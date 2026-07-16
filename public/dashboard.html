@@ -559,28 +559,6 @@
                     </div>
                 </div>
 
-                <!-- Additional Plan Card -->
-                <div class="stat-card" style="border-top: 3px solid #4299e1; background: var(--bg-card);">
-                    <div style="font-size: 13px; font-weight: 700; color: #4299e1; margin-bottom: 8px; text-transform: uppercase;">Additional Plan</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center;">
-                        <div style="background: rgba(255,255,255,0.03); padding: 8px 4px; border-radius: 6px;">
-                            <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Plan</div>
-                            <div id="status-additional-plan-qty" style="font-size: 16px; font-weight: 700; color: white;">0</div>
-                            <div id="status-additional-plan-count" style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">0 orders</div>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.03); padding: 8px 4px; border-radius: 6px;">
-                            <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Picked</div>
-                            <div id="status-additional-picked-qty" style="font-size: 16px; font-weight: 700; color: var(--accent-green);">0</div>
-                            <div id="status-additional-picked-count" style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">0 orders</div>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.03); padding: 8px 4px; border-radius: 6px;">
-                            <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Pending</div>
-                            <div id="status-additional-pending-qty" style="font-size: 16px; font-weight: 700; color: var(--onesource-red);">0</div>
-                            <div id="status-additional-pending-count" style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">0 orders</div>
-                        </div>
-                    </div>
-                </div>
-
 
                 <!-- Tomorrow's Plan Card -->
                 <div class="stat-card" style="border-top: 3px solid #9f7aea; background: var(--bg-card);">
@@ -604,28 +582,6 @@
                     </div>
                 </div>
 
-                <!-- Grand Advanced Card -->
-                <div class="stat-card" style="border-top: 3px solid #f56565; background: var(--bg-card);">
-                    <div style="font-size: 13px; font-weight: 700; color: #f56565; margin-bottom: 8px; text-transform: uppercase;">Grand Advanced</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center;">
-                        <div style="background: rgba(255,255,255,0.03); padding: 8px 4px; border-radius: 6px;">
-                            <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Plan</div>
-                            <div id="status-grand-plan-qty" style="font-size: 16px; font-weight: 700; color: white;">0</div>
-                            <div id="status-grand-plan-count" style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">0 orders</div>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.03); padding: 8px 4px; border-radius: 6px;">
-                            <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Picked</div>
-                            <div id="status-grand-picked-qty" style="font-size: 16px; font-weight: 700; color: var(--accent-green);">0</div>
-                            <div id="status-grand-picked-count" style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">0 orders</div>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.03); padding: 8px 4px; border-radius: 6px;">
-                            <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Pending</div>
-                            <div id="status-grand-pending-qty" style="font-size: 16px; font-weight: 700; color: var(--onesource-red);">0</div>
-                            <div id="status-grand-pending-count" style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">0 orders</div>
-                        </div>
-                    </div>
-                    </div>
-                </div>
 
                 <div id="section-charts" class="dashboard-section" data-title="Performance Charts" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                     <div class="chart-card" style="margin-bottom:0;">
@@ -857,19 +813,19 @@
             
             const today = getLogicalDateStr();
             
-            // Main plan excludes Grand Advanced / Grand Advance
+            // Main plan excludes Archived Orders
             // Also apply Type filter!
             const mainDispatchPlan = dispatchPlan.filter(d => {
                 const status = (d.status || '').trim().toLowerCase();
-                const statusMatch = status !== 'grand advanced' && status !== 'grand advance';
+                const statusMatch = status !== 'archive order' && status !== 'archived order';
                 const typeMatch = currentTypeFilter === 'All' || d.type === currentTypeFilter;
                 return statusMatch && typeMatch;
             });
 
-            // Today's Target plan: Pending Plan, Today's Plan, Additional Plan (excludes Tomorrow's Plan, Grand Advanced, etc.)
+            // Today's Target plan: Pending Plan, Today's Plan, Unconfirmed Plan
             const todaysTargetPlan = dispatchPlan.filter(d => {
                 const status = (d.status || '').trim().toLowerCase();
-                const statusMatch = status === 'pending plan' || status === "today's plan" || status === 'additional plan';
+                const statusMatch = status === 'pending plan' || status === "today's plan" || status === 'unconfirmed plan';
                 const typeMatch = currentTypeFilter === 'All' || d.type === currentTypeFilter;
                 return statusMatch && typeMatch;
             });
@@ -998,12 +954,6 @@
             const pendingStats = getStatusBreakdown('Pending Plan');
             const todayStats = getStatusBreakdown("Today's Plan");
             const tomorrowStats = getStatusBreakdown("Tomorrow's Plan");
-            const additionalStats = getStatusBreakdown('Additional Plan');
-            
-            let grandStats = getStatusBreakdown('Grand Advanced');
-            if (grandStats.planQty === 0) {
-                grandStats = getStatusBreakdown('Grand Advance');
-            }
 
             const assignStat = (id, val) => {
                 const el = document.getElementById(id);
@@ -1036,19 +986,7 @@
             assignStat('status-tomorrow-pending-qty', tomorrowStats.pendingQty);
             assignText('status-tomorrow-pending-count', `${tomorrowStats.pendingCount} orders`);
 
-            assignStat('status-additional-plan-qty', additionalStats.planQty);
-            assignText('status-additional-plan-count', `${additionalStats.planCount} orders`);
-            assignStat('status-additional-picked-qty', additionalStats.pickedQty);
-            assignText('status-additional-picked-count', `${additionalStats.pickedCount} orders`);
-            assignStat('status-additional-pending-qty', additionalStats.pendingQty);
-            assignText('status-additional-pending-count', `${additionalStats.pendingCount} orders`);
 
-            assignStat('status-grand-plan-qty', grandStats.planQty);
-            assignText('status-grand-plan-count', `${grandStats.planCount} orders`);
-            assignStat('status-grand-picked-qty', grandStats.pickedQty);
-            assignText('status-grand-picked-count', `${grandStats.pickedCount} orders`);
-            assignStat('status-grand-pending-qty', grandStats.pendingQty);
-            assignText('status-grand-pending-count', `${grandStats.pendingCount} orders`);
 
             // Estimated Completion Time
             const todaysPicks = (Array.isArray(orders) ? orders : []).filter(o => 
