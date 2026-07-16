@@ -78,7 +78,20 @@ app.use('/api/items', itemRoutes);
 // ─── API Routes (Aliases for Old Frontend Compatibility) ────────────────────
 app.use('/api/dispatch-plan', dispatchRoutes);
 app.use('/api/picking-orders', pickingRoutes);
-app.use('/api/pickers', resourceRoutes); // old UI fetches /api/pickers, which should hit /api/resources/pickers? Wait.
+
+// The old UI fetches /api/pickers directly instead of /api/resources/pickers
+app.use('/api/pickers', (req, res, next) => {
+  req.url = req.url === '/' ? '/pickers' : '/pickers' + req.url;
+  resourceRoutes(req, res, next);
+});
+app.use('/api/checkers', (req, res, next) => {
+  req.url = req.url === '/' ? '/checkers' : '/checkers' + req.url;
+  resourceRoutes(req, res, next);
+});
+app.use('/api/staging-areas', (req, res, next) => {
+  req.url = req.url === '/' ? '/staging-areas' : '/staging-areas' + req.url;
+  resourceRoutes(req, res, next);
+});
 
 // ─── Health Check ───────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

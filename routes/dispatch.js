@@ -408,8 +408,8 @@ router.post('/bulk-archive', authenticateToken, async (req, res) => {
 });
 
 // ─── GET ARCHIVED ORDERS ────────────────────────────────────────────────────
-// GET /api/dispatch/archive
-router.get('/archive/list', authenticateToken, async (req, res) => {
+// GET /api/dispatch/archived
+router.get('/archived', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM dispatch_archive ORDER BY archived_at DESC');
     res.json(result.rows);
