@@ -2042,16 +2042,28 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[firstSheet];
                 
-                const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: '', raw: false});
-                if (rows.length === 0) return;
+                let allOrders = [];
+                for (let sheetName of workbook.SheetNames) {
+                    const sheet = workbook.Sheets[sheetName];
+                    const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: '', raw: false});
+                    if (rows.length === 0) continue;
+                    
+                    const parsedOrders = extractOrdersFromRows(rows);
+                    if (parsedOrders && parsedOrders.length > 0) {
+                        allOrders = allOrders.concat(parsedOrders);
+                    }
+                }
 
-                processExtractedRows(rows);
+                if (allOrders.length === 0) {
+                    alert('No valid orders found in any sheet. Please check your Excel format.');
+                    return;
+                }
+                
+                await uploadParsedOrders(allOrders);
             };
             reader.readAsArrayBuffer(file);
         }
@@ -2060,10 +2072,15 @@
             const text = document.getElementById('paste-area').value.trim();
             if (!text) return;
             const rows = text.split('\n').map(row => row.split('\t'));
-            processExtractedRows(rows);
+            const orders = extractOrdersFromRows(rows);
+            if (!orders || orders.length === 0) {
+                alert('No valid orders found');
+                return;
+            }
+            await uploadParsedOrders(orders);
         }
 
-        async function processExtractedRows(rows) {
+        function extractOrdersFromRows(rows) {
             let headerRowIndex = -1;
             for (let i = 0; i < Math.min(10, rows.length); i++) {
                 if (!rows[i]) continue;
@@ -2143,13 +2160,10 @@
                 }
             }
 
-            const orders = Object.values(aggregated);
+            return Object.values(aggregated);
+        }
 
-            if (orders.length === 0) {
-                alert('No valid orders found');
-                return;
-            }
-
+        async function uploadParsedOrders(orders) {
             try {
                 const btn = document.getElementById('btn-process-paste');
                 const statusMsg = document.getElementById('upload-status-msg');
