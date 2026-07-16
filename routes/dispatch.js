@@ -501,8 +501,11 @@ router.post('/upload', authenticateToken, async (req, res) => {
     let skippedCount = 0;
 
     for (const order of orders) {
-      // Check if FO already exists to avoid duplicates
-      const checkRes = await client.query('SELECT id FROM dispatch_orders WHERE fo = $1', [order.fo]);
+      // Check if FO already exists in active or archived orders to avoid duplicates
+      const checkRes = await client.query(
+          'SELECT id FROM dispatch_orders WHERE fo = $1 UNION SELECT id FROM dispatch_archive WHERE fo = $1', 
+          [order.fo]
+      );
       if (checkRes.rows.length > 0) {
           skippedCount++;
           continue; // Skip existing FOs
