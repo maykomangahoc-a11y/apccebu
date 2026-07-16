@@ -14,8 +14,8 @@
 
         :root {
             --onesource-red: #E63946;
-            --bg-dark: #1a1d23;
-            --bg-card: #25292f;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
             --text-primary: #ffffff;
             --text-secondary: #a0aec0;
             --accent-blue: #4299e1;
@@ -358,7 +358,7 @@
             top: calc(100% + 4px);
             left: 0;
             z-index: 9999;
-            background: #1e2229;
+            background: #1e293b;
             border: 1px solid rgba(255,255,255,0.12);
             border-radius: 8px;
             min-width: 200px;
@@ -473,7 +473,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: #1e2229;
+            background: #1e293b;
             border-top: 2px solid var(--onesource-red);
             padding: 12px 24px;
             display: flex;
@@ -560,7 +560,7 @@
             padding: 6px 14px;
             font-size: 13px;
             font-weight: 700;
-            color: #1a1d23;
+            color: #0f172a;
             background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
             border: none;
             border-radius: 8px;
@@ -751,7 +751,7 @@
 
         <!-- Order Status Modal -->
         <div id="status-modal" class="modal" onclick="closePlanStatusModal()" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e2229; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
+            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
                     <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: white;">Update Order Status</h3>
                     <span onclick="closePlanStatusModal()" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
@@ -764,7 +764,7 @@
 
         <!-- Paste Orders Modal -->
         <div id="paste-modal" class="modal" onclick="document.getElementById('paste-modal').style.display='none'" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e2229; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
+            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
                     <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: white;">Paste Orders from Excel</h3>
                     <span onclick="document.getElementById('paste-modal').style.display='none'" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
