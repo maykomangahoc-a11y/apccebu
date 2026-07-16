@@ -769,7 +769,7 @@
                     <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: white;">Paste Orders from Excel</h3>
                     <span onclick="document.getElementById('paste-modal').style.display='none'" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
                 </div>
-                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Paste rows directly from Excel. Expected columns (no headers needed if matching this order): <br><strong style="color:white">Date | FO# | Account Name | Type | Qty | Value</strong></p>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Paste rows directly from your raw Excel export. Do not change the columns. Expected columns:<br><strong style="color:white">Order No | Customer Code | Customer Name | P.O No | P.O No Date | Other Ref | Delivery Addr | Remarks | Mat | Desc | UOM | Qty</strong><br><em>Line items will be automatically grouped by Order No (FO).</em></p>
                 <textarea id="paste-area" placeholder="Paste data here..." style="width: 100%; height: 200px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 12px; font-family: monospace; font-size: 12px; outline: none; margin-bottom: 16px; resize: vertical;"></textarea>
                 <div style="display: flex; justify-content: flex-end; gap: 12px;">
                     <button onclick="document.getElementById('paste-modal').style.display='none'" style="padding: 8px 16px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer;">Cancel</button>
@@ -2045,17 +2045,42 @@
             if (!text) return;
             
             const rows = text.split('\n').map(row => row.split('\t'));
-            const orders = rows.map(cols => ({
-                dispatch_date: cols[0] || new Date().toLocaleDateString('en-US'),
-                fo: cols[1] || '',
-                account_name: cols[2] || '',
-                type: cols[3] || '',
-                qty: parseInt(cols[4] ? cols[4].replace(/,/g, '') : '0') || 0,
-                invoiced_value: cols[5] ? cols[5].replace(/,/g, '').replace('P', '').trim() : '0',
-                order_received: new Date().toISOString(),
-                status: 'Pending Plan',
-                order_status: 'checking'
-            })).filter(o => o.fo);
+            
+            // Check if user copied the header row. If so, skip it.
+            let startIndex = 0;
+            if (rows[0] && rows[0][0] && rows[0][0].trim().toLowerCase() === 'order no') {
+                startIndex = 1;
+            }
+
+            const aggregated = {};
+            for (let i = startIndex; i < rows.length; i++) {
+                const cols = rows[i];
+                if (!cols[0]) continue; // Skip empty rows
+                
+                // Assuming columns: Order No(0), Customer Code(1), Customer Name(2), P.O No(3), P.O No Date(4), Ref(5), Addr(6), Remarks(7), Mat(8), Desc(9), UOM(10), Qty(11)
+                const fo = String(cols[0]).trim();
+                if (!fo) continue;
+
+                const qty = parseInt(cols[11] ? String(cols[11]).replace(/,/g, '') : '0') || 0;
+                
+                if (!aggregated[fo]) {
+                    aggregated[fo] = {
+                        dispatch_date: cols[4] ? String(cols[4]).trim() : new Date().toLocaleDateString('en-US'),
+                        fo: fo,
+                        account_name: cols[2] ? String(cols[2]).trim() : '',
+                        type: '', // Not in export
+                        qty: qty,
+                        invoiced_value: '0', // Not in export
+                        order_received: new Date().toISOString(),
+                        status: 'Pending Plan',
+                        order_status: 'checking'
+                    };
+                } else {
+                    aggregated[fo].qty += qty;
+                }
+            }
+
+            const orders = Object.values(aggregated);
 
             if (orders.length === 0) {
                 alert('No valid orders found');
@@ -2076,7 +2101,7 @@
                 if (res.ok) {
                     document.getElementById('paste-area').value = '';
                     document.getElementById('paste-modal').style.display = 'none';
-                    await loadDispatchPlan();
+                    await loadData();
                 } else {
                     alert('Failed to upload orders');
                 }
