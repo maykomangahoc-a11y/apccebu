@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dispatch Plan & Truck Assignment</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="/auth.js"></script>
     <style>
         * {
@@ -637,7 +638,7 @@
                         <select id="dispatch-date-filter" onchange="filterDispatchTable()" title="Filter by Order Date" style="flex: 0 0 auto; min-width: 150px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                             <option value="">📅 All Order Dates</option>
                         </select>
-                        <input type="text" id="dispatch-search" placeholder="🔍 Search FO# or Account..." oninput="filterDispatchTable()" style="flex: 1; min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                        <input type="text" id="dispatch-search" placeholder="🔍 Search Order No or Account..." oninput="filterDispatchTable()" style="flex: 1; min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                     </div>
                 </div>
                 <div class="table-container">
@@ -650,7 +651,7 @@
                             <tr>
                                 <th>Plan Status</th>
                                 <th>Order Date</th>
-                                <th>FO#</th>
+                                <th>Order No</th>
                                 <th>Account Name</th>
                                 <th>Type</th>
                                 <th style="text-align: center;">Order Qty</th>
@@ -676,7 +677,7 @@
                         <h2 class="card-title">Truck Assignment</h2>
                     </div>
                     <div style="min-width: 300px; flex-grow: 1; max-width: 400px;">
-                        <input type="text" id="truck-search" placeholder="🔍 Search FO# or Account..." oninput="filterTruckTable()" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                        <input type="text" id="truck-search" placeholder="🔍 Search Order No or Account..." oninput="filterTruckTable()" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                     </div>
                 </div>
                 <div class="table-container">
@@ -687,7 +688,7 @@
                     <table id="truck-table" style="display: none;">
                         <thead>
                             <tr>
-                                <th>FO#</th>
+                                <th>Order No</th>
                                 <th>Account Name</th>
                                 <th style="text-align: center;">Order Qty</th>
                                 <th style="text-align: center;">CBM</th>
@@ -725,7 +726,7 @@
                             <input type="date" id="archived-date-to" onchange="filterArchivedTable()" style="padding: 8px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 12px; outline: none; color-scheme: dark;">
                             <button onclick="clearArchivedDateRange()" title="Clear date filter" style="padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">All</button>
                         </div>
-                        <input type="text" id="archived-search" placeholder="🔍 Search FO# or Account..." oninput="filterArchivedTable()" style="min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                        <input type="text" id="archived-search" placeholder="🔍 Search Order No or Account..." oninput="filterArchivedTable()" style="min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                     </div>
                 </div>
                 <div class="table-container">
@@ -733,7 +734,7 @@
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>FO#</th>
+                                <th>Order No</th>
                                 <th>Account Name</th>
                                 <th>Type</th>
                                 <th style="text-align: center;">Order Qty</th>
@@ -769,7 +770,9 @@
                     <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: white;">Paste Orders from Excel</h3>
                     <span onclick="document.getElementById('paste-modal').style.display='none'" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
                 </div>
-                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Paste rows directly from your raw Excel export. Do not change the columns. Expected columns:<br><strong style="color:white">Order No | Customer Code | Customer Name | P.O No | P.O No Date | Other Ref | Delivery Addr | Remarks | Mat | Desc | UOM | Qty</strong><br><em>Line items will be automatically grouped by Order No (FO).</em></p>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Select an Excel file or paste rows directly. Expected columns:<br><strong style="color:white">Order No | Customer Code | Customer Name | P.O No | P.O No Date | Other Ref | Delivery Addr | Remarks | Mat | Desc | UOM | Qty</strong><br><em>Line items will be grouped by Order No. Type is auto-determined.</em></p>
+                <input type="file" id="excel-file-upload" accept=".xlsx, .xls" style="margin-bottom: 12px; color: white; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); width: 100%; cursor: pointer;" onchange="handleExcelUpload(event)">
+                <div style="text-align: center; color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">OR</div>
                 <textarea id="paste-area" placeholder="Paste data here..." style="width: 100%; height: 200px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 12px; font-family: monospace; font-size: 12px; outline: none; margin-bottom: 16px; resize: vertical;"></textarea>
                 <div style="display: flex; justify-content: flex-end; gap: 12px;">
                     <button onclick="document.getElementById('paste-modal').style.display='none'" style="padding: 8px 16px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer;">Cancel</button>
@@ -1806,7 +1809,7 @@
                                 <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
                                     <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">BL#</th>
                                     <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Account</th>
-                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">FO#</th>
+                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Order No</th>
                                     <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">PO#</th>
                                     <th style="padding:8px 10px;text-align:center;font-size:11px;color:#63b3ed;text-transform:uppercase;">Operator Qty</th>
                                     <th style="padding:8px 10px;text-align:center;font-size:11px;color:#48bb78;text-transform:uppercase;">Picker Qty</th>
@@ -2040,37 +2043,60 @@
             setInterval(() => {
                         if (document.hidden) return; loadData(); }, 60000); // Refresh every minute
         })();
+        async function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[firstSheet];
+                
+                const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ''});
+                if (rows.length === 0) return;
+
+                processExtractedRows(rows);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
         async function processPastedOrders() {
             const text = document.getElementById('paste-area').value.trim();
             if (!text) return;
-            
             const rows = text.split('\n').map(row => row.split('\t'));
-            
-            // Check if user copied the header row. If so, skip it.
+            processExtractedRows(rows);
+        }
+
+        async function processExtractedRows(rows) {
             let startIndex = 0;
-            if (rows[0] && rows[0][0] && rows[0][0].trim().toLowerCase() === 'order no') {
+            if (rows[0] && rows[0][0] && String(rows[0][0]).trim().toLowerCase() === 'order no') {
                 startIndex = 1;
+            } else if (rows[1] && rows[1][0] && String(rows[1][0]).trim().toLowerCase() === 'order no') {
+                startIndex = 2;
             }
 
             const aggregated = {};
             for (let i = startIndex; i < rows.length; i++) {
                 const cols = rows[i];
-                if (!cols[0]) continue; // Skip empty rows
+                if (!cols[0]) continue;
                 
-                // Assuming columns: Order No(0), Customer Code(1), Customer Name(2), P.O No(3), P.O No Date(4), Ref(5), Addr(6), Remarks(7), Mat(8), Desc(9), UOM(10), Qty(11)
                 const fo = String(cols[0]).trim();
-                if (!fo) continue;
+                if (!fo || fo.toLowerCase() === 'order no' || fo.toLowerCase() === 'orders') continue;
 
                 const qty = parseInt(cols[11] ? String(cols[11]).replace(/,/g, '') : '0') || 0;
+                const accountName = cols[2] ? String(cols[2]).trim() : '';
+                const type = accountName.toLowerCase().includes('station') ? 'STN' : 'DD';
                 
                 if (!aggregated[fo]) {
                     aggregated[fo] = {
                         dispatch_date: cols[4] ? String(cols[4]).trim() : new Date().toLocaleDateString('en-US'),
                         fo: fo,
-                        account_name: cols[2] ? String(cols[2]).trim() : '',
-                        type: '', // Not in export
+                        account_name: accountName,
+                        type: type,
                         qty: qty,
-                        invoiced_value: '0', // Not in export
+                        invoiced_value: '0',
                         order_received: new Date().toISOString(),
                         status: 'Pending Plan',
                         order_status: 'checking'
@@ -2100,6 +2126,8 @@
 
                 if (res.ok) {
                     document.getElementById('paste-area').value = '';
+                    const fileInput = document.getElementById('excel-file-upload');
+                    if (fileInput) fileInput.value = '';
                     document.getElementById('paste-modal').style.display = 'none';
                     await loadData();
                 } else {
