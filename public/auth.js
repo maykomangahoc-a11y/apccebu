@@ -131,3 +131,49 @@ const AuthGuard = (() => {
 
     return { init, getToken, getUser, hasRole, logout, authFetch };
 })();
+
+// Global fetch interceptor for all /api/ requests
+const originalFetch = window.fetch;
+window.fetch = async function () {
+    let [resource, config] = arguments;
+    
+    // Check if it's an API request
+    let url = '';
+    if (typeof resource === 'string') {
+        url = resource;
+    } else if (resource instanceof Request) {
+        url = resource.url;
+    }
+
+    if (url.includes('/api/')) {
+        const token = AuthGuard.getToken();
+        if (token) {
+            config = config || {};
+            config.headers = {
+                ...config.headers,
+                'Authorization': `Bearer ${token}`
+            };
+            
+            // If resource is a Request object, we need to recreate it with new headers
+            if (resource instanceof Request) {
+                resource = new Request(resource, config);
+            }
+        }
+        
+        try {
+            const res = await originalFetch(resource, config);
+            if (res.status === 401) {
+                AuthGuard.logout();
+                throw new Error('Session expired');
+            }
+            if (res.status === 403) {
+                throw new Error('Access denied');
+            }
+            return res;
+        } catch (error) {
+            throw error;
+        }
+    }
+    
+    return originalFetch.apply(this, arguments);
+};
