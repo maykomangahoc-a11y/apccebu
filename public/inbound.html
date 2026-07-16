@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbound Checking</title>
+    <script src="/auth.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --onesource-red: #E63946;
+            --accent-teal: #38b2ac;
+            --bg-dark: #1a1d23;
+            --bg-card: #25292f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-blue: #4299e1;
+            --accent-green: #48bb78;
+            --accent-orange: #ed8936;
+            --accent-purple: #9f7aea;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .app-container { max-width: 1600px; margin: 0 auto; padding: 16px; }
+
+        header {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section { display: flex; align-items: center; gap: 16px; }
+        .logo { height: 40px; width: auto; }
+
+        .header-title { border-left: 3px solid var(--accent-teal); padding-left: 14px; }
+        .header-title h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .header-title p  { font-size: 14px; color: var(--text-secondary); }
+
+        .connection-badge {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 16px;
+            background: rgba(56,178,172,0.1);
+            border-radius: 8px; font-size: 13px; font-weight: 500;
+            color: var(--accent-teal);
+        }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-connected    { background: var(--accent-teal); animation: pulseTeal 2s infinite; }
+        .status-disconnected { background: var(--danger); }
+
+        @keyframes pulseTeal {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(56,178,172,0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 5px rgba(56,178,172,0); }
+        }
+
+        /* Connection alert */
+        .alert {
+            padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;
+            display: none; align-items: center; gap: 8px; font-size: 13px;
+        }
+        .alert.error { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); display: flex; }
+
+        /* Tabs */
+        .tabs-header {
+            display: flex; gap: 4px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            flex: 1; min-width: 130px;
+            padding: 14px 20px;
+            border: none; border-radius: 8px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+
+        .tab-button.active {
+            background: var(--accent-teal); color: #fff; font-weight: 600;
+            box-shadow: 0 4px 12px rgba(56,178,172,0.35);
+        }
+
+        /* Tab content */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px; padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .card-header {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent-teal), #2c9a94);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px;
+        }
+        .card-title { font-size: 16px; font-weight: 700; }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+        thead th {
+            background: rgba(255,255,255,0.03);
+            text-align: left; padding: 10px 12px;
+            color: var(--text-secondary);
+            font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap;
+        }
+
+        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); }
+        tbody tr:hover:not(.expand-row) { background: rgba(255,255,255,0.02); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody td { padding: 12px 12px; vertical-align: middle; font-size: 13px; color: var(--text-primary); }
+
+        /* Status badges */
+        .badge {
+            display: inline-block; padding: 2px 10px;
+            border-radius: 10px; font-size: 11px; font-weight: 600;
+            text-transform: capitalize;
+        }
+        .badge-pending   { background: rgba(237,137,54,0.15); color: var(--accent-orange); }
+        .badge-progress  { background: rgba(66,153,225,0.15);  color: var(--accent-blue); }
+        .badge-completed { background: rgba(72,187,120,0.15);  color: var(--accent-green); }
+        .badge-default   { background: rgba(160,174,192,0.15); color: var(--text-secondary); }
+
+        /* Inputs */
+        input[type="text"], input[type="date"], select, textarea {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px; padding: 8px 12px;
+            color: var(--text-primary); font-size: 13px;
+            width: 100%;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--accent-teal);
+        }
+
+        ::placeholder { color: var(--text-secondary); }
+
+        /* Buttons */
+        .btn {
+            padding: 9px 18px; border-radius: 8px; border: none;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-teal); color: #fff;
+        }
+        .btn-primary:hover { background: #2c9a94; }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.08); color: var(--text-primary);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+
+        .btn-danger { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+        .btn-danger:hover { background: rgba(239,68,68,0.25); }
+
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* Form grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px; margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: var(--text-secondary); margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+
+        .required::after { content: ' *'; color: var(--danger); }
+
+        /* Status select inside table */
+        .status-select {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 6px; padding: 4px 8px;
+            color: var(--text-primary); font-size: 12px;
+            cursor: pointer;
+        }
+        .status-select:focus { outline: none; border-color: var(--accent-teal); }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center; padding: 48px 24px;
+            color: var(--text-secondary); font-size: 14px;
+        }
+        .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+
+        /* Pagination / count label */
+        .count-label { font-size: 12px; color: var(--text-secondary); margin-left: auto; }
+
+        /* Divider label */
+        .section-header {
+            display: flex; align-items: center; gap: 16px;
+            margin-bottom: 16px; flex-wrap: wrap;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 16px; }
+            .tabs-header { flex-direction: column; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Under Construction Banner -->
+    <div style="background:linear-gradient(90deg,rgba(237,137,54,0.15),rgba(237,137,54,0.08));border-bottom:2px solid rgba(237,137,54,0.4);padding:12px 24px;display:flex;align-items:center;gap:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+        <span style="font-size:22px;">🚧</span>
+        <div>
+            <div style="font-size:14px;font-weight:700;color:#ed8936;letter-spacing:0.3px;">Under Construction</div>
+            <div style="font-size:12px;color:#a0aec0;margin-top:2px;">This page is being rebuilt. Features may be incomplete or unavailable.</div>
+        </div>
+    </div>
+    <div class="app-container">
+        <header>
+            <div class="logo-section">
+                <img src="/onesource.png" alt="Onesource Logistics" class="logo">
+                <div class="header-title">
+                    <h1>Inbound Checking</h1>
+                    <p>Inbound checking and inspection</p>
+                </div>
+            </div>
+            <div class="connection-badge">
+                <span class="status-dot" id="status-dot"></span>
+                <span id="status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <div id="connection-alert"></div>
+
+        <div class="tabs-header">
+            <button class="tab-button active" onclick="switchTab('all-entries')">
+                📥 All Entries
+            </button>
+            <button class="tab-button" onclick="switchTab('pending')">
+                🕐 Pending
+            </button>
+            <button class="tab-button" onclick="switchTab('in-progress')">
+                ⏱️ In Progress
+            </button>
+            <button class="tab-button" onclick="switchTab('completed')">
+                ✅ Completed
+            </button>
+            <button class="tab-button" id="new-entry-tab" onclick="switchTab('new-entry')">
+                ➕ New Entry
+            </button>
+        </div>
+
+        <!-- All Entries Tab -->
+        <div id="all-entries" class="tab-content active">
+            <div class="card">
+                <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-icon">📥</div>
+                        <h2 class="card-title">All Inbound Entries</h2>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="all-search" placeholder="🔍 Search entries..."
+                            oninput="renderTab('all-entries')" style="width: 260px;">
+                        <span class="count-label" id="all-count"></span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div id="all-entries-table">
+                        <div class="empty-state"><div class="empty-icon">📥</div>Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Tab -->
+        <div id="pending" class="tab-content">
+            <div class="card">
+                <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-icon">🕐</div>
+                        <h2 class="card-title">Pending Entries</h2>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="pending-search" placeholder="🔍 Search..."
+                            oninput="renderTab('pending')" style="width: 240px;">
+                        <span class="count-label" id="pending-count"></span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div id="pending-table">
+                        <div class="empty-state"><div class="empty-icon">🕐</div>Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- In Progress Tab -->
+        <div id="in-progress" class="tab-content">
+            <div class="card">
+                <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-icon">⏱️</div>
+                        <h2 class="card-title">In Progress</h2>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="progress-search" placeholder="🔍 Search..."
+                            oninput="renderTab('in-progress')" style="width: 240px;">
+                        <span class="count-label" id="progress-count"></span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div id="in-progress-table">
+                        <div class="empty-state"><div class="empty-icon">⏱️</div>Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completed Tab -->
+        <div id="completed" class="tab-content">
+            <div class="card">
+                <div class="card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-icon">✅</div>
+                        <h2 class="card-title">Completed / Received</h2>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="completed-search" placeholder="🔍 Search..."
+                            oninput="renderTab('completed')" style="width: 240px;">
+                        <input type="date" id="completed-from" onchange="renderTab('completed')">
+                        <input type="date" id="completed-to"   onchange="renderTab('completed')">
+                        <span class="count-label" id="completed-count"></span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div id="completed-table">
+                        <div class="empty-state"><div class="empty-icon">✅</div>Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Entry Tab -->
+        <div id="new-entry" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">➕</div>
+                    <h2 class="card-title">Add New Inbound Entry</h2>
+                </div>
+                <div id="new-entry-form-container">
+                    <!-- Dynamically rendered based on sheet headers -->
+                    <div class="empty-state"><div class="empty-icon">⏳</div>Loading sheet columns...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        let allData     = [];
+        let headers     = [];
+        let statusColIdx = -1;
+        let dateColIdx   = -1;
+        let statusCol    = null; // header name of status column
+        let dateCol      = null;
+        let isConnected  = false;
+        let currentUser  = null;
+
+        const STATUS_NAMES = ['status', 'condition', 'state', 'remarks'];
+        const DATE_NAMES   = ['date', 'received date', 'entry date', 'created', 'timestamp'];
+
+        // ── Column detection ───────────────────────────────────────────────────
+        function detectCols() {
+            statusColIdx = headers.findIndex(h => STATUS_NAMES.includes(h.toLowerCase().trim()));
+            dateColIdx   = headers.findIndex(h => DATE_NAMES.some(d => h.toLowerCase().trim().includes(d)));
+            statusCol = statusColIdx >= 0 ? headers[statusColIdx] : null;
+            dateCol   = dateColIdx   >= 0 ? headers[dateColIdx]   : null;
+        }
+
+        function getStatus(row) {
+            if (!statusCol) return '';
+            return String(row[statusCol] || '').toLowerCase().trim();
+        }
+
+        function badgeClass(s) {
+            if (!s)                        return 'badge-default';
+            if (s.includes('pending'))     return 'badge-pending';
+            if (s.includes('progress'))    return 'badge-progress';
+            if (s.includes('complete') || s.includes('received') || s === 'done') return 'badge-completed';
+            return 'badge-default';
+        }
+
+        // ── Connection ─────────────────────────────────────────────────────────
+        async function checkConnection() {
+            try {
+                const r = await fetch(`${API_BASE}/health`);
+                const d = await r.json();
+                isConnected = d.status === 'OK';
+                const dot  = document.getElementById('status-dot');
+                const text = document.getElementById('status-text');
+                if (isConnected && d.sheetsConnected) {
+                    dot.className  = 'status-dot status-connected';
+                    text.textContent = 'Connected';
+                } else {
+                    dot.className  = 'status-dot status-disconnected';
+                    text.textContent = 'Reconnecting...';
+                }
+                document.getElementById('connection-alert').innerHTML = '';
+            } catch {
+                isConnected = false;
+                const dot  = document.getElementById('status-dot');
+                if (dot) { dot.className = 'status-dot status-disconnected'; }
+                document.getElementById('status-text').textContent = 'Server offline';
+                document.getElementById('connection-alert').innerHTML =
+                    `<div class="alert error">⚠️ Cannot reach server — displaying cached data.</div>`;
+            }
+        }
+
+        // ── Tab switching ──────────────────────────────────────────────────────
+        function switchTab(tabId) {
+            localStorage.setItem('inbound_tab', tabId);
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            renderTab(tabId);
+        }
+
+        // ── Table rendering ────────────────────────────────────────────────────
+        const TAB_CONFIG = {
+            'all-entries': {
+                containerId: 'all-entries-table',
+                countId: 'all-count',
+                searchId: 'all-search',
+                filter: () => true,
+            },
+            'pending': {
+                containerId: 'pending-table',
+                countId: 'pending-count',
+                searchId: 'pending-search',
+                filter: r => { const s = getStatus(r); return !s || s === 'pending'; },
+            },
+            'in-progress': {
+                containerId: 'in-progress-table',
+                countId: 'progress-count',
+                searchId: 'progress-search',
+                filter: r => getStatus(r).includes('progress'),
+            },
+            'completed': {
+                containerId: 'completed-table',
+                countId: 'completed-count',
+                searchId: 'completed-search',
+                filter: r => {
+                    const s = getStatus(r);
+                    if (!(s.includes('complete') || s.includes('received') || s === 'done')) return false;
+                    // Date range filtering
+                    if (dateCol) {
+                        const from = document.getElementById('completed-from')?.value;
+                        const to   = document.getElementById('completed-to')?.value;
+                        if (from || to) {
+                            try {
+                                const d = new Date(r[dateCol]);
+                                if (from && d < new Date(from)) return false;
+                                if (to   && d > new Date(to + 'T23:59:59')) return false;
+                            } catch {}
+                        }
+                    }
+                    return true;
+                },
+            },
+        };
+
+        function renderTab(tabId) {
+            const cfg = TAB_CONFIG[tabId];
+            if (!cfg) return;
+
+            const search = (document.getElementById(cfg.searchId)?.value || '').toLowerCase();
+            const displayCols = headers.filter(h => h && !h.startsWith('_'));
+
+            let rows = allData.filter(cfg.filter);
+            if (search) {
+                rows = rows.filter(r =>
+                    displayCols.some(h => String(r[h] || '').toLowerCase().includes(search))
+                );
+            }
+
+            if (cfg.countId) {
+                document.getElementById(cfg.countId).textContent = `${rows.length} entries`;
+            }
+
+            const canEdit = currentUser && ['admin', 'supervisor', 'processor'].includes(currentUser.role);
+
+            if (!rows.length) {
+                document.getElementById(cfg.containerId).innerHTML =
+                    `<div class="empty-state"><div class="empty-icon">📭</div>No entries found</div>`;
+                return;
+            }
+
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            ${displayCols.map(h => `<th>${h}</th>`).join('')}
+                            ${canEdit && statusCol ? '<th>Update Status</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((r, i) => `
+                            <tr>
+                                <td style="color: var(--text-secondary); font-size: 12px;">${i + 1}</td>
+                                ${displayCols.map(h => {
+                                    const val = r[h];
+                                    if (h === statusCol) {
+                                        return `<td><span class="badge ${badgeClass(getStatus(r))}">${val || '—'}</span></td>`;
+                                    }
+                                    return `<td>${val !== undefined && val !== '' ? val : '—'}</td>`;
+                                }).join('')}
+                                ${canEdit && statusCol ? `
+                                    <td>
+                                        <select class="status-select" onchange="updateStatus(${r._rowIndex}, this.value, this)">
+                                            <option value="">— set status —</option>
+                                            <option value="Pending"     ${getStatus(r) === 'pending'      ? 'selected' : ''}>Pending</option>
+                                            <option value="In Progress" ${getStatus(r).includes('progress') ? 'selected' : ''}>In Progress</option>
+                                            <option value="Completed"   ${getStatus(r).includes('complete') || getStatus(r).includes('received') ? 'selected' : ''}>Completed</option>
+                                        </select>
+                                    </td>
+                                ` : ''}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+            document.getElementById(cfg.containerId).innerHTML = html;
+        }
+
+        // ── Status update ──────────────────────────────────────────────────────
+        async function updateStatus(rowIndex, newStatus, selectEl) {
+            if (!newStatus) return;
+            // Find column letter for status col
+            const colLetter = indexToColLetter(statusColIdx); // 0-based index
+            try {
+                selectEl.disabled = true;
+                const res = await fetch(`${API_BASE}/inbound/update`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rowIndex, colLetter, value: newStatus }),
+                });
+                if (!res.ok) throw new Error(await res.text());
+                await loadData(false); // reload without spinner
+            } catch (e) {
+                alert('Failed to update status: ' + e.message);
+                selectEl.disabled = false;
+            }
+        }
+
+        function indexToColLetter(idx) {
+            let letter = '';
+            let n = idx + 1;
+            while (n > 0) {
+                const rem = (n - 1) % 26;
+                letter = String.fromCharCode(65 + rem) + letter;
+                n = Math.floor((n - 1) / 26);
+            }
+            return letter;
+        }
+
+        // ── New Entry Form ─────────────────────────────────────────────────────
+        function buildNewEntryForm() {
+            if (!headers.length) return;
+            const canEdit = currentUser && ['admin', 'supervisor', 'processor'].includes(currentUser.role);
+            if (!canEdit) {
+                document.getElementById('new-entry-form-container').innerHTML =
+                    `<div class="empty-state"><div class="empty-icon">🔒</div>You don't have permission to add entries.</div>`;
+                return;
+            }
+
+            const skipCols = ['_rowindex'];
+            const formCols = headers.filter(h => h && !skipCols.includes(h.toLowerCase()));
+
+            const fieldHtml = formCols.map(h => `
+                <div class="form-group">
+                    <label>${h}</label>
+                    ${h === statusCol
+                        ? `<select id="nf-${h}">
+                               <option value="Pending">Pending</option>
+                               <option value="In Progress">In Progress</option>
+                               <option value="Completed">Completed</option>
+                           </select>`
+                        : `<input type="text" id="nf-${h}" placeholder="${h}">`
+                    }
+                </div>
+            `).join('');
+
+            document.getElementById('new-entry-form-container').innerHTML = `
+                <div class="form-grid">${fieldHtml}</div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="submitNewEntry()">💾 Save Entry</button>
+                    <button class="btn btn-secondary" onclick="clearNewEntry()">🔄 Clear</button>
+                </div>
+                <div id="new-entry-msg" style="margin-top: 12px; font-size: 13px;"></div>
+            `;
+        }
+
+        async function submitNewEntry() {
+            const skipCols = ['_rowindex'];
+            const formCols = headers.filter(h => h && !skipCols.includes(h.toLowerCase()));
+            const values = formCols.map(h => {
+                const el = document.getElementById(`nf-${h}`);
+                return el ? el.value : '';
+            });
+
+            const msg = document.getElementById('new-entry-msg');
+            msg.textContent = '⏳ Saving...';
+            msg.style.color = 'var(--accent-teal)';
+
+            try {
+                const res = await fetch(`${API_BASE}/inbound/rows`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ values }),
+                });
+                if (!res.ok) throw new Error(await res.text());
+                msg.textContent = '✅ Entry saved successfully.';
+                msg.style.color = 'var(--accent-green)';
+                clearNewEntry();
+                await loadData(false);
+            } catch (e) {
+                msg.textContent = '❌ Error: ' + e.message;
+                msg.style.color = 'var(--danger)';
+            }
+        }
+
+        function clearNewEntry() {
+            const skipCols = ['_rowindex'];
+            headers.filter(h => h && !skipCols.includes(h.toLowerCase())).forEach(h => {
+                const el = document.getElementById(`nf-${h}`);
+                if (el && el.tagName === 'INPUT') el.value = '';
+                if (el && el.tagName === 'SELECT') el.selectedIndex = 0;
+            });
+        }
+
+        // ── Data loading ───────────────────────────────────────────────────────
+        async function loadData(showLoading = true) {
+            if (showLoading) {
+                ['all-entries-table','pending-table','in-progress-table','completed-table'].forEach(id => {
+                    document.getElementById(id).innerHTML =
+                        '<div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>';
+                });
+            }
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE}/inbound/data`);
+                if (!res.ok) throw new Error(await res.text());
+                const json = await res.json();
+                headers = json.headers || [];
+                allData = json.data || [];
+                detectCols();
+                buildNewEntryForm();
+                const activeTab = localStorage.getItem('inbound_tab') || 'all-entries';
+                renderTab(activeTab);
+            } catch (e) {
+                console.error('Inbound load error:', e);
+                ['all-entries-table','pending-table','in-progress-table','completed-table'].forEach(id => {
+                    document.getElementById(id).innerHTML =
+                        `<div class="empty-state"><div class="empty-icon">⚠️</div>${e.message}</div>`;
+                });
+            }
+        }
+
+        // ── Init ───────────────────────────────────────────────────────────────
+        window.onload = async function () {
+            const user = await AuthGuard.init();
+            if (!user) return;
+            currentUser = user;
+
+            // Hide new-entry tab for viewers/visitors
+            if (user.role === 'viewer' || user.role === 'visitor') {
+                const btn = document.getElementById('new-entry-tab');
+                if (btn) btn.style.display = 'none';
+            }
+
+            const savedTab = localStorage.getItem('inbound_tab') || 'all-entries';
+            switchTab(savedTab);
+
+            await checkConnection();
+            await loadData();
+
+            setInterval(() => { if (!document.hidden) checkConnection(); }, 30000);
+            setInterval(async () => {
+                if (!document.hidden) {
+                    await loadData(false);
+                    const t = localStorage.getItem('inbound_tab') || 'all-entries';
+                    renderTab(t);
+                }
+            }, 30000);
+        };
+    </script>
+</body>
+</html>

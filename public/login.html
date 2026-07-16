@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — Onesource Warehouse Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --onesource-red: #E63946;
+            --bg-dark: #0f1117;
+            --bg-card: #1a1d26;
+            --bg-input: #252932;
+            --text-primary: #ffffff;
+            --text-secondary: #8892a4;
+            --border: rgba(255,255,255,0.08);
+            --accent-green: #48bb78;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bg-glow {
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(230,57,70,0.12) 0%, transparent 70%);
+            pointer-events: none;
+            animation: pulse-glow 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 48px 44px;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+            animation: slide-up 0.4s ease;
+        }
+
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 36px;
+        }
+
+        .logo { height: 38px; width: auto; }
+
+        .brand-text {
+            border-left: 3px solid var(--onesource-red);
+            padding-left: 14px;
+        }
+
+        .brand-name { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+        .brand-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+
+        /* Mode toggle tabs */
+        .mode-tabs {
+            display: flex;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 28px;
+            gap: 4px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 9px;
+            border: none;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: none;
+            color: var(--text-secondary);
+        }
+
+        .mode-tab.active {
+            background: var(--onesource-red);
+            color: white;
+            box-shadow: 0 4px 12px rgba(230,57,70,0.3);
+        }
+
+        .heading {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .subheading {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 7px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 13px 16px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: var(--onesource-red);
+            box-shadow: 0 0 0 3px rgba(230,57,70,0.15);
+        }
+
+        input.valid { border-color: var(--accent-green) !important; }
+
+        /* PIN dots */
+        .pin-wrapper { position: relative; }
+
+        .pin-dots {
+            display: flex;
+            gap: 10px;
+            padding: 13px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: text;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            min-height: 48px;
+            align-items: center;
+        }
+
+        .pin-dots.focused {
+            border-color: var(--onesource-red);
+            box-shadow: 0 0 0 3px rgba(230,57,70,0.15);
+        }
+
+        .pin-dots.valid { border-color: var(--accent-green); }
+
+        .pin-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            opacity: 0.3;
+            transition: opacity 0.15s, background 0.15s;
+            flex-shrink: 0;
+        }
+
+        .pin-dot.filled { background: var(--onesource-red); opacity: 1; }
+        .pin-dot.filled.valid { background: var(--accent-green); }
+
+        .pin-input-hidden {
+            position: absolute;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 14px;
+            background: var(--onesource-red);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-main:hover {
+            background: #c1121f;
+            box-shadow: 0 8px 24px rgba(230,57,70,0.35);
+        }
+
+        .btn-main:active { transform: scale(0.98); }
+        .btn-main:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .error-box {
+            background: rgba(230,57,70,0.1);
+            border: 1px solid rgba(230,57,70,0.3);
+            border-radius: 8px;
+            padding: 11px 14px;
+            font-size: 13px;
+            color: #ff6b6b;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-box.show {
+            display: block;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        .success-box {
+            background: rgba(72,187,120,0.1);
+            border: 1px solid rgba(72,187,120,0.3);
+            border-radius: 8px;
+            padding: 11px 14px;
+            font-size: 13px;
+            color: var(--accent-green);
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .success-box.show { display: block; }
+
+        .spinner {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+        .footer-note {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Register note */
+        .viewer-note {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .viewer-note strong { color: #f6ad55; }
+
+        /* Strength indicator */
+        .pin-strength {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .strength-bar {
+            flex: 1;
+            height: 3px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.08);
+            transition: background 0.3s;
+        }
+
+        .strength-bar.weak { background: var(--onesource-red); }
+        .strength-bar.ok { background: #f6ad55; }
+        .strength-bar.strong { background: var(--accent-green); }
+
+        .pin-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Slide animation between forms */
+        .form-panel {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .form-panel.hidden {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+
+    <div class="card">
+        <div class="logo-row">
+            <img src="/onesource.png" alt="Onesource" class="logo">
+            <div class="brand-text">
+                <div class="brand-name">Onesource Logistics</div>
+                <div class="brand-sub">Warehouse Portal</div>
+            </div>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+            <button class="mode-tab active" id="tab-login" onclick="switchMode('login')">Sign In</button>
+            <button class="mode-tab" id="tab-register" onclick="switchMode('register')">Create Account</button>
+        </div>
+
+        <!-- Shared status boxes -->
+        <div class="error-box" id="error-box">⚠️ <span id="error-msg"></span></div>
+        <div class="success-box" id="success-box">✅ <span id="success-msg"></span></div>
+
+        <!-- LOGIN FORM -->
+        <div id="panel-login" class="form-panel">
+            <h1 class="heading">Welcome back</h1>
+            <p class="subheading">Sign in to your warehouse account</p>
+
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" placeholder="Your username" autocomplete="username" autocapitalize="none" required>
+                </div>
+
+                <div class="form-group">
+                    <label>PIN</label>
+                    <div class="pin-wrapper">
+                        <div class="pin-dots" id="login-pin-dots" onclick="document.getElementById('login-pin-hidden').focus()"></div>
+                        <input type="password" id="login-pin-hidden" class="pin-input-hidden" inputmode="numeric" maxlength="8"
+                            oninput="updatePinDots('login')" autocomplete="current-password">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-main" id="login-btn">Sign in</button>
+            </form>
+        </div>
+
+        <!-- REGISTER FORM -->
+        <div id="panel-register" class="form-panel hidden">
+            <h1 class="heading">Create account</h1>
+            <p class="subheading">Join the warehouse team</p>
+
+            <div class="viewer-note">
+                New accounts start as <strong>Viewer</strong> (read-only). An admin can grant you pick permissions.
+            </div>
+
+            <form id="register-form" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="reg-username">Username</label>
+                    <input type="text" id="reg-username" placeholder="Choose a username" autocomplete="username" autocapitalize="none" required
+                        oninput="validateUsername(this)">
+                </div>
+
+                <div class="form-group">
+                    <label>PIN</label>
+                    <div class="pin-wrapper">
+                        <div class="pin-dots" id="reg-pin-dots" onclick="document.getElementById('reg-pin-hidden').focus()"></div>
+                        <input type="password" id="reg-pin-hidden" class="pin-input-hidden" inputmode="numeric" maxlength="8"
+                            oninput="updatePinDots('reg')">
+                    </div>
+                    <div class="pin-strength" id="pin-strength-bars">
+                        <div class="strength-bar" id="sbar-1"></div>
+                        <div class="strength-bar" id="sbar-2"></div>
+                        <div class="strength-bar" id="sbar-3"></div>
+                        <div class="strength-bar" id="sbar-4"></div>
+                    </div>
+                    <div class="pin-hint" id="pin-hint">Enter at least 4 digits</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirm PIN</label>
+                    <div class="pin-wrapper">
+                        <div class="pin-dots" id="reg-pin2-dots" onclick="document.getElementById('reg-pin2-hidden').focus()"></div>
+                        <input type="password" id="reg-pin2-hidden" class="pin-input-hidden" inputmode="numeric" maxlength="8"
+                            oninput="updatePinDots('reg-pin2')">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-main" id="register-btn">Create Account</button>
+            </form>
+        </div>
+
+        <div class="footer-note" id="footer-note">
+            Authorized warehouse staff only.<br>Contact your administrator if you have issues signing in.
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'login';
+
+        // ── Mode switching ────────────────────────────────────────────
+        function switchMode(mode) {
+            currentMode = mode;
+            clearMessages();
+
+            document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+            document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+            document.getElementById('panel-login').classList.toggle('hidden', mode !== 'login');
+            document.getElementById('panel-register').classList.toggle('hidden', mode === 'login');
+
+            document.getElementById('footer-note').innerHTML = mode === 'login'
+                ? 'Authorized warehouse staff only.<br>Contact your administrator if you have issues signing in.'
+                : 'Already have an account? <a href="#" onclick="switchMode(\'login\'); return false;" style="color:var(--onesource-red);text-decoration:none;font-weight:600;">Sign in</a>';
+        }
+
+        // ── PIN dot renderer ─────────────────────────────────────────
+        function buildPinDots(containerId, count, filledCount, isValid) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            for (let i = 0; i < Math.max(count, 4); i++) {
+                const dot = document.createElement('div');
+                dot.className = 'pin-dot' + (i < filledCount ? ' filled' : '') + (isValid && i < filledCount ? ' valid' : '');
+                container.appendChild(dot);
+            }
+        }
+
+        function updatePinDots(prefix) {
+            const inputId = prefix === 'login' ? 'login-pin-hidden' : prefix === 'reg' ? 'reg-pin-hidden' : 'reg-pin2-hidden';
+            const dotsId = prefix === 'login' ? 'login-pin-dots' : prefix === 'reg' ? 'reg-pin-dots' : 'reg-pin2-dots';
+
+            const val = document.getElementById(inputId).value;
+            buildPinDots(dotsId, Math.max(val.length, 4), val.length, false);
+
+            // PIN strength for registration
+            if (prefix === 'reg') updatePinStrength(val);
+
+            // Confirm PIN match check
+            if (prefix === 'reg' || prefix === 'reg-pin2') {
+                const pin1 = document.getElementById('reg-pin-hidden').value;
+                const pin2 = document.getElementById('reg-pin2-hidden').value;
+                if (pin2.length > 0) {
+                    const match = pin1 === pin2;
+                    const container = document.getElementById('reg-pin2-dots');
+                    if (container) container.classList.toggle('valid', match);
+                    buildPinDots('reg-pin2-dots', Math.max(pin2.length, 4), pin2.length, match);
+                }
+            }
+        }
+
+        function updatePinStrength(pin) {
+            const len = pin.length;
+            const bars = [document.getElementById('sbar-1'), document.getElementById('sbar-2'),
+                          document.getElementById('sbar-3'), document.getElementById('sbar-4')];
+            const hint = document.getElementById('pin-hint');
+
+            bars.forEach(b => { b.className = 'strength-bar'; });
+
+            if (len === 0) { hint.textContent = 'Enter at least 4 digits'; return; }
+            if (len < 4)   { bars[0].classList.add('weak'); hint.textContent = 'Too short'; return; }
+            if (len < 5)   { bars[0].classList.add('ok'); bars[1].classList.add('ok'); hint.textContent = 'Acceptable (4 digits)'; return; }
+            if (len < 7)   { [0,1,2].forEach(i => bars[i].classList.add('ok')); hint.textContent = 'Good'; return; }
+            bars.forEach(b => b.classList.add('strong'));
+            hint.textContent = 'Strong PIN ✓';
+        }
+
+        function validateUsername(input) {
+            const val = input.value.trim();
+            const ok = val.length >= 2 && /^[a-zA-Z0-9_.-]+$/.test(val);
+            input.classList.toggle('valid', ok);
+        }
+
+        // ── Status messages ──────────────────────────────────────────
+        function clearMessages() {
+            document.getElementById('error-box').classList.remove('show');
+            document.getElementById('success-box').classList.remove('show');
+        }
+
+        function showError(msg) {
+            clearMessages();
+            document.getElementById('error-msg').textContent = msg;
+            const box = document.getElementById('error-box');
+            box.classList.add('show');
+            box.style.animation = 'none'; box.offsetHeight; box.style.animation = '';
+        }
+
+        function showSuccess(msg) {
+            clearMessages();
+            document.getElementById('success-msg').textContent = msg;
+            document.getElementById('success-box').classList.add('show');
+        }
+
+        // ── Redirect if already logged in ────────────────────────────
+        (async function checkExistingSession() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) redirectAfterLogin();
+            } catch (e) {}
+        })();
+
+        function redirectAfterLogin() {
+            const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
+            window.location.href = redirect;
+        }
+
+        function storeSession(data) {
+            localStorage.setItem('auth_token', data.token);
+            localStorage.setItem('auth_user', JSON.stringify(data.user));
+        }
+
+        // ── Login ─────────────────────────────────────────────────────
+        async function handleLogin(e) {
+            e.preventDefault();
+            clearMessages();
+
+            const btn = document.getElementById('login-btn');
+            const username = document.getElementById('login-username').value.trim();
+            const pin = document.getElementById('login-pin-hidden').value.trim();
+
+            if (!username || !pin) { showError('Please enter your username and PIN'); return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Signing in...';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, pin })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    storeSession(data);
+                    btn.innerHTML = '✓ Welcome back!';
+                    btn.style.background = '#48bb78';
+                    setTimeout(redirectAfterLogin, 400);
+                } else {
+                    showError(data.error || 'Invalid username or PIN');
+                    btn.disabled = false;
+                    btn.innerHTML = 'Sign in';
+                    document.getElementById('login-pin-hidden').value = '';
+                    updatePinDots('login');
+                }
+            } catch (err) {
+                showError('Could not connect to server. Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = 'Sign in';
+            }
+        }
+
+        // ── Register ──────────────────────────────────────────────────
+        async function handleRegister(e) {
+            e.preventDefault();
+            clearMessages();
+
+            const btn = document.getElementById('register-btn');
+            const username = document.getElementById('reg-username').value.trim();
+            const pin = document.getElementById('reg-pin-hidden').value.trim();
+            const pin2 = document.getElementById('reg-pin2-hidden').value.trim();
+
+            if (!username) { showError('Please enter a username'); return; }
+            if (username.length < 2) { showError('Username must be at least 2 characters'); return; }
+            if (!/^[a-zA-Z0-9_.-]+$/.test(username)) { showError('Username can only contain letters, numbers, _ . -'); return; }
+            if (!pin || pin.length < 4) { showError('PIN must be at least 4 digits'); return; }
+            if (!/^\d+$/.test(pin)) { showError('PIN must contain numbers only'); return; }
+            if (pin !== pin2) { showError('PINs do not match'); return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Creating account...';
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, pin })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    btn.innerHTML = '✓ Registered!';
+                    btn.style.background = '#48bb78';
+                    showSuccess(data.message || 'Account created! Your account is pending administrator approval.');
+                    
+                    // Switch to login tab after 3 seconds
+                    setTimeout(() => {
+                        switchMode('login');
+                        btn.disabled = false;
+                        btn.innerHTML = 'Create Account';
+                        btn.style.background = '';
+                        // Clear fields
+                        document.getElementById('reg-username').value = '';
+                        document.getElementById('reg-pin-hidden').value = '';
+                        document.getElementById('reg-pin2-hidden').value = '';
+                        updatePinDots('reg');
+                        updatePinDots('reg-pin2');
+                    }, 3000);
+                } else {
+                    showError(data.error || 'Registration failed');
+                    btn.disabled = false;
+                    btn.innerHTML = 'Create Account';
+                }
+            } catch (err) {
+                showError('Could not connect to server. Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = 'Create Account';
+            }
+        }
+
+
+
+        // Init PIN dots
+        buildPinDots('login-pin-dots', 4, 0, false);
+        buildPinDots('reg-pin-dots', 4, 0, false);
+        buildPinDots('reg-pin2-dots', 4, 0, false);
+
+        // Wire focus events
+        ['login-pin-hidden', 'reg-pin-hidden', 'reg-pin2-hidden'].forEach(id => {
+            const dotsId = id.replace('-hidden', '-dots');
+            document.getElementById(id).addEventListener('focus', () => {
+                document.getElementById(dotsId)?.classList.add('focused');
+            });
+            document.getElementById(id).addEventListener('blur', () => {
+                document.getElementById(dotsId)?.classList.remove('focused');
+            });
+        });
+
+        // Check for ?mode=register in URL
+        if (new URLSearchParams(window.location.search).get('mode') === 'register') {
+            switchMode('register');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outbound Checking</title>
+    <script src="/auth.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-dark: #1a1d23;
+            --bg-card: #25292f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-blue: #4299e1;
+            --accent-green: #48bb78;
+            --accent-orange: #ed8936;
+            --accent-teal: #38b2ac;
+            --accent-purple: #9f7aea;
+            --onesource-red: #E63946;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .app-container { max-width: 1600px; margin: 0 auto; padding: 16px; }
+
+        /* ── Header ── */
+        header {
+            background: var(--bg-card);
+            border-radius: 12px; padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px;
+        }
+        .logo-section { display: flex; align-items: center; gap: 16px; }
+        .logo { height: 40px; width: auto; }
+        .header-title { border-left: 3px solid var(--onesource-red); padding-left: 14px; }
+        .header-title h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .header-title p { font-size: 14px; color: var(--text-secondary); }
+        .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .refresh-badge {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px; background: rgba(66,153,225,0.1);
+            border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--accent-blue);
+        }
+        .pulse-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent-blue); animation: pulseBlue 2s infinite;
+        }
+        @keyframes pulseBlue {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(66,153,225,0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(66,153,225,0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(66,153,225,0); }
+        }
+
+        /* ── Tabs ── */
+        .tabs-header {
+            display: flex; gap: 8px;
+            background: var(--bg-card); border-radius: 12px; padding: 8px;
+            margin-bottom: 24px; flex-wrap: wrap;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .tab-button {
+            flex: 1; min-width: 130px; padding: 14px 20px;
+            border: none; border-radius: 8px;
+            background: transparent; color: var(--text-secondary);
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            white-space: nowrap;
+        }
+        .tab-button:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+        .tab-button.active {
+            background: var(--onesource-red); color: #fff; font-weight: 600;
+            box-shadow: 0 4px 12px rgba(230,57,70,0.3);
+        }
+        .tab-button[data-tab="completed"].active {
+            background: var(--accent-green);
+            box-shadow: 0 4px 12px rgba(72,187,120,0.35);
+        }
+        .tab-count {
+            background: rgba(255,255,255,0.2); border-radius: 10px;
+            padding: 2px 7px; font-size: 11px; font-weight: 700; line-height: 1.4;
+        }
+        .tab-button:not(.active) .tab-count { background: rgba(255,255,255,0.1); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.25s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ── Card ── */
+        .card { background: var(--bg-card); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; padding-bottom: 16px; flex-wrap: wrap; gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .card-title-row { display: flex; align-items: center; gap: 12px; }
+        .card-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--onesource-red), #c8102e);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px;
+        }
+        .card-title { font-size: 16px; font-weight: 700; }
+        .card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+        /* ── Table ── */
+        .table-container {
+            overflow-x: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        thead th {
+            background: rgba(255,255,255,0.03);
+            text-align: left; padding: 10px 12px;
+            color: var(--text-secondary); font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap;
+        }
+        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); }
+        tbody tr:hover:not(.expand-row) { background: rgba(255,255,255,0.02); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody td { padding: 12px 12px; vertical-align: middle; font-size: 13px; color: var(--text-primary); }
+
+        /* ── Badges ── */
+        .fo-badge {
+            display: inline-block; padding: 3px 9px;
+            background: rgba(255,255,255,0.1); color: var(--text-primary);
+            border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+        }
+        .fo-container { display: flex; flex-wrap: wrap; gap: 4px; max-width: 220px; }
+        .fo-badge-pill {
+            display: inline-block; padding: 2px 8px;
+            background: rgba(255,255,255,0.1); color: var(--text-primary);
+            border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .person-badge {
+            display: inline-block; padding: 3px 9px;
+            background: rgba(255,255,255,0.08); color: var(--text-primary);
+            border-radius: 6px; font-size: 12px; font-weight: 600;
+        }
+        .person-badge-dispatch {
+            background: rgba(230,57,70,0.12); color: var(--onesource-red);
+        }
+
+        /* ── Plan Status Badges ── */
+        .ps-badge {
+            display: inline-block; padding: 3px 8px; border-radius: 5px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        .ps-pending    { background: rgba(237,137,54,0.15); color: var(--accent-orange); border: 1px solid rgba(237,137,54,0.3); }
+        .pick-badge { display:inline-block; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; }
+        .pick-completed  { color: var(--accent-green); }
+        .pick-ongoing    { color: var(--accent-orange); }
+        .pick-pending    { color: var(--text-secondary); }
+        .ps-today      { background: rgba(72,187,120,0.12); color: var(--accent-green);  border: 1px solid rgba(72,187,120,0.25); }
+        .ps-additional { background: rgba(159,122,234,0.12); color: var(--accent-purple); border: 1px solid rgba(159,122,234,0.25); }
+        .ps-tomorrow   { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+        .ps-grand      { background: rgba(229,62,62,0.12); color: #e53e3e; border: 1px solid rgba(229,62,62,0.25); }
+
+        /* ── Buttons ── */
+        .btn {
+            padding: 8px 16px; border-radius: 8px; border: none;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.08); color: var(--text-primary);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+        .btn-action {
+            padding: 5px 14px; background: var(--onesource-red); color: #fff;
+            border: none; border-radius: 6px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+        .btn-action:hover { background: #c0303b; transform: scale(1.03); }
+        .btn-action-update { background: rgba(230,57,70,0.2); color: var(--onesource-red); border: 1px solid rgba(230,57,70,0.4); }
+        .btn-action-update:hover { background: rgba(230,57,70,0.35); transform: scale(1.03); }
+        .btn-action-dispatch { background: var(--onesource-red); }
+        .btn-action-dispatch:hover { background: #c0303b; }
+        .btn-action-dispatch.btn-action-update { background: rgba(230,57,70,0.2); color: var(--onesource-red); border: 1px solid rgba(230,57,70,0.4); }
+        .btn-action-dispatch.btn-action-update:hover { background: rgba(230,57,70,0.35); }
+
+        /* ── Expand Row ── */
+        .expand-row td {
+            background: rgba(230,57,70,0.06);
+            border-top: none; border-bottom: 2px solid rgba(230,57,70,0.25);
+            padding: 14px 16px;
+        }
+        .expand-row-dispatch td {
+            background: rgba(230,57,70,0.06);
+            border-bottom: 2px solid rgba(230,57,70,0.25);
+        }
+        .expand-inner {
+            display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap;
+        }
+        .expand-field { min-width: 180px; }
+        .expand-field label {
+            display: block; font-size: 10px; font-weight: 700;
+            color: var(--onesource-red); text-transform: uppercase;
+            letter-spacing: 0.4px; margin-bottom: 5px;
+        }
+        .expand-row-dispatch .expand-field label { color: var(--onesource-red); }
+        .expand-field select {
+            width: 100%; padding: 7px 10px; font-size: 13px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(230,57,70,0.35); border-radius: 7px; color: white;
+        }
+        .expand-row-dispatch .expand-field select { border-color: rgba(230,57,70,0.35); }
+        .expand-field select:focus { border-color: var(--onesource-red); outline: none; }
+        .expand-row-dispatch .expand-field select:focus { border-color: var(--onesource-red); }
+
+        /* ── Combo Select (searchable) ── */
+        .combo-select { position: relative; }
+        .combo-select-input {
+            width: 100%; padding: 7px 10px; font-size: 13px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(230,57,70,0.35); border-radius: 7px;
+            color: white; outline: none; box-sizing: border-box;
+        }
+        .combo-select-input:focus { border-color: var(--onesource-red); }
+        .combo-list {
+            display: none; position: absolute; top: calc(100% + 4px);
+            left: 0; right: 0; z-index: 999;
+            background: #1e2030;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            list-style: none; padding: 4px 0;
+            max-height: 200px; overflow-y: auto;
+        }
+        .combo-list.open { display: block; }
+        .combo-list li {
+            padding: 7px 12px; font-size: 13px; cursor: pointer;
+            color: var(--text-primary);
+        }
+        .combo-list li:hover { background: rgba(230,57,70,0.18); }
+        .combo-list li.cs-selected { background: rgba(230,57,70,0.28); color: white; font-weight: 600; }
+        .combo-list li.cs-hidden { display: none; }
+        .expand-field input[type="number"] {
+            width: 120px; padding: 7px 10px; font-size: 14px; font-weight: 700;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(230,57,70,0.35); border-radius: 7px;
+            color: white; text-align: center;
+        }
+        .expand-field input[type="number"]:focus { border-color: var(--onesource-red); outline: none; }
+        .expand-qty-display {
+            font-size: 20px; font-weight: 700; color: var(--text-primary);
+            padding-top: 4px;
+        }
+        .expand-actions { display: flex; gap: 8px; align-items: center; padding-top: 20px; }
+        .btn-expand-save {
+            padding: 7px 18px; background: var(--accent-green); color: #fff;
+            border: none; border-radius: 7px; font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .btn-expand-save:hover { background: #38a169; }
+        .btn-expand-save:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-expand-cancel {
+            padding: 7px 12px; background: rgba(255,255,255,0.07);
+            color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 7px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .btn-expand-cancel:hover { background: rgba(255,255,255,0.13); color: white; }
+
+        /* ── Search ── */
+        .search-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        input[type="text"], input[type="number"], select {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px; padding: 8px 12px;
+            color: var(--text-primary); font-size: 13px; font-family: inherit;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--onesource-red); }
+        ::placeholder { color: var(--text-secondary); }
+        select option { background: #25292f; color: #ffffff; }
+
+        /* ── Completed view toggle ── */
+        .view-toggle {
+            display: flex; background: rgba(255,255,255,0.05);
+            border-radius: 8px; padding: 3px; gap: 2px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .view-toggle-btn {
+            padding: 6px 14px; border: none; border-radius: 6px;
+            background: transparent; color: var(--text-secondary);
+            font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .view-toggle-btn.active {
+            background: var(--bg-card); color: var(--text-primary);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .view-toggle-btn.active.red { color: var(--onesource-red); }
+
+        /* ── Empty ── */
+        .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); font-size: 14px; }
+        .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+
+        @media (max-width: 768px) {
+            header { flex-direction: column; }
+            .tabs-header { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+
+    <header>
+        <div class="logo-section">
+            <img src="/onesource.png" alt="Onesource Logistics" class="logo">
+            <div class="header-title">
+                <h1>Outbound Checking</h1>
+                <p>Line Checking & Dispatching</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="refresh-badge">
+                <span class="pulse-dot"></span>
+                <span id="sync-text">Loading...</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="loadData()">↻ Refresh</button>
+        </div>
+    </header>
+
+    <div class="tabs-header">
+        <button class="tab-button active" data-tab="checking" onclick="switchTab('checking')">
+            ✅ Checking <span class="tab-count" id="count-checking">—</span>
+        </button>
+        <button class="tab-button" data-tab="dispatching" onclick="switchTab('dispatching')">
+            🚚 Dispatch <span class="tab-count" id="count-dispatching">—</span>
+        </button>
+        <button class="tab-button" data-tab="inprogress" onclick="switchTab('inprogress')">
+            🔄 In Progress <span class="tab-count" id="count-inprogress">—</span>
+        </button>
+        <button class="tab-button" data-tab="completed" onclick="switchTab('completed')">
+            📦 Completed <span class="tab-count" id="count-completed">—</span>
+        </button>
+    </div>
+
+    <!-- Checking Tab -->
+    <div id="tab-checking" class="tab-content active">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">✅</div>
+                    <div>
+                        <div class="card-title">Line Checking</div>
+                        <div class="card-sub">Assign linechecker and verify quantity per order</div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <input type="text" id="checking-search" placeholder="🔍 Search customer, FO#..."
+                        oninput="renderChecking()" style="width:240px;height:36px;">
+                </div>
+            </div>
+            <div class="table-container">
+                <div id="checking-table">
+                    <div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dispatch Tab -->
+    <div id="tab-dispatching" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">🚚</div>
+                    <div>
+                        <div class="card-title">Dispatch</div>
+                        <div class="card-sub">Assign dispatcher per order</div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <input type="text" id="dispatching-search" placeholder="🔍 Search customer, FO#..."
+                        oninput="renderDispatching()" style="width:240px;height:36px;">
+                </div>
+            </div>
+            <div class="table-container">
+                <div id="dispatching-table">
+                    <div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In Progress Tab -->
+    <div id="tab-inprogress" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">🔄</div>
+                    <div>
+                        <div class="card-title">In Progress</div>
+                        <div class="card-sub">Orders currently being line-checked</div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <input type="text" id="inprogress-search" placeholder="🔍 Search customer, FO#..."
+                        oninput="renderInProgress()" style="width:240px;height:36px;">
+                </div>
+            </div>
+            <div class="table-container">
+                <div id="inprogress-table">
+                    <div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Tab -->
+    <div id="tab-completed" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">📦</div>
+                    <div>
+                        <div class="card-title">Completed</div>
+                        <div class="card-sub">Orders with assigned checker or dispatcher</div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <div class="view-toggle">
+                        <button class="view-toggle-btn active red" id="toggle-linechecking" onclick="setCompletedView('linechecking')">Line Checking</button>
+                        <button class="view-toggle-btn" id="toggle-dispatching" onclick="setCompletedView('dispatching')">Dispatching</button>
+                    </div>
+                    <input type="text" id="completed-search" placeholder="🔍 Search..."
+                        oninput="renderCompleted()" style="width:220px;height:36px;">
+                </div>
+            </div>
+            <div class="table-container">
+                <div id="completed-table">
+                    <div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    const API_BASE = '/api';
+
+    let dispatchData = [];
+    let _checkers = [];
+
+    // ── Combo Select helpers ──────────────────────────────────────
+    function buildComboSelect(id, items, placeholder, selectedVal) {
+        const listItems = items.map(item => {
+            const cls = item === selectedVal ? 'cs-selected' : '';
+            const esc = item.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return `<li class="${cls}" onmousedown="comboPick('${id}','${esc}')">${item}</li>`;
+        }).join('');
+        return `<div class="combo-select">
+            <input type="text" class="combo-select-input" id="${id}-q"
+                   placeholder="${placeholder}" value="${selectedVal || ''}"
+                   oninput="comboFilter('${id}',this.value)"
+                   onfocus="comboOpen('${id}')"
+                   onblur="comboClose('${id}')"
+                   autocomplete="off">
+            <ul class="combo-list" id="${id}-list">${listItems}</ul>
+            <input type="hidden" id="${id}" value="${selectedVal || ''}">
+        </div>`;
+    }
+    function comboOpen(id) {
+        const list = document.getElementById(id + '-list');
+        if (list) list.classList.add('open');
+    }
+    function comboClose(id) {
+        setTimeout(() => {
+            const list = document.getElementById(id + '-list');
+            if (list) list.classList.remove('open');
+        }, 150);
+    }
+    function comboFilter(id, q) {
+        const list = document.getElementById(id + '-list');
+        if (!list) return;
+        list.classList.add('open');
+        const lower = q.toLowerCase();
+        list.querySelectorAll('li').forEach(li => {
+            li.classList.toggle('cs-hidden', !li.textContent.toLowerCase().includes(lower));
+        });
+    }
+    function comboPick(id, val) {
+        const hidden = document.getElementById(id);
+        if (hidden) hidden.value = val;
+        const inp = document.getElementById(id + '-q');
+        if (inp) inp.value = val;
+        const list = document.getElementById(id + '-list');
+        if (list) {
+            list.classList.remove('open');
+            list.querySelectorAll('li').forEach(li => {
+                li.classList.toggle('cs-selected', li.textContent.trim() === val);
+                li.classList.remove('cs-hidden');
+            });
+        }
+    }
+    let _pickedQtyMap = {};      // orderId → total pickerQty (for display)
+    let _pickCompletedMap = {};  // orderId → total completed pickerQty
+    let _pickOngoingMap = {};    // orderId → total in-progress pickerQty
+    let currentUser = null;
+    let _expandedCheckingId = null;
+    let _expandedInProgressId = null;
+    let _expandedDispatchingId = null;
+    let _completedView = 'linechecking';
+
+    const ACTIVE_PLAN_STATUSES = ["pending plan", "today's plan", "additional plan"];
+
+    const PLAN_STATUS_MAP = {
+        "pending plan":    { cls: 'ps-pending',    label: 'Pending Plan' },
+        "today's plan":    { cls: 'ps-today',      label: "Today's Plan" },
+        "additional plan": { cls: 'ps-additional', label: 'Additional Plan' },
+        "tomorrow's plan": { cls: 'ps-tomorrow',   label: "Tomorrow's Plan" },
+        "grand advance":   { cls: 'ps-grand',      label: 'Grand Advance' },
+    };
+
+    const ORDER_STATUS_COLORS = {
+        'Ready to Dispatch':   '#f4a261',
+        'Sorting in progress': '#e9c46a',
+        'Sorted':              '#c77dff',
+        'In progress picking': '#a8c4d4',
+        'picked for sort':     '#90e0ef',
+        'Loading in progress': '#f9e03a',
+        'Loaded':              '#57cc99',
+        'dispatched':          '#48bb78',
+        'Checking':            '#ffb4a2',
+    };
+
+    function filterActiveOrders() {
+        return dispatchData.filter(item => {
+            const planStatus  = (item.status      || '').toLowerCase().trim();
+            const orderStatus = (item.orderStatus || '').toLowerCase().trim();
+            const archStatus  = (item.archiveStatus || '').toLowerCase().trim();
+            return (
+                ACTIVE_PLAN_STATUSES.includes(planStatus) &&
+                orderStatus !== 'dispatched' &&
+                archStatus  !== 'archive order'
+            );
+        });
+    }
+
+    function getPickingStatus(orderId, qty) {
+        const completed = _pickCompletedMap[orderId] || 0;
+        const ongoing   = _pickOngoingMap[orderId]   || 0;
+        const orderQty  = parseInt(qty) || 0;
+        if (orderQty > 0 && completed >= orderQty) return 'completed';
+        if (ongoing > 0 || completed > 0) return 'ongoing';
+        return 'pending';
+    }
+
+    function buildPickingBadge(orderId, qty) {
+        const ps = getPickingStatus(orderId, qty);
+        if (ps === 'completed') return '<span class="pick-badge pick-completed">Completed</span>';
+        if (ps === 'ongoing')   return '<span class="pick-badge pick-ongoing">In Progress</span>';
+        return '';
+    }
+
+    function applySearch(orders, query) {
+        if (!query) return orders;
+        const q = query.toLowerCase();
+        return orders.filter(o =>
+            (o.partyCode   || '').toLowerCase().includes(q) ||
+            (o.accountName || '').toLowerCase().includes(q) ||
+            (o.fo          || '').toLowerCase().includes(q)
+        );
+    }
+
+    function buildPlanBadge(status) {
+        if (!status) return '<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>';
+        const key = (status || '').toLowerCase().trim();
+        const m = PLAN_STATUS_MAP[key];
+        return `<span class="ps-badge ${m ? m.cls : ''}">${m ? m.label : status}</span>`;
+    }
+
+    function buildOrderStatusDot(status) {
+        if (!status) return '<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>';
+        const color = ORDER_STATUS_COLORS[status] || 'rgba(255,255,255,0.3)';
+        return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>
+            ${status}
+        </span>`;
+    }
+
+    function safeId(id) { return (id || '').replace(/[^a-zA-Z0-9]/g, '_'); }
+
+    function buildFoBadges(fo) {
+        if (!fo) return '<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>';
+        const fos = String(fo).split(',').map(f => f.trim()).filter(f => f);
+        return `<div class="fo-container">${fos.map(f => `<span class="fo-badge-pill">${f}</span>`).join('')}</div>`;
+    }
+
+    function formatTS(ts) {
+        if (!ts) return '—';
+        return ts;
+    }
+
+    function isToday(ts) {
+        if (!ts) return false;
+        const d = new Date(ts);
+        if (isNaN(d.getTime())) return false;
+        const now = new Date();
+        return d.getDate() === now.getDate() &&
+               d.getMonth() === now.getMonth() &&
+               d.getFullYear() === now.getFullYear();
+    }
+
+    // ── CHECKING TAB ──────────────────────────────────────────────
+
+    function renderChecking() {
+        const search = document.getElementById('checking-search')?.value || '';
+        const canAct = currentUser && ['admin', 'supervisor', 'processor'].includes(currentUser.role);
+        // Only orders with NO linechecker assigned yet, and picking is ongoing or completed
+        const orders = applySearch(
+            filterActiveOrders().filter(o => {
+                if ((o.linechecker || '').trim()) return false;
+                const ps = getPickingStatus(o.id, o.qty);
+                return ps === 'completed' || ps === 'ongoing';
+            }),
+            search
+        );
+
+        document.getElementById('count-checking').textContent = orders.length;
+
+        if (!orders.length) {
+            document.getElementById('checking-table').innerHTML =
+                '<div class="empty-state"><div class="empty-icon">✅</div>All active orders have checkers assigned</div>';
+            return;
+        }
+
+        const colSpan = canAct ? 7 : 6;
+        const rows = orders.map(o => {
+            const sid = safeId(o.id);
+            const isExpanded = _expandedCheckingId === o.id;
+            const pickedQty  = _pickedQtyMap[o.id] || 0;
+
+            let actionCell = '';
+            if (canAct) {
+                if (isExpanded) {
+                    actionCell = `<td style="text-align:center;"><button class="btn-action" style="background:rgba(255,255,255,0.08);color:var(--text-secondary);" onclick="cancelCheckingExpand()">✕ Cancel</button></td>`;
+                } else {
+                    actionCell = `<td style="text-align:center;"><button class="btn-action" onclick="expandChecking('${o.id}')">✅ Assign</button></td>`;
+                }
+            }
+
+            const expandRow = (canAct && isExpanded) ? `
+            <tr class="expand-row" id="er-c-${sid}">
+                <td colspan="${colSpan}">
+                    <div class="expand-inner">
+                        <div class="expand-field" style="flex:1;min-width:220px;">
+                            <label>Checker</label>
+                            ${buildComboSelect(`checker-sel-${sid}`, _checkers.map(c => `${c.code} - ${c.name}`), '— Select Checker —', '')}
+                        </div>
+                        <div class="expand-field">
+                            <label>Checked QTY</label>
+                            <input type="number" id="checker-qty-${sid}"
+                                value="${o.qty || ''}" min="0" placeholder="Qty">
+                        </div>
+                        <div class="expand-actions">
+                            <button class="btn-expand-save" id="save-c-${sid}"
+                                onclick="submitChecking('${o.id}','${sid}')">▶ Save</button>
+                            <button class="btn-expand-cancel" onclick="cancelCheckingExpand()">✕ Cancel</button>
+                        </div>
+                    </div>
+                </td>
+            </tr>` : '';
+
+            const rowStyle = isExpanded ? 'background:rgba(230,57,70,0.05);' : '';
+            return `<tr style="${rowStyle}">
+                <td>${buildFoBadges(o.fo)}</td>
+                <td style="font-weight:600;white-space:nowrap;">${o.accountName || o.partyCode || '—'}</td>
+                <td style="font-size:12px;color:var(--text-secondary);">${o.type || '—'}</td>
+                <td style="text-align:center;font-weight:700;">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</td>
+                <td style="text-align:center;font-weight:700;color:var(--onesource-red);">${pickedQty || '—'}</td>
+                <td style="text-align:center;">${buildPickingBadge(o.id, o.qty)}</td>
+                ${actionCell}
+            </tr>${expandRow}`;
+        }).join('');
+
+        const actionHeader = canAct ? '<th style="width:110px;text-align:center;">ACTION</th>' : '';
+        document.getElementById('checking-table').innerHTML = `
+            <table>
+                <thead><tr>
+                    <th style="width:200px;">FO#</th>
+                    <th>ACCOUNT NAME</th>
+                    <th style="width:120px;">TYPE</th>
+                    <th style="width:90px;text-align:center;">ORDER QTY</th>
+                    <th style="width:90px;text-align:center;">PICKED QTY</th>
+                    <th style="width:110px;text-align:center;">PICKING STATUS</th>
+                    ${actionHeader}
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    function expandChecking(id) {
+        _expandedCheckingId = _expandedCheckingId === id ? null : id;
+        renderChecking();
+    }
+
+    function cancelCheckingExpand() {
+        _expandedCheckingId = null;
+        renderChecking();
+    }
+
+    // ── IN PROGRESS TAB ───────────────────────────────────────────
+
+    function renderInProgress() {
+        const search = document.getElementById('inprogress-search')?.value || '';
+        const canAct = currentUser && ['admin', 'supervisor', 'processor'].includes(currentUser.role);
+        // Orders WITH linechecker, WITHOUT endLineCheck (actively being checked)
+        const orders = applySearch(
+            filterActiveOrders().filter(o => (o.linechecker || '').trim() && !(o.endLineCheck || '').trim()),
+            search
+        );
+
+        document.getElementById('count-inprogress').textContent = orders.length;
+
+        if (!orders.length) {
+            document.getElementById('inprogress-table').innerHTML =
+                '<div class="empty-state"><div class="empty-icon">🔄</div>No orders in progress</div>';
+            return;
+        }
+
+        const colSpan = canAct ? 8 : 7;
+        const rows = orders.map(o => {
+            const sid = safeId(o.id);
+            const isExpanded = _expandedInProgressId === o.id;
+            const pickedQty  = _pickedQtyMap[o.id] || 0;
+
+            const checkerCell = `<span class="person-badge">${o.linechecker}</span>
+                ${o.startLineCheck ? `<div style="font-size:10px;color:var(--onesource-red);margin-top:3px;">▶ ${o.startLineCheck}</div>` : ''}`;
+
+            let actionCell = '';
+            if (canAct) {
+                if (isExpanded) {
+                    actionCell = `<td style="text-align:center;"><button class="btn-action" style="background:rgba(255,255,255,0.08);color:var(--text-secondary);" onclick="cancelInProgressExpand()">✕ Cancel</button></td>`;
+                } else {
+                    actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-update" onclick="expandInProgress('${o.id}')">✏️ Update</button></td>`;
+                }
+            }
+
+            const expandRow = (canAct && isExpanded) ? `
+            <tr class="expand-row" id="er-ip-${sid}">
+                <td colspan="${colSpan}">
+                    <div class="expand-inner">
+                        <div class="expand-field" style="flex:1;min-width:220px;">
+                            <label>Checker</label>
+                            ${buildComboSelect(`ip-checker-sel-${sid}`, _checkers.map(c => `${c.code} - ${c.name}`), '— Select Checker —', o.linechecker || '')}
+                        </div>
+                        <div class="expand-field">
+                            <label>Checked QTY</label>
+                            <input type="number" id="ip-checker-qty-${sid}"
+                                value="${o.checkedQty || o.qty || ''}" min="0" placeholder="Qty">
+                        </div>
+                        <div class="expand-actions">
+                            <button class="btn-expand-save" id="save-ip-${sid}"
+                                onclick="submitInProgress('${o.id}','${sid}')">▶ Save</button>
+                            <button class="btn-expand-cancel" onclick="cancelInProgressExpand()">✕ Cancel</button>
+                        </div>
+                    </div>
+                </td>
+            </tr>` : '';
+
+            const rowStyle = isExpanded ? 'background:rgba(230,57,70,0.05);' : '';
+            return `<tr style="${rowStyle}">
+                <td>${buildFoBadges(o.fo)}</td>
+                <td style="font-weight:600;white-space:nowrap;">${o.accountName || o.partyCode || '—'}</td>
+                <td style="font-size:12px;color:var(--text-secondary);">${o.type || '—'}</td>
+                <td style="text-align:center;font-weight:700;">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</td>
+                <td style="text-align:center;font-weight:700;color:var(--onesource-red);">${pickedQty || '—'}</td>
+                <td>${checkerCell}</td>
+                <td style="text-align:center;font-weight:700;color:var(--onesource-red);">${o.checkedQty || '—'}</td>
+                ${actionCell}
+            </tr>${expandRow}`;
+        }).join('');
+
+        const actionHeader = canAct ? '<th style="width:110px;text-align:center;">ACTION</th>' : '';
+        document.getElementById('inprogress-table').innerHTML = `
+            <table>
+                <thead><tr>
+                    <th style="width:200px;">FO#</th>
+                    <th>ACCOUNT NAME</th>
+                    <th style="width:120px;">TYPE</th>
+                    <th style="width:90px;text-align:center;">ORDER QTY</th>
+                    <th style="width:90px;text-align:center;">PICKED QTY</th>
+                    <th style="width:185px;">LINECHECKER</th>
+                    <th style="width:110px;text-align:center;">CHECKED QTY</th>
+                    ${actionHeader}
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    function expandInProgress(id) {
+        _expandedInProgressId = _expandedInProgressId === id ? null : id;
+        renderInProgress();
+    }
+
+    function cancelInProgressExpand() {
+        _expandedInProgressId = null;
+        renderInProgress();
+    }
+
+    async function submitInProgress(id, sid) {
+        const o       = dispatchData.find(x => x.id === id);
+        const checker = document.getElementById(`ip-checker-sel-${sid}`)?.value?.trim();
+        const qty     = document.getElementById(`ip-checker-qty-${sid}`)?.value?.trim();
+
+        if (!checker) { alert('Please select a checker.'); return; }
+
+        const btn = document.getElementById(`save-ip-${sid}`);
+        if (btn) btn.disabled = true;
+
+        try {
+            const r1 = await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'linechecker', value: checker })
+            });
+            if (!r1.ok) {
+                const e = await r1.json().catch(() => ({}));
+                alert(e.error || 'Failed to save checker.');
+                if (btn) btn.disabled = false;
+                return;
+            }
+
+            if (qty !== '') {
+                await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: 'checkedQty', value: qty })
+                });
+            }
+
+            AuthGuard.authFetch(`${API_BASE}/dispatch-plan/check-log`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id, fo: o?.fo || '', partyCode: o?.partyCode || '',
+                    accountName: o?.accountName || '', qty: o?.qty || '',
+                    checker, checkedQty: qty || ''
+                })
+            }).catch(e => console.warn('check-log failed:', e));
+
+            _expandedInProgressId = null;
+            await loadData();
+        } catch (err) {
+            alert('Error: ' + err.message);
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async function submitChecking(id, sid) {
+        const o       = dispatchData.find(x => x.id === id);
+        const checker = document.getElementById(`checker-sel-${sid}`)?.value?.trim();
+        const qty     = document.getElementById(`checker-qty-${sid}`)?.value?.trim();
+
+        if (!checker) { alert('Please select a checker.'); return; }
+
+        const btn = document.getElementById(`save-c-${sid}`);
+        if (btn) btn.disabled = true;
+
+        try {
+            const r1 = await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'linechecker', value: checker })
+            });
+            if (!r1.ok) {
+                const e = await r1.json().catch(() => ({}));
+                alert(e.error || 'Failed to save checker.');
+                if (btn) btn.disabled = false;
+                return;
+            }
+
+            if (qty !== '') {
+                const r2 = await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: 'checkedQty', value: qty })
+                });
+                if (!r2.ok) console.warn('checkedQty save failed');
+            }
+
+            // Set startLineCheck only on first assignment
+            if (!(o?.startLineCheck || '').trim()) {
+                const startTs = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+                await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: 'startLineCheck', value: startTs })
+                });
+            }
+
+            // Log to Checking Data sheet
+            AuthGuard.authFetch(`${API_BASE}/dispatch-plan/check-log`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id,
+                    fo:          o?.fo          || '',
+                    partyCode:   o?.partyCode   || '',
+                    accountName: o?.accountName || '',
+                    qty:         o?.qty         || '',
+                    checker,
+                    checkedQty: qty || ''
+                })
+            }).catch(e => console.warn('check-log failed:', e));
+
+            _expandedCheckingId = null;
+            await loadData();
+        } catch (err) {
+            alert('Error: ' + err.message);
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    // ── DISPATCHING TAB ──────────────────────────────────────────
+
+    function renderDispatching() {
+        const search  = document.getElementById('dispatching-search')?.value || '';
+        const canAct  = currentUser && ['admin', 'supervisor', 'processor'].includes(currentUser.role);
+        const orders  = applySearch(
+            filterActiveOrders().filter(o => {
+                const ps = getPickingStatus(o.id, o.qty);
+                return ps === 'completed' || ps === 'ongoing';
+            }),
+            search
+        );
+
+        document.getElementById('count-dispatching').textContent = orders.length;
+
+        if (!orders.length) {
+            document.getElementById('dispatching-table').innerHTML =
+                '<div class="empty-state"><div class="empty-icon">🚚</div>No active orders found</div>';
+            return;
+        }
+
+        const rows = orders.map(o => {
+            const sid = safeId(o.id);
+            const isExpanded = _expandedDispatchingId === o.id;
+            const hasDispatcher = (o.dispatcher || '').trim();
+
+            const dispCell = hasDispatcher
+                ? `<span class="person-badge person-badge-dispatch">${o.dispatcher}</span>
+                   ${o.dispatcher_TS ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">${formatTS(o.dispatcher_TS)}</div>` : ''}`
+                : `<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>`;
+
+            let actionCell = '';
+            if (canAct) {
+                if (isExpanded) {
+                    actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch" style="background:rgba(255,255,255,0.08);color:var(--text-secondary);" onclick="cancelDispatchingExpand()">✕ Cancel</button></td>`;
+                } else {
+                    const updateClass = hasDispatcher ? 'btn-action-update' : '';
+                    actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" onclick="expandDispatching('${o.id}')">🚚 Dispatch</button></td>`;
+                }
+            }
+
+            const expandRow = (canAct && isExpanded) ? `
+            <tr class="expand-row expand-row-dispatch" id="er-d-${sid}">
+                <td colspan="10">
+                    <div class="expand-inner">
+                        <div class="expand-field" style="flex:1;min-width:220px;">
+                            <label>Dispatcher</label>
+                            ${buildComboSelect(`dispatcher-sel-${sid}`, _checkers.map(c => `${c.code} - ${c.name}`), '— Select Dispatcher —', o.dispatcher || '')}
+                        </div>
+                        <div class="expand-field">
+                            <label>QTY</label>
+                            <div class="expand-qty-display">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</div>
+                        </div>
+                        <div class="expand-actions">
+                            <button class="btn-expand-save" id="save-d-${sid}"
+                                onclick="submitDispatching('${o.id}','${sid}')">▶ Save</button>
+                            <button class="btn-expand-cancel" onclick="cancelDispatchingExpand()">✕ Cancel</button>
+                        </div>
+                    </div>
+                </td>
+            </tr>` : '';
+
+            const checkerBadge = (o.linechecker || '').trim()
+                ? `<span class="person-badge">${o.linechecker}</span>
+                   ${o.startLineCheck ? `<div style="font-size:10px;color:var(--onesource-red);margin-top:3px;">▶ ${o.startLineCheck}</div>` : ''}`
+                : `<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>`;
+
+            const rowStyle = isExpanded ? 'background:rgba(230,57,70,0.05);' : '';
+            return `<tr style="${rowStyle}">
+                <td>${buildFoBadges(o.fo)}</td>
+                <td style="font-weight:600;white-space:nowrap;">${o.accountName || o.partyCode || '—'}</td>
+                <td style="text-align:center;font-weight:700;">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</td>
+                <td style="text-align:center;font-size:12px;">${o.cbm || '—'}</td>
+                <td style="text-align:center;font-size:12px;">${o.weight || '—'}</td>
+                <td>${buildPlanBadge(o.status)}</td>
+                <td style="text-align:center;">${buildPickingBadge(o.id, o.qty)}</td>
+                <td>${buildOrderStatusDot(o.orderStatus)}</td>
+                <td>${checkerBadge}</td>
+                <td>${dispCell}</td>
+                ${actionCell}
+            </tr>${expandRow}`;
+        }).join('');
+
+        const actionHeader = canAct ? '<th style="width:130px;text-align:center;">ACTION</th>' : '';
+        document.getElementById('dispatching-table').innerHTML = `
+            <table>
+                <thead><tr>
+                    <th style="width:200px;">FO#</th>
+                    <th>ACCOUNT NAME</th>
+                    <th style="width:75px;text-align:center;">QTY</th>
+                    <th style="width:75px;text-align:center;">CBM</th>
+                    <th style="width:80px;text-align:center;">WEIGHT</th>
+                    <th style="width:140px;">PLAN STATUS</th>
+                    <th style="width:120px;text-align:center;">PICKING STATUS</th>
+                    <th style="width:175px;">ORDER STATUS</th>
+                    <th style="width:175px;">LINECHECKER</th>
+                    <th style="width:185px;">DISPATCHER</th>
+                    ${actionHeader}
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    function expandDispatching(id) {
+        _expandedDispatchingId = _expandedDispatchingId === id ? null : id;
+        renderDispatching();
+    }
+
+    function cancelDispatchingExpand() {
+        _expandedDispatchingId = null;
+        renderDispatching();
+    }
+
+    async function submitDispatching(id, sid) {
+        const o          = dispatchData.find(x => x.id === id);
+        const dispatcher = document.getElementById(`dispatcher-sel-${sid}`)?.value?.trim();
+        if (!dispatcher) { alert('Please select a dispatcher.'); return; }
+
+        const btn = document.getElementById(`save-d-${sid}`);
+        if (btn) btn.disabled = true;
+
+        try {
+            const r = await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'dispatcher', value: dispatcher })
+            });
+            if (!r.ok) {
+                const e = await r.json().catch(() => ({}));
+                alert(e.error || 'Failed to save dispatcher.');
+                if (btn) btn.disabled = false;
+                return;
+            }
+
+            // Set endLineCheck timestamp
+            const endTs = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'endLineCheck', value: endTs })
+            });
+
+            // Log to Dispatching Data sheet (no master mirror for the log entry)
+            AuthGuard.authFetch(`${API_BASE}/dispatch-plan/dispatch-log`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id,
+                    fo:          o?.fo          || '',
+                    partyCode:   o?.partyCode   || '',
+                    accountName: o?.accountName || '',
+                    qty:         o?.qty         || '',
+                    dispatcher
+                })
+            }).catch(e => console.warn('dispatch-log failed:', e));
+
+            _expandedDispatchingId = null;
+            await loadData();
+        } catch (err) {
+            alert('Error: ' + err.message);
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    // ── COMPLETED TAB ─────────────────────────────────────────────
+
+    function setCompletedView(view) {
+        _completedView = view;
+        document.getElementById('toggle-linechecking').classList.toggle('active', view === 'linechecking');
+        document.getElementById('toggle-linechecking').classList.toggle('red', view === 'linechecking');
+        document.getElementById('toggle-dispatching').classList.toggle('active', view === 'dispatching');
+        document.getElementById('toggle-dispatching').classList.toggle('red', view === 'dispatching');
+        renderCompleted();
+    }
+
+    function renderCompleted() {
+        const search = document.getElementById('completed-search')?.value || '';
+        const isLC   = _completedView === 'linechecking';
+
+        let orders = dispatchData.filter(o => {
+            if (isLC) {
+                return (o.linechecker || '').trim() && isToday(o.startLineCheck);
+            } else {
+                return (o.dispatcher || '').trim() && isToday(o.endLineCheck);
+            }
+        });
+        orders = applySearch(orders, search);
+
+        document.getElementById('count-completed').textContent = orders.length;
+
+        if (!orders.length) {
+            const msg = isLC ? 'No line-checked orders found' : 'No orders with dispatcher assigned';
+            document.getElementById('completed-table').innerHTML =
+                `<div class="empty-state"><div class="empty-icon">📦</div>${msg}</div>`;
+            return;
+        }
+
+        const rows = orders.map(o => {
+            const person  = isLC ? (o.linechecker || '—')     : (o.dispatcher || '—');
+            const ts      = isLC ? (o.linechecker_TS || '')    : (o.dispatcher_TS || '');
+            const byUser  = isLC ? (o.linechecker_User || '')  : (o.dispatcher_User || '');
+            const personClass = isLC ? '' : 'person-badge-dispatch';
+
+            const checkedQtyCell = isLC
+                ? `<td style="text-align:center;font-weight:700;color:var(--onesource-red);">${o.checkedQty || '—'}</td>`
+                : '';
+
+            return `<tr>
+                <td>${buildFoBadges(o.fo)}</td>
+                <td style="font-weight:600;white-space:nowrap;">${o.accountName || o.partyCode || '—'}</td>
+                <td style="text-align:center;font-weight:700;">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</td>
+                ${checkedQtyCell}
+                <td>${buildPlanBadge(o.status)}</td>
+                <td>${buildOrderStatusDot(o.orderStatus)}</td>
+                <td>
+                    <span class="person-badge ${personClass}">${person}</span>
+                    ${byUser ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">by ${byUser}</div>` : ''}
+                </td>
+                <td style="font-size:11px;color:var(--text-secondary);">${formatTS(ts)}</td>
+            </tr>`;
+        }).join('');
+
+        const checkedQtyHeader = isLC
+            ? '<th style="width:110px;text-align:center;">CHECKED QTY</th>' : '';
+        const personLabel = isLC ? 'LINECHECKER' : 'DISPATCHER';
+
+        document.getElementById('completed-table').innerHTML = `
+            <table>
+                <thead><tr>
+                    <th style="width:200px;">FO#</th>
+                    <th>ACCOUNT NAME</th>
+                    <th style="width:80px;text-align:center;">ORDER QTY</th>
+                    ${checkedQtyHeader}
+                    <th style="width:140px;">PLAN STATUS</th>
+                    <th style="width:175px;">ORDER STATUS</th>
+                    <th style="width:185px;">${personLabel}</th>
+                    <th style="width:170px;">ASSIGNED AT</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    // ── TABS ──────────────────────────────────────────────────────
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        document.querySelector(`.tab-button[data-tab="${tab}"]`).classList.add('active');
+
+        // cancel any open expand rows when switching tabs
+        _expandedCheckingId = null;
+        _expandedInProgressId = null;
+        _expandedDispatchingId = null;
+    }
+
+    // ── DATA LOADING ──────────────────────────────────────────────
+
+    async function loadData() {
+        try {
+            const [ordersRes, checkersRes, pickingRes] = await Promise.all([
+                AuthGuard.authFetch(`${API_BASE}/dispatch-plan`),
+                AuthGuard.authFetch(`${API_BASE}/checkers`),
+                AuthGuard.authFetch(`${API_BASE}/picking-orders`)
+            ]);
+
+            if (ordersRes.ok)  dispatchData = await ordersRes.json();
+            if (checkersRes.ok) _checkers   = await checkersRes.json();
+            if (pickingRes.ok) {
+                const picks = await pickingRes.json();
+                _pickedQtyMap = {};
+                _pickCompletedMap = {};
+                _pickOngoingMap = {};
+                picks.forEach(p => {
+                    if (p.orderId) {
+                        _pickedQtyMap[p.orderId] = (_pickedQtyMap[p.orderId] || 0) + (p.pickerQty || 0);
+                        if (p.status === 'completed') {
+                            _pickCompletedMap[p.orderId] = (_pickCompletedMap[p.orderId] || 0) + (p.pickerQty || 0);
+                        } else {
+                            _pickOngoingMap[p.orderId] = (_pickOngoingMap[p.orderId] || 0) + (p.pickerQty || 0);
+                        }
+                    }
+                });
+            }
+
+            const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            document.getElementById('sync-text').textContent = 'Updated ' + now;
+
+            renderChecking();
+            renderInProgress();
+            renderDispatching();
+            renderCompleted();
+        } catch (err) {
+            console.error(err);
+            document.getElementById('sync-text').textContent = 'Error loading data';
+        }
+    }
+
+    // Initialize
+    AuthGuard.init({ requiredRole: 'viewer' }).then(user => {
+        currentUser = user;
+        loadData();
+    });
+
+    // Auto-refresh every 2 minutes
+    setInterval(loadData, 120000);
+</script>
+</body>
+</html>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbound Reporting Hub</title>
+    <style>
+        :root {
+            --onesource-red: #E63946;
+            --bg-dark: #1a1d23;
+            --bg-card: #25292f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-blue: #4299e1;
+            --accent-green: #48bb78;
+            --accent-orange: #ed8936;
+            --accent-purple: #9f7aea;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .header-title {
+            border-left: 3px solid var(--onesource-red);
+            padding-left: 14px;
+        }
+
+        .header-title h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .header-title p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Filters */
+        .filter-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--onesource-red);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td {
+            padding: 12px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--onesource-red);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+        }
+
+        .filter-trigger {
+            cursor: pointer;
+            opacity: 0.4;
+            padding: 4px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+        .filter-trigger:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .filter-trigger.active-filter {
+            opacity: 1;
+            color: var(--onesource-red);
+            background: rgba(230, 57, 70, 0.1);
+        }
+        .excel-filter-card {
+            display: none;
+            position: absolute;
+            z-index: 9999;
+            background: #1e2229;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            width: 220px;
+            max-height: 340px;
+            flex-direction: column;
+            gap: 8px;
+            animation: modalFadeIn 0.15s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo-section">
+            <img src="/onesource.png" alt="Onesource Logistics" class="logo">
+            <div class="header-title">
+                <h1>Inbound Reporting</h1>
+                <p>Export and analyze inbound put-away performance</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="filter-card">
+        <div class="filter-grid">
+            <div class="form-group">
+                <label>JIB#</label>
+                <input type="text" id="report-jib" placeholder="Search JIB#...">
+            </div>
+            <div class="form-group">
+                <label>Operator</label>
+                <input type="text" id="report-operator" placeholder="Search name...">
+            </div>
+            <div class="form-group">
+                <label>Start Date (GR Date)</label>
+                <input type="date" id="report-start">
+            </div>
+            <div class="form-group">
+                <label>End Date (GR Date)</label>
+                <input type="date" id="report-end">
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end; gap: 8px;">
+                <button class="btn btn-primary" style="flex: 1;" onclick="loadReportData()">
+                    🔍 Generate Report
+                </button>
+                <button class="btn"
+                    style="flex: 1; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.2); color: white;"
+                    onclick="exportToCSV()">
+                    📥 Export CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selection Counter / Toolbar -->
+    <div id="selection-counter-container" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
+        <div id="selection-counter" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+            <span>📋</span> Showing: <strong>0</strong> / 0 records
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary); font-style: italic;">
+            Click column header dropdown icons to filter rows
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="report-table">
+            <thead>
+                <tr>
+                    <th>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span>GR Date</span>
+                            <span class="filter-trigger" data-filter-trigger="grDate" onclick="toggleFilterDropdown('grDate', event)">
+                                <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                            </span>
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span>JIB#</span>
+                            <span class="filter-trigger" data-filter-trigger="jibNumber" onclick="toggleFilterDropdown('jibNumber', event)">
+                                <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                            </span>
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span>Shift</span>
+                            <span class="filter-trigger" data-filter-trigger="shift" onclick="toggleFilterDropdown('shift', event)">
+                                <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                            </span>
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span>Operator</span>
+                            <span class="filter-trigger" data-filter-trigger="operator" onclick="toggleFilterDropdown('operator', event)">
+                                <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                            </span>
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span>QTY</span>
+                            <span class="filter-trigger" data-filter-trigger="qty" onclick="toggleFilterDropdown('qty', event)">
+                                <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                            </span>
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span># of Pallets</span>
+                            <span class="filter-trigger" data-filter-trigger="pallets" onclick="toggleFilterDropdown('pallets', event)">
+                                <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                            </span>
+                        </div>
+                    </th>
+                    <th>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span>Duration</span>
+                            <span class="filter-trigger" data-filter-trigger="duration" onclick="toggleFilterDropdown('duration', event)">
+                                <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                            </span>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="report-body">
+                <!-- Data will be loaded here -->
+            </tbody>
+        </table>
+        <div id="report-empty" class="empty-state">
+            <div class="empty-icon">📊</div>
+            <div class="empty-title">Ready to Generate</div>
+            <div class="empty-text">Set your filters and click Generate Report</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api';
+        let currentReportData = [];
+        let currentFilterColumn = '';
+        let activeFilters = {
+            grDate: [],
+            jibNumber: [],
+            shift: [],
+            operator: [],
+            qty: [],
+            pallets: [],
+            duration: []
+        };
+
+        function getRowVal(row, col) {
+            if (col === 'grDate')    return row['GR Date']        || '';
+            if (col === 'jibNumber') return row['JIB#']           || '';
+            if (col === 'shift')     return row['Shift']          || '';
+            if (col === 'operator')  return row['Operator']       || '';
+            if (col === 'qty')       return row['QTY']            || '';
+            if (col === 'pallets')   return row['# of Pallets']   || '';
+            if (col === 'duration')  return row['Duration']       || '';
+            return '';
+        }
+
+        function resetExcelFilters() {
+            activeFilters = {
+                grDate: [],
+                jibNumber: [],
+                shift: [],
+                operator: [],
+                qty: [],
+                pallets: [],
+                duration: []
+            };
+            document.querySelectorAll('.filter-trigger').forEach(el => {
+                el.classList.remove('active-filter');
+            });
+        }
+
+        function parseGRDate(val) {
+            if (!val) return null;
+            // Accept M/D/YYYY, MM/DD/YYYY, or YYYY-MM-DD
+            const parts = val.split('/');
+            if (parts.length === 3) {
+                const [m, d, y] = parts;
+                return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+            }
+            const d = new Date(val);
+            return isNaN(d) ? null : d;
+        }
+
+        async function loadReportData() {
+            const jibFilter      = document.getElementById('report-jib').value.toLowerCase().trim();
+            const operatorFilter = document.getElementById('report-operator').value.toLowerCase().trim();
+            const startDate      = document.getElementById('report-start').value;
+            const endDate        = document.getElementById('report-end').value;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/inbound-putaway/data`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const { data } = await res.json();
+
+                let filtered = data.filter(row => {
+                    const grDate   = (row['GR Date']  || '').trim();
+                    const operator = (row['Operator'] || '').trim();
+                    const jib      = (row['JIB#']     || '').trim();
+                    // Skip completely empty rows
+                    if (!grDate && !jib && !operator) return false;
+                    return true;
+                });
+
+                if (jibFilter)      filtered = filtered.filter(r => (r['JIB#'] || '').toLowerCase().includes(jibFilter));
+                if (operatorFilter) filtered = filtered.filter(r => (r['Operator'] || '').toLowerCase().includes(operatorFilter));
+
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    filtered = filtered.filter(r => {
+                        const d = parseGRDate(r['GR Date']);
+                        return d && d >= start;
+                    });
+                }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    filtered = filtered.filter(r => {
+                        const d = parseGRDate(r['GR Date']);
+                        return d && d <= end;
+                    });
+                }
+
+                currentReportData = filtered;
+                resetExcelFilters();
+                renderReport(filtered);
+            } catch (error) {
+                console.error('Error loading inbound report data:', error);
+                alert('Failed to load data: ' + error.message);
+            }
+        }
+
+        function toggleFilterDropdown(column, event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('excel-filter-dropdown');
+            if (!dropdown) return;
+
+            const searchInput = document.getElementById('excel-filter-search');
+            if (searchInput) searchInput.value = '';
+
+            if (dropdown.style.display === 'flex' && currentFilterColumn === column) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            currentFilterColumn = column;
+
+            const labelMap = {
+                grDate:    'GR Date',
+                jibNumber: 'JIB#',
+                shift:     'Shift',
+                operator:  'Operator',
+                qty:       'QTY',
+                pallets:   '# of Pallets',
+                duration:  'Duration'
+            };
+            document.getElementById('filter-column-name').textContent = 'Filter ' + (labelMap[column] || column);
+
+            const uniqueValues = [...new Set(currentReportData.map(row => getRowVal(row, column)))].sort((a, b) =>
+                a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+            );
+
+            const optionsContainer = document.getElementById('excel-filter-options');
+            optionsContainer.innerHTML = uniqueValues.map(val => {
+                const isChecked = (activeFilters[column].length === 0 || activeFilters[column].includes(val)) ? 'checked' : '';
+                return `
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: white; cursor: pointer; user-select: none;">
+                        <input type="checkbox" data-val="${val.replace(/"/g, '&quot;')}" ${isChecked} style="width: auto; cursor: pointer; accent-color: var(--onesource-red);">
+                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${val || '(Blank)'}</span>
+                    </label>
+                `;
+            }).join('');
+
+            const triggerRect = event.currentTarget.getBoundingClientRect();
+            dropdown.style.display = 'flex';
+
+            let left = triggerRect.left + window.scrollX;
+            if (left + 220 > window.innerWidth) left = window.innerWidth - 240;
+            dropdown.style.left = `${left}px`;
+            dropdown.style.top = `${triggerRect.bottom + window.scrollY + 6}px`;
+        }
+
+        function excelSelectAllFilters(isChecked) {
+            document.querySelectorAll('#excel-filter-options label').forEach(label => {
+                if (label.style.display !== 'none') {
+                    const cb = label.querySelector('input[type="checkbox"]');
+                    if (cb) cb.checked = isChecked;
+                }
+            });
+        }
+
+        function filterExcelFilterOptions() {
+            const query = document.getElementById('excel-filter-search').value.toLowerCase().trim();
+            document.querySelectorAll('#excel-filter-options label').forEach(label => {
+                label.style.display = label.textContent.toLowerCase().includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        function applyExcelFilter() {
+            const column = currentFilterColumn;
+            const checkboxes = document.querySelectorAll('#excel-filter-options input[type="checkbox"]');
+            const selectedVals = [];
+            checkboxes.forEach(cb => { if (cb.checked) selectedVals.push(cb.getAttribute('data-val')); });
+
+            const allChecked = [...checkboxes].every(cb => cb.checked);
+            activeFilters[column] = allChecked ? [] : selectedVals;
+
+            const trigger = document.querySelector(`[data-filter-trigger="${column}"]`);
+            if (trigger) {
+                trigger.classList.toggle('active-filter', activeFilters[column].length > 0);
+            }
+
+            closeExcelFilter();
+            applyFiltersToTable();
+        }
+
+        function closeExcelFilter() {
+            const dropdown = document.getElementById('excel-filter-dropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+
+        function applyFiltersToTable() {
+            const tbody = document.getElementById('report-body');
+            if (!tbody) return;
+
+            const cols = ['grDate', 'jibNumber', 'shift', 'operator', 'qty', 'pallets', 'duration'];
+            const rows = tbody.querySelectorAll('tr');
+            let visibleCount = 0;
+
+            rows.forEach((row, idx) => {
+                const record = currentReportData[idx];
+                if (!record) return;
+
+                const matches = cols.every(col => {
+                    const filterVals = activeFilters[col];
+                    if (!filterVals || filterVals.length === 0) return true;
+                    return filterVals.includes(getRowVal(record, col));
+                });
+
+                row.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            const counterEl = document.getElementById('selection-counter');
+            if (counterEl) {
+                counterEl.innerHTML = `<span>📋</span> Showing: <strong>${visibleCount}</strong> / ${currentReportData.length} records`;
+            }
+        }
+
+        window.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('excel-filter-dropdown');
+            if (dropdown && dropdown.style.display === 'flex') {
+                if (!dropdown.contains(e.target) && !e.target.closest('.filter-trigger')) {
+                    closeExcelFilter();
+                }
+            }
+        });
+
+        function renderReport(data) {
+            const tbody = document.getElementById('report-body');
+            const empty = document.getElementById('report-empty');
+            const counterContainer = document.getElementById('selection-counter-container');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+                empty.style.display = 'block';
+                if (counterContainer) counterContainer.style.display = 'none';
+                return;
+            }
+
+            empty.style.display = 'none';
+            if (counterContainer) counterContainer.style.display = 'flex';
+
+            tbody.innerHTML = data.map(row => `
+                <tr>
+                    <td>${row['GR Date'] || ''}</td>
+                    <td><strong>${row['JIB#'] || ''}</strong></td>
+                    <td>${row['Shift'] || ''}</td>
+                    <td>${row['Operator'] || ''}</td>
+                    <td>${row['QTY'] || ''}</td>
+                    <td>${row['# of Pallets'] || ''}</td>
+                    <td>${row['Duration'] || ''}</td>
+                </tr>
+            `).join('');
+
+            applyFiltersToTable();
+        }
+
+        function exportToCSV() {
+            if (!currentReportData || currentReportData.length === 0) {
+                alert("No data to export. Please generate a report first.");
+                return;
+            }
+
+            const cols = ['grDate', 'jibNumber', 'shift', 'operator', 'qty', 'pallets', 'duration'];
+            const visibleRows = currentReportData.filter(row =>
+                cols.every(col => {
+                    const filterVals = activeFilters[col];
+                    if (!filterVals || filterVals.length === 0) return true;
+                    return filterVals.includes(getRowVal(row, col));
+                })
+            );
+
+            if (visibleRows.length === 0) {
+                alert("No matching records to export. Check your filters.");
+                return;
+            }
+
+            let csv = "GR Date,JIB#,Shift,Operator,QTY,# of Pallets,Duration\n";
+            visibleRows.forEach(row => {
+                const escape = v => `"${(v || '').toString().replace(/"/g, '""')}"`;
+                csv += [
+                    escape(row['GR Date']),
+                    escape(row['JIB#']),
+                    escape(row['Shift']),
+                    escape(row['Operator']),
+                    escape(row['QTY']),
+                    escape(row['# of Pallets']),
+                    escape(row['Duration'])
+                ].join(',') + "\n";
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.setAttribute("href", URL.createObjectURL(blob));
+            link.setAttribute("download", `inbound_report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+
+    <!-- Excel Column Filter Dropdown Container -->
+    <div id="excel-filter-dropdown" class="excel-filter-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 4px;">
+            <span id="filter-column-name" style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Filter</span>
+            <span onclick="closeExcelFilter()" style="cursor: pointer; color: var(--text-secondary); font-weight: bold; font-size: 14px; line-height: 1;">&times;</span>
+        </div>
+        <div style="padding: 2px 0;">
+            <input type="text" id="excel-filter-search" placeholder="Search values..." style="width: 100%; font-size: 12px; padding: 6px 8px; background: #252932; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white; outline: none;" oninput="filterExcelFilterOptions()">
+        </div>
+        <div style="display: flex; gap: 6px;">
+            <button class="btn" style="flex: 1; padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;" onclick="excelSelectAllFilters(true)">Select All</button>
+            <button class="btn" style="flex: 1; padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;" onclick="excelSelectAllFilters(false)">Clear</button>
+        </div>
+        <div id="excel-filter-options" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 4px 0; max-height: 160px;">
+            <!-- Options loaded dynamically -->
+        </div>
+        <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px; margin-top: 4px;">
+            <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px; border-radius: 4px;" onclick="applyExcelFilter()">Apply</button>
+        </div>
+    </div>
+</body>
+</html>

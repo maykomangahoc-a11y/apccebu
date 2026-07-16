@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onesource - Orders Status</title>
+    <style>
+        :root {
+            --onesource-red: #E63946;
+            --onesource-dark: #0f1117;
+            --sidebar-bg: #1a1d23;
+            --sidebar-text: #a0aec0;
+            --sidebar-active: #ffffff;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-blue: #3b82f6;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            margin: 0;
+            padding: 24px;
+            background: #f8fafc;
+            color: var(--gray-900);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header-title h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0;
+            color: var(--gray-900);
+        }
+
+        .header-title p {
+            margin: 4px 0 0 0;
+            color: var(--gray-600);
+            font-size: 14px;
+        }
+
+        .refresh-btn {
+            background: white;
+            border: 1px solid var(--gray-200);
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-300);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--gray-600);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: var(--gray-50);
+            padding: 16px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--gray-600);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--gray-100);
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .fo-badge {
+            font-weight: 700;
+            color: var(--onesource-red);
+        }
+
+        .progress-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 200px;
+        }
+
+        .progress-bar-bg {
+            flex-grow: 1;
+            height: 8px;
+            background: var(--gray-100);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--onesource-red);
+            border-radius: 4px;
+            transition: width 0.5s ease-out;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            font-weight: 700;
+            width: 40px;
+            text-align: right;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-pending { background: #fee2e2; color: #991b1b; }
+        .status-ongoing { background: #fef3c7; color: #92400e; }
+        .status-completed { background: #dcfce7; color: #166534; }
+
+        .action-link {
+            color: var(--onesource-red);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-link:hover {
+            text-decoration: underline;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 100px;
+            color: var(--gray-600);
+        }
+
+        .spinner {
+            border: 3px solid rgba(0,0,0,0.1);
+            border-top: 3px solid var(--onesource-red);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <h1>Orders Status</h1>
+            <p>Real-time progress of all fulfillment orders</p>
+        </div>
+        <button class="refresh-btn" onclick="loadData()">
+            <span>🔄</span> Refresh
+        </button>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value" id="stat-total-orders">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Pending Units</div>
+            <div class="stat-value" id="stat-pending-units">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Units Picked</div>
+            <div class="stat-value" id="stat-picked-units" style="color: var(--accent-green)">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Active Picks</div>
+            <div class="stat-value" id="stat-active-picks" style="color: var(--accent-orange)">0</div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="status-table">
+            <thead>
+                <tr>
+                    <th>FO#</th>
+                    <th>Account Name</th>
+                    <th>Total Qty</th>
+                    <th>Picked</th>
+                    <th>Pending</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr>
+                    <td colspan="8" class="loading-state">
+                        <div class="spinner"></div>
+                        Loading orders...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                const [dispatchRes, pickingRes] = await Promise.all([
+                    fetch('/api/dispatch-plan'),
+                    fetch('/api/picking-orders')
+                ]);
+
+                const dispatchPlan = (await dispatchRes.json()).filter(item => item.archiveStatus !== 'Archived');
+                const pickingOrders = await pickingRes.json();
+
+                renderStatus(dispatchPlan, pickingOrders);
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function renderStatus(plan, orders) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            let totalPending = 0;
+            let totalPicked = 0;
+            let activePicks = 0;
+
+            plan.forEach(item => {
+                // Calculate picked and ongoing
+                let pickedQty = 0;
+                let ongoingCount = 0;
+
+                orders.forEach(order => {
+                    if (order.foNumber === item.fo) {
+                        if (order.status === 'completed') {
+                            pickedQty += parseInt(order.pickerQty) || 0;
+                        } else if (order.status === 'in-progress') {
+                            ongoingCount++;
+                        }
+                    }
+                });
+
+                const pendingQty = Math.max(0, item.qty - pickedQty);
+                const progress = Math.round((pickedQty / item.qty) * 100);
+                
+                totalPending += pendingQty;
+                totalPicked += pickedQty;
+                if (ongoingCount > 0) activePicks++;
+
+                let statusLabel = 'Pending';
+                let statusClass = 'status-pending';
+                
+                if (pickedQty >= item.qty) {
+                    statusLabel = 'Completed';
+                    statusClass = 'status-completed';
+                } else if (ongoingCount > 0 || pickedQty > 0) {
+                    statusLabel = 'On-going';
+                    statusClass = 'status-ongoing';
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="fo-badge">${item.fo}</td>
+                    <td style="font-weight: 600;">${item.accountName}</td>
+                    <td>${item.qty.toLocaleString()}</td>
+                    <td style="color: var(--accent-green); font-weight: 700;">${pickedQty.toLocaleString()}</td>
+                    <td style="color: ${pendingQty > 0 ? 'var(--onesource-red)' : 'var(--gray-600)'}">${pendingQty.toLocaleString()}</td>
+                    <td>
+                        <div class="progress-wrapper">
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <div class="progress-text">${progress}%</div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge ${statusClass}">${statusLabel}</span>
+                    </td>
+                    <td>
+                        ${pickedQty < item.qty ? 
+                            `<a href="#" class="action-link" onclick="parent.switchPage('outbound')">▶ Pick Now</a>` : 
+                            '✅ Finished'}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update stats
+            document.getElementById('stat-total-orders').textContent = plan.length;
+            document.getElementById('stat-pending-units').textContent = totalPending.toLocaleString();
+            document.getElementById('stat-picked-units').textContent = totalPicked.toLocaleString();
+            document.getElementById('stat-active-picks').textContent = activePicks;
+        }
+
+        // Initialize
+        loadData();
+        // Auto refresh every 30 seconds
+        setInterval(() => {
+                        if (document.hidden) return; loadData(); }, 30000);
+    </script>
+</body>
+</html>

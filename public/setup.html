@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Onesource - Emergency Setup</title>
+    <style>
+        body { font-family: sans-serif; background: #0f1117; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1a1d23; padding: 30px; border-radius: 12px; width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { color: #E63946; margin-top: 0; }
+        textarea, input { width: 100%; padding: 12px; margin: 10px 0; background: #25292f; border: 1px solid #333; color: white; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #E63946; border: none; color: white; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .status { margin-top: 15px; padding: 10px; border-radius: 4px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Emergency Connection</h1>
+        <p>Railway environment variables are not propagating. Use this to connect the server manually.</p>
+        
+        <label>Google Credentials JSON:</label>
+        <textarea id="creds" rows="10" placeholder='{"type": "service_account", ...}'></textarea>
+        
+        <label>Spreadsheet ID:</label>
+        <input type="text" id="sid" value="1FNFQhyfdynvaFJ77p4s2vsZq-o77HibAJf9htI44MxY">
+        
+        <button onclick="connect()">Connect Server</button>
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        async function connect() {
+            const btn = document.querySelector('button');
+            const status = document.getElementById('status');
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+            
+            try {
+                const response = await fetch('/api/emergency-setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        credentials: document.getElementById('creds').value,
+                        spreadsheetId: document.getElementById('sid').value
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    status.style.display = 'block';
+                    status.style.background = '#1b4332';
+                    status.textContent = '✅ Connected! You can now use the dashboard.';
+                    setTimeout(() => window.location.href = '/', 2000);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (e) {
+                status.style.display = 'block';
+                status.style.background = '#432818';
+                status.textContent = '❌ Error: ' + e.message;
+                btn.disabled = false;
+                btn.textContent = 'Try Again';
+            }
+        }
+    </script>
+</body>
+</html>

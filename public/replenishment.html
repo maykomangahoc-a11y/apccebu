@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Replenishment - Onesource Logistics</title>
+    <script src="/auth.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --onesource-red: #E63946;
+            --bg-dark: #1a1d23;
+            --bg-card: #25292f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-blue: #4299e1;
+            --accent-green: #48bb78;
+            --accent-orange: #ed8936;
+            --accent-purple: #9f7aea;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .app-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        header {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .header-title {
+            border-left: 3px solid var(--onesource-red);
+            padding-left: 14px;
+        }
+
+        .header-title h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .header-title p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .tabs-header {
+            display: flex;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            gap: 8px;
+        }
+
+        .tab-button {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+
+        .tab-button.active {
+            background: var(--onesource-red);
+            color: white;
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        /* Unified Table Styles */
+        .table-container {
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .data-table th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .data-table td {
+            padding: 12px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .count-badge {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .pallet-badge {
+            background: rgba(66, 153, 225, 0.1);
+            color: #63b3ed;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--onesource-red);
+            color: white;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--onesource-red);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Connection Badge */
+        .connection-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(66, 153, 225, 0.1);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent-blue);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse-blue 2s infinite;
+        }
+
+        .status-connected {
+            background: var(--accent-blue);
+        }
+
+        .status-disconnected {
+            background: var(--danger);
+            box-shadow: none;
+        }
+
+        @keyframes pulse-blue {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(66, 153, 225, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(66, 153, 225, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo-section">
+                <img src="/onesource.png" alt="Onesource Logistics" class="logo">
+                <div class="header-title">
+                    <h1>Replenishment</h1>
+                    <p>Priority Replenishment & File Management</p>
+                </div>
+            </div>
+            <div class="connection-badge">
+                <div id="status-dot" class="status-dot status-connected"></div>
+                <span id="sync-status">Live Sync</span>
+            </div>
+        </header>
+
+        <div class="tabs-header">
+            <button class="tab-button active" data-tab="prio-replenishment" onclick="switchTab('prio-replenishment')">
+                ⚡ Prio Replenishment
+            </button>
+            <button class="tab-button" data-tab="file-upload" onclick="switchTab('file-upload')">
+                📁 Files Upload
+            </button>
+        </div>
+
+        <div id="prio-replenishment" class="tab-content active">
+            <!-- Content will be injected by JS -->
+        </div>
+
+        <div id="file-upload" class="tab-content">
+            <div class="card">
+                <div class="card-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                    <h2 style="font-size: 20px; font-weight: 700;">Upload Replenishment Files</h2>
+                </div>
+                
+                <div style="max-width: 500px;">
+                    <div class="form-group">
+                        <label>Select File Type</label>
+                        <select class="form-input">
+                            <option>Replenishment List</option>
+                            <option>Stock Level Update</option>
+                            <option>Manual Override</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>File</label>
+                        <input type="file" class="form-input" style="padding: 8px;">
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="alert('File upload logic to be implemented.')">
+                        📤 Upload and Process
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api';
+        let processingSkus = [];
+        let itemDatabase = [];
+
+        async function initPage() {
+            const user = await AuthGuard.init();
+            if (!user) return;
+
+            await loadData();
+
+            const savedTab = localStorage.getItem('replenishment_active_tab') || 'prio-replenishment';
+            switchTab(savedTab);
+
+            // Start Auto-refresh
+            setInterval(async () => {
+                        if (document.hidden) return;
+                await loadData();
+            }, 60000);
+        }
+
+        async function loadData() {
+            try {
+                const [skuRes, itemRes] = await Promise.all([
+                    AuthGuard.authFetch('/api/processing-skus'),
+                    AuthGuard.authFetch('/api/item-database')
+                ]);
+                if (skuRes && skuRes.ok) processingSkus = await skuRes.json();
+                if (itemRes && itemRes.ok) itemDatabase = await itemRes.json();
+                
+                renderPrioReplenishment();
+                updateSyncStatus(true);
+            } catch (e) { 
+                console.error('Load data error:', e); 
+                updateSyncStatus(false);
+            }
+        }
+
+        function updateSyncStatus(connected) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('sync-status');
+            if (connected) {
+                if (dot) dot.className = 'status-dot status-connected';
+                if (text) {
+                    const now = new Date();
+                    text.textContent = `Live Sync ${now.toLocaleTimeString()}`;
+                }
+            } else {
+                if (dot) dot.className = 'status-dot status-disconnected';
+                if (text) text.textContent = 'Server Disconnected';
+            }
+        }
+
+        function renderPrioReplenishment() {
+            const container = document.getElementById('prio-replenishment');
+            
+            // Filter Pending SKUs
+            const pendingSkus = processingSkus.filter(s => 
+                String(s.status || '').trim().toLowerCase() === 'pending' && 
+                (!s.processedQty || s.processedQty === 0)
+            );
+
+            // Group by SKU
+            const grouped = {};
+            pendingSkus.forEach(s => {
+                const sku = String(s.sku).trim();
+                if (!grouped[sku]) {
+                    grouped[sku] = {
+                        sku: sku,
+                        description: '',
+                        pendingQty: 0,
+                        orders: new Set(),
+                        bls: new Set(),
+                        palletizing: 1
+                    };
+                    // Find in itemDatabase
+                    const item = itemDatabase.find(i => String(i.sku).trim() === sku);
+                    if (item) {
+                        grouped[sku].description = item.materialDescription || item.description || '';
+                        grouped[sku].palletizing = parseInt(item.palletizing) || 1;
+                    }
+                }
+                grouped[sku].pendingQty += parseInt(s.qty) || 0;
+                if (s.foNumber) grouped[sku].orders.add(s.foNumber);
+                if (s.blNumber) grouped[sku].bls.add(s.blNumber);
+            });
+
+            const list = Object.values(grouped);
+            
+            // Sort by first appearance in Processing SKU Data
+            list.sort((a, b) => {
+                const indexA = processingSkus.findIndex(s => String(s.sku).trim() === a.sku);
+                const indexB = processingSkus.findIndex(s => String(s.sku).trim() === b.sku);
+                return indexA - indexB;
+            });
+
+            let html = `
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Description</th>
+                                    <th style="text-align: right;">Pending Qty</th>
+                                    <th style="text-align: right;">Pallet Qty</th>
+                                    <th style="text-align: center;">Orders</th>
+                                    <th style="text-align: center;">BLs</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            if (list.length === 0) {
+                html += `<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--text-secondary);">No pending SKUs found.</td></tr>`;
+            } else {
+                list.forEach(item => {
+                    const pallets = Math.ceil(item.pendingQty / item.palletizing);
+                    html += `
+                        <tr>
+                            <td style="font-weight: bold; color: var(--onesource-red);">${item.sku}</td>
+                            <td style="font-size: 14px;">${item.description || '-'}</td>
+                            <td style="font-weight: bold; text-align: right;">${item.pendingQty.toLocaleString()}</td>
+                            <td style="font-weight: bold; text-align: right; color: #63b3ed;">${pallets.toLocaleString()}</td>
+                            <td style="text-align: center;"><span class="count-badge">${item.orders.size}</span></td>
+                            <td style="text-align: center;"><span class="count-badge">${item.bls.size}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                if (btn.getAttribute('data-tab') === tabId) {
+                    btn.classList.add('active');
+                }
+            });
+
+            localStorage.setItem('replenishment_active_tab', tabId);
+        }
+
+        initPage();
+    </script>
+</body>
+</html>

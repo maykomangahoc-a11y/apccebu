@@ -1,112 +1,769 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="APC Cebu Warehouse Management System">
-  <title>Onesource Logistics</title>
-  <link rel="stylesheet" href="/css/index.css">
-  <link rel="icon" type="image/png" href="/onesource-icon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onesource Logistics</title>
+    <link rel="icon" type="image/png" href="/onesource-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="/auth.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 72px;
+            --sidebar-bg: #0f1117;
+            --sidebar-hover: #1a1d27;
+            --sidebar-active: #E63946;
+            --sidebar-active-glow: rgba(230, 57, 70, 0.15);
+            --sidebar-text: #8b8fa3;
+            --sidebar-text-active: #ffffff;
+            --sidebar-border: rgba(255, 255, 255, 0.06);
+            --onesource-red: #E63946;
+            --accent-blue: #4299e1;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f1117;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Layout */
+        .app-layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--sidebar-border);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 100;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .sidebar.hidden {
+            width: 0;
+            border-right: none;
+        }
+
+        /* Toggle button — always visible, floats on edge */
+        .sidebar-toggle {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            left: var(--sidebar-width);
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 200;
+            width: 20px;
+            height: 48px;
+            background: var(--sidebar-bg);
+            border: 1px solid var(--sidebar-border);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--sidebar-text);
+            font-size: 10px;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--sidebar-hover);
+            color: white;
+        }
+
+        .sidebar.hidden ~ .sidebar-toggle,
+        .sidebar-toggle.collapsed {
+            left: 0;
+        }
+
+        /* Logo Section */
+        .sidebar-brand {
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--sidebar-border);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .brand-info {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .brand-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--sidebar-text);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Navigation */
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--sidebar-text);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 12px 12px 8px;
+            opacity: 0.6;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--sidebar-text);
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            position: relative;
+            user-select: none;
+        }
+
+        .nav-item:hover {
+            background: var(--sidebar-hover);
+            color: var(--sidebar-text-active);
+        }
+
+        .nav-item.active {
+            background: var(--sidebar-active-glow);
+            color: var(--sidebar-text-active);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background: var(--onesource-red);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .nav-label {
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        /* Status badge in nav */
+        .nav-badge {
+            margin-left: auto;
+            background: var(--onesource-red);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--sidebar-border);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--sidebar-text);
+        }
+
+        .status-indicator {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .status-indicator.error {
+            background: #ef4444;
+            animation: none;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(66, 153, 225, 0); }
+        }
+
+        .sidebar-version {
+            font-size: 10px;
+            color: var(--sidebar-text);
+            opacity: 0.4;
+            margin-top: 8px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            background: #1a1d23;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .content-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        .content-frame.active {
+            display: block;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: #1a1d23;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 50;
+            transition: opacity 0.4s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(255, 255, 255, 0.08);
+            border-top-color: var(--onesource-red);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .loading-text {
+            font-size: 13px;
+            color: var(--sidebar-text);
+            font-weight: 500;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                height: 100vh;
+                z-index: 200;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .mobile-header {
+                display: flex !important;
+            }
+
+            .main-content {
+                width: 100%;
+            }
+        }
+
+        .mobile-header {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--sidebar-bg);
+            border-bottom: 1px solid var(--sidebar-border);
+        }
+
+        .mobile-menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 150;
+        }
+
+        .mobile-overlay.visible {
+            display: block;
+        }
+    </style>
 </head>
 <body>
-
-  <!-- ═══ Login Page ═══ -->
-  <div id="login-page" class="login-page" style="display:none"></div>
-
-  <!-- ═══ App Layout ═══ -->
-  <div id="app-layout" class="app-layout" style="display:none">
-
-    <!-- Sidebar -->
-    <aside id="sidebar" class="sidebar">
-      <div class="sidebar-brand">
-        <img src="/onesource.png" alt="Onesource Logistics" style="width: 38px; height: 38px; border-radius: 10px; object-fit: contain; flex-shrink: 0;">
-        <div>
-          <div class="brand-text">Onesource Logistics</div>
-          <div class="brand-sub">Asia Inc. Portal</div>
-        </div>
-      </div>
-
-      <nav class="sidebar-nav">
-        <div class="nav-section">
-          <div class="nav-section-title">Outbound</div>
-          <a class="nav-item" data-path="/dashboard" href="#/dashboard">
-            <span class="nav-icon">📊</span> Dashboard
-          </a>
-          <a class="nav-item" data-path="/dispatch" href="#/dispatch">
-            <span class="nav-icon">📋</span> Dispatch Plan
-          </a>
-          <a class="nav-item" data-path="/checking" href="#/checking">
-            <span class="nav-icon">✅</span> Outbound Checking
-          </a>
-          <a class="nav-item" data-path="/picking" href="#/picking">
-            <span class="nav-icon">📦</span> Outbound Picking
-          </a>
-          <a class="nav-item" data-path="/reporting" href="#/reporting">
-            <span class="nav-icon">📈</span> Reporting
-          </a>
-        </div>
-
-        <div class="nav-section" style="display:none">
-          <div class="nav-section-title">Inbound</div>
-          <a class="nav-item" data-path="/inbound" href="#/inbound">
-            <span class="nav-icon">📥</span> Inbound
-          </a>
-          <a class="nav-item" data-path="/putaway" href="#/putaway">
-            <span class="nav-icon">🏗️</span> Putaway
-          </a>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-section-title">Configuration</div>
-          <a class="nav-item" data-path="/resources" href="#/resources">
-            <span class="nav-icon">👥</span> Resources
-          </a>
-          <a class="nav-item" data-path="/settings" href="#/settings">
-            <span class="nav-icon">⚙️</span> Management
-          </a>
-        </div>
-      </nav>
-    </aside>
-
-    <!-- Main Content -->
-    <div class="main-wrapper">
-      <header class="header">
-        <div class="header-left">
-          <button class="menu-toggle" id="menu-toggle">☰</button>
-          <h1 id="header-title" class="header-title">Dashboard</h1>
-        </div>
-        <div class="header-right">
-          <div class="user-badge">
-            <div class="user-avatar" id="user-avatar">?</div>
-            <div>
-              <div class="user-name" id="user-name">User</div>
-              <div class="user-role" id="user-role">viewer</div>
-            </div>
-          </div>
-          <button class="btn-logout" id="btn-logout">Sign Out</button>
-        </div>
-      </header>
-
-      <main class="page-content" id="page-content">
-        <div class="loading-container">
-          <div class="spinner"></div>
-          <span>Loading...</span>
-        </div>
-      </main>
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+        <img src="/onesource.png" alt="Onesource" style="height: 28px;">
+        <span style="color: white; font-weight: 600; font-size: 14px;">Onesource Logistics</span>
     </div>
-  </div>
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
 
-  <!-- Scripts -->
-  <script src="/js/api.js"></script>
-  <script src="/js/pages/login.js"></script>
-  <script src="/js/pages/dashboard.js"></script>
-  <script src="/js/pages/dispatch.js"></script>
-  <script src="/js/pages/picking.js"></script>
-  <script src="/js/pages/processing.js"></script>
-  <script src="/js/pages/inbound.js"></script>
-  <script src="/js/pages/putaway.js"></script>
-  <script src="/js/pages/resources.js"></script>
-  <script src="/js/pages/settings.js"></script>
-  <script src="/js/app.js"></script>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <img src="/onesource.png" alt="Onesource Logistics" class="brand-logo">
+                <div class="brand-info">
+                    <div class="brand-name">Onesource Logistics</div>
+                    <div class="brand-subtitle">Asia Inc. Portal</div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">OUTBOUND</div>
+
+                <a class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+
+                <a class="nav-item" data-page="dispatch-plan" onclick="switchPage('dispatch-plan')">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Dispatch Plan</span>
+                </a>
+
+                <a class="nav-item" data-page="outbound-checking" onclick="switchPage('outbound-checking')">
+                    <span class="nav-icon">✅</span>
+                    <span class="nav-label">Outbound Checking</span>
+                </a>
+
+                <a class="nav-item" data-page="outbound" onclick="switchPage('outbound')">
+                    <span class="nav-icon">📦</span>
+                    <span class="nav-label">Outbound Picking</span>
+                </a>
+
+                <a class="nav-item" data-page="processing" onclick="switchPage('processing')">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Order Processing</span>
+                </a>
+
+                <a class="nav-item" data-page="reporting" onclick="switchPage('reporting')">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Reporting</span>
+                </a>
+
+                <div class="nav-section-label">Inbound</div>
+
+                <a class="nav-item" data-page="inbound-dashboard" onclick="switchPage('inbound-dashboard')">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+
+                <a class="nav-item" data-page="inbound-monitoring" onclick="switchPage('inbound-monitoring')">
+                    <span class="nav-icon">🚢</span>
+                    <span class="nav-label">Inbound Monitoring</span>
+                </a>
+
+                <a class="nav-item" data-page="inbound-monitoring-sku" onclick="switchPage('inbound-monitoring-sku')" style="display:none;">
+                    <span class="nav-icon">📦</span>
+                    <span class="nav-label">Inbound Monitoring</span>
+                </a>
+
+                <a class="nav-item" data-page="inbound" onclick="switchPage('inbound')">
+                    <span class="nav-icon">📥</span>
+                    <span class="nav-label">Inbound Checking</span>
+                </a>
+
+                <a class="nav-item" data-page="inbound-putaway" onclick="switchPage('inbound-putaway')">
+                    <span class="nav-icon">🏗️</span>
+                    <span class="nav-label">Inbound Put-away</span>
+                </a>
+
+                <a class="nav-item" data-page="inbound-reporting" onclick="switchPage('inbound-reporting')">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Reporting</span>
+                </a>
+
+                <div class="nav-section-label">Replenishment</div>
+                <a class="nav-item" data-page="replenishment" onclick="switchPage('replenishment')">
+                    <span class="nav-icon">🔄</span>
+                    <span class="nav-label">Replenishment</span>
+                </a>
+
+                <div class="nav-section-label">Configuration</div>
+                <a class="nav-item" data-page="management" onclick="switchPage('management')">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Management</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <!-- User Badge -->
+                <div id="auth-user-badge" style="margin-bottom:12px;"></div>
+                <div class="connection-status">
+                    <div class="status-indicator" id="sidebarStatusDot"></div>
+                    <span id="sidebarStatusText">Connecting...</span>
+                </div>
+                <div class="sidebar-version">v1.0.0</div>
+            </div>
+        </aside>
+
+        <!-- Sidebar Toggle Button -->
+        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle navigation">
+            <span id="toggleIcon">◀</span>
+        </button>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading module...</div>
+            </div>
+
+            <iframe 
+                id="frame-dashboard" 
+                class="content-frame active" 
+                src="/dashboard.html?v=4"
+                onload="frameLoaded('dashboard')"
+            ></iframe>
+
+            <iframe
+                id="frame-dispatch-plan"
+                class="content-frame"
+                src="/dispatch-plan.html?v=1"
+                onload="frameLoaded('dispatch-plan')"
+            ></iframe>
+
+            <iframe
+                id="frame-outbound-checking"
+                class="content-frame"
+                src="/outbound-checking.html?v=1"
+                onload="frameLoaded('outbound-checking')"
+            ></iframe>
+
+            <iframe
+                id="frame-outbound" 
+                class="content-frame" 
+                src="/outbound.html?v=4"
+                onload="frameLoaded('outbound')"
+            ></iframe>
+
+            <iframe
+                id="frame-processing"
+                class="content-frame"
+                src="/processing.html?v=4"
+                onload="frameLoaded('processing')"
+            ></iframe>
+
+            <iframe 
+                id="frame-reporting" 
+                class="content-frame" 
+                src="/reporting.html?v=4"
+                onload="frameLoaded('reporting')"
+            ></iframe>
+
+            <iframe
+                id="frame-inbound-dashboard"
+                class="content-frame"
+                src="/inbound-dashboard.html?v=1"
+                onload="frameLoaded('inbound-dashboard')"
+            ></iframe>
+
+            <iframe
+                id="frame-inbound-monitoring"
+                class="content-frame"
+                src="/inbound-monitoring.html?v=1"
+                onload="frameLoaded('inbound-monitoring')"
+            ></iframe>
+
+            <iframe
+                id="frame-inbound-monitoring-sku"
+                class="content-frame"
+                src="/inbound-monitoring-sku.html?v=1"
+                onload="frameLoaded('inbound-monitoring-sku')"
+            ></iframe>
+
+            <iframe
+                id="frame-inbound"
+                class="content-frame"
+                src="/inbound.html?v=1"
+                onload="frameLoaded('inbound')"
+            ></iframe>
+
+            <iframe
+                id="frame-inbound-putaway"
+                class="content-frame"
+                src="/inbound-putaway.html?v=1"
+                onload="frameLoaded('inbound-putaway')"
+            ></iframe>
+
+            <iframe
+                id="frame-inbound-reporting"
+                class="content-frame"
+                src="/inbound-reporting.html?v=1"
+                onload="frameLoaded('inbound-reporting')"
+            ></iframe>
+
+            <iframe
+                id="frame-replenishment"
+                class="content-frame"
+                src="/replenishment.html?v=2"
+                onload="frameLoaded('replenishment')"
+            ></iframe>
+
+            <iframe
+                id="frame-management"
+                class="content-frame"
+                src="/management.html?v=2"
+                onload="frameLoaded('management')"
+            ></iframe>
+        </main>
+    </div>
+
+    <script>
+        const PAGES = ['dashboard', 'dispatch-plan', 'outbound-checking', 'outbound', 'processing', 'reporting', 'inbound-dashboard', 'inbound-monitoring', 'inbound-monitoring-sku', 'inbound', 'inbound-putaway', 'inbound-reporting', 'replenishment', 'management'];
+        let framesLoaded = { dashboard: false, 'dispatch-plan': false, 'outbound-checking': false, outbound: false, processing: false, reporting: false, 'inbound-dashboard': false, 'inbound-monitoring': false, 'inbound-monitoring-sku': false, inbound: false, 'inbound-putaway': false, 'inbound-reporting': false, replenishment: false, management: false };
+
+        // Restore last visited page, default to dashboard
+        let currentPage = localStorage.getItem('onesource_page') || 'dashboard';
+        if (!PAGES.includes(currentPage)) currentPage = 'dashboard';
+
+        function switchPage(page) {
+            if (page === currentPage) return;
+            currentPage = page;
+            localStorage.setItem('onesource_page', page);
+
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.page === page);
+            });
+
+            // Show loading if frame not loaded yet
+            if (!framesLoaded[page]) {
+                document.getElementById('loadingOverlay').classList.remove('hidden');
+            }
+
+            // Switch frames
+            document.querySelectorAll('.content-frame').forEach(frame => {
+                frame.classList.remove('active');
+            });
+            document.getElementById('frame-' + page).classList.add('active');
+
+            // Close mobile menu
+            closeMobileMenu();
+        }
+
+        function frameLoaded(page) {
+            framesLoaded[page] = true;
+            if (page === currentPage) {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        }
+
+        // Check server connection
+        async function checkConnection() {
+            const dot = document.getElementById('sidebarStatusDot');
+            const text = document.getElementById('sidebarStatusText');
+            try {
+                const res = await fetch('/api/health');
+                const data = await res.json();
+                if (data.status === 'OK' && data.sheetsConnected) {
+                    dot.classList.remove('error');
+                    if (text) {
+                        if (data.environment === 'Railway') {
+                            text.textContent = 'Connected via Railway';
+                        } else if (data.environment === 'Google Run') {
+                            text.textContent = 'Connected via Google Run';
+                        } else {
+                            text.textContent = 'Connected to Server';
+                        }
+                    }
+                } else {
+                    dot.classList.add('error');
+                    text.textContent = 'Sheets disconnected';
+                }
+            } catch (e) {
+                dot.classList.add('error');
+                text.textContent = 'Server offline';
+            }
+        }
+
+        // Mobile menu
+        function toggleMobileMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('mobileOverlay').classList.toggle('visible');
+        }
+
+        function closeMobileMenu() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('mobileOverlay').classList.remove('visible');
+        }
+
+        // Sidebar collapse
+        let sidebarHidden = localStorage.getItem('sidebar_hidden') === 'true';
+
+        function toggleSidebar() {
+            sidebarHidden = !sidebarHidden;
+            applySidebarState();
+            localStorage.setItem('sidebar_hidden', sidebarHidden);
+        }
+
+        function applySidebarState() {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            const icon = document.getElementById('toggleIcon');
+            if (sidebarHidden) {
+                sidebar.classList.add('hidden');
+                toggle.style.left = '0px';
+                icon.textContent = '▶';
+            } else {
+                sidebar.classList.remove('hidden');
+                toggle.style.left = 'var(--sidebar-width)';
+                icon.textContent = '◀';
+            }
+
+            // Force charts to resize in the active iframe after transition
+            setTimeout(() => {
+                const activeFrame = document.querySelector('.content-frame.active');
+                if (activeFrame && activeFrame.contentWindow) {
+                    activeFrame.contentWindow.dispatchEvent(new Event('resize'));
+                }
+            }, 310);
+        }
+
+        // Initialize
+        async function initPage() {
+            // Auth guard — validate token and get user
+            const user = await AuthGuard.init();
+            if (!user) return; // will have redirected to login
+
+            // Show/hide Management nav based on role
+            const mgmtNav = document.querySelector('[data-page="management"]');
+            if (mgmtNav) {
+                mgmtNav.style.display = (user.role === 'admin' || user.role === 'supervisor') ? '' : 'none';
+            }
+            // If current page is management but user isn't admin/supervisor, redirect to dashboard
+            if (currentPage === 'management' && user.role !== 'admin' && user.role !== 'supervisor') {
+                currentPage = 'dashboard';
+                localStorage.setItem('onesource_page', 'dashboard');
+            }
+
+            const reportingNav = document.querySelector('[data-page="reporting"]');
+            if (reportingNav) {
+                reportingNav.style.display = (user.role === 'visitor' || user.role === 'viewer' || user.role === 'client') ? 'none' : '';
+            }
+
+            const processingNav = document.querySelector('[data-page="processing"]');
+            if (processingNav) {
+                processingNav.style.display = (user.role === 'visitor' || user.role === 'viewer') ? 'none' : '';
+            }
+            // If current page is reporting but user is visitor/viewer/client, redirect to dashboard
+            if (currentPage === 'reporting' && (user.role === 'visitor' || user.role === 'viewer' || user.role === 'client')) {
+                currentPage = 'dashboard';
+                localStorage.setItem('onesource_page', 'dashboard');
+            }
+
+            // Show/hide Outbound nav based on role (always visible for now, content restricted in frame)
+            const outboundNav = document.querySelector('[data-page="outbound"]');
+            if (outboundNav) {
+                outboundNav.style.display = '';
+            }
+
+            // Set correct nav item active
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.page === currentPage);
+            });
+
+            // Show the correct frame
+            document.querySelectorAll('.content-frame').forEach(frame => {
+                frame.classList.remove('active');
+            });
+            document.getElementById('frame-' + currentPage).classList.add('active');
+        }
+
+        // Initialize
+        initPage();
+        applySidebarState();
+        checkConnection();
+        setInterval(() => {
+                        if (document.hidden) return; checkConnection(); }, 30000);
+
+        // Hide loading after active frame loads
+        PAGES.forEach(page => {
+            document.getElementById('frame-' + page).addEventListener('load', () => {
+                frameLoaded(page);
+            });
+        });
+    </script>
 </body>
 </html>

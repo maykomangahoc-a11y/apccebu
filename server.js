@@ -28,10 +28,40 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
+// Helper to convert snake_case to camelCase
+function toCamelCase(str) {
+  return str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+}
+
+// Recursive function to convert object keys
+function keysToCamelCase(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(v => keysToCamelCase(v));
+  } else if (obj !== null && obj.constructor === Object) {
+    return Object.keys(obj).reduce((result, key) => {
+      result[toCamelCase(key)] = keysToCamelCase(obj[key]);
+      return result;
+    }, {});
+  }
+  return obj;
+}
+
+// Middleware to format all JSON responses to camelCase for the old UI
+app.use((req, res, next) => {
+  const originalJson = res.json;
+  res.json = function(body) {
+    if (body && typeof body === 'object') {
+      body = keysToCamelCase(body);
+    }
+    return originalJson.call(this, body);
+  };
+  next();
+});
+
 // Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── API Routes ─────────────────────────────────────────────────────────────
+// ─── API Routes (New Structure) ─────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/config', configRoutes);
@@ -44,6 +74,11 @@ app.use('/api/outbound-bl', outboundBlRoutes);
 app.use('/api/inbound', inboundRoutes);
 app.use('/api/putaway', putawayRoutes);
 app.use('/api/items', itemRoutes);
+
+// ─── API Routes (Aliases for Old Frontend Compatibility) ────────────────────
+app.use('/api/dispatch-plan', dispatchRoutes);
+app.use('/api/picking-orders', pickingRoutes);
+app.use('/api/pickers', resourceRoutes); // old UI fetches /api/pickers, which should hit /api/resources/pickers? Wait.
 
 // ─── Health Check ───────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbound Put-away</title>
+    <script src="/auth.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-dark: #1a1d23;
+            --bg-card: #25292f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-blue: #4299e1;
+            --accent-green: #48bb78;
+            --accent-orange: #ed8936;
+            --accent-teal: #38b2ac;
+            --accent-purple: #9f7aea;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .app-container { max-width: 1600px; margin: 0 auto; padding: 16px; }
+
+        /* ── Header ─────────────────────────────────────────────────────── */
+        header {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo-section { display: flex; align-items: center; gap: 16px; }
+        .logo { height: 40px; width: auto; }
+        .header-title { border-left: 3px solid var(--accent-blue); padding-left: 14px; }
+        .header-title h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .header-title p { font-size: 14px; color: var(--text-secondary); }
+        .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .refresh-badge {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px;
+            background: rgba(56,178,172,0.1);
+            border-radius: 8px; font-size: 13px; font-weight: 500;
+            color: var(--accent-teal);
+        }
+        .pulse-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent-teal);
+            animation: pulseTeal 2s infinite;
+        }
+        @keyframes pulseTeal {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(56,178,172,0.4); }
+            50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(56,178,172,0); }
+        }
+
+        /* ── Tabs ───────────────────────────────────────────────────────── */
+        .tabs-header {
+            display: flex; gap: 8px;
+            background: var(--bg-card);
+            border-radius: 12px; padding: 8px;
+            margin-bottom: 24px; flex-wrap: wrap;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .tab-button {
+            flex: 1; min-width: 130px;
+            padding: 14px 20px; border: none; border-radius: 8px;
+            background: transparent; color: var(--text-secondary);
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            white-space: nowrap;
+        }
+        .tab-button:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+        .tab-button.active {
+            background: var(--accent-teal); color: #fff; font-weight: 600;
+            box-shadow: 0 4px 12px rgba(56,178,172,0.35);
+        }
+        .tab-count {
+            background: rgba(255,255,255,0.2); border-radius: 10px;
+            padding: 2px 7px; font-size: 11px; font-weight: 700; line-height: 1.4;
+        }
+        .tab-button:not(.active) .tab-count { background: rgba(255,255,255,0.1); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ── Card ───────────────────────────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px; padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px; padding-bottom: 16px; flex-wrap: wrap; gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .card-title-row { display: flex; align-items: center; gap: 12px; }
+        .card-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent-teal), #2c9a94);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px;
+        }
+        .card-title { font-size: 16px; font-weight: 700; }
+        .card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+        /* ── Table ──────────────────────────────────────────────────────── */
+        .table-container {
+            overflow-x: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        thead th {
+            background: rgba(255,255,255,0.03);
+            text-align: left; padding: 10px 12px;
+            color: var(--text-secondary); font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap;
+        }
+        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); }
+        tbody tr:hover:not(.expand-row) { background: rgba(255,255,255,0.02); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody td { padding: 12px 12px; vertical-align: middle; font-size: 13px; color: var(--text-primary); }
+
+        /* ── JIB badge ──────────────────────────────────────────────────── */
+        .jib-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: rgba(66,153,225,0.12);
+            color: var(--accent-blue);
+            border-radius: 6px;
+            font-size: 12px; font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        /* ── Status badges ──────────────────────────────────────────────── */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px; border-radius: 6px;
+            font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .status-pending  { background: rgba(160,174,192,0.1);  color: var(--text-secondary); border: 1px solid rgba(160,174,192,0.2); }
+        .status-ongoing  { background: rgba(237,137,54,0.12);  color: var(--accent-orange);  border: 1px solid rgba(237,137,54,0.3); cursor: pointer; }
+        .status-ongoing:hover  { background: rgba(237,137,54,0.22); }
+        .status-completed { background: rgba(72,187,120,0.12); color: var(--accent-green);   border: 1px solid rgba(72,187,120,0.25); cursor: pointer; }
+        .status-completed:hover { background: rgba(72,187,120,0.22); }
+
+        /* ── Progress bar ───────────────────────────────────────────────── */
+        .progress-wrapper { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+        .progress-bar-bg {
+            flex: 1; height: 8px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 4px; overflow: hidden; display: flex;
+        }
+        .progress-bar-fill { height: 100%; transition: width 0.3s; }
+        .progress-text {
+            font-size: 11px; color: var(--text-secondary);
+            min-width: 32px; text-align: right; font-weight: 600;
+        }
+
+        /* ── Buttons ────────────────────────────────────────────────────── */
+        .btn {
+            padding: 9px 18px; border-radius: 8px; border: none;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .btn-primary  { background: var(--accent-blue); color: #fff; }
+        .btn-primary:hover { background: #3182ce; }
+        .btn-secondary {
+            background: rgba(255,255,255,0.08); color: var(--text-primary);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+        .btn-danger { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+        .btn-danger:hover { background: rgba(239,68,68,0.25); }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-putaway {
+            padding: 5px 16px; background: var(--accent-blue); color: #fff;
+            border: none; border-radius: 6px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-putaway:hover { background: #3182ce; transform: scale(1.03); }
+
+        /* ── Search ─────────────────────────────────────────────────────── */
+        .search-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .count-label { font-size: 12px; color: var(--text-secondary); }
+
+        input[type="text"], input[type="date"], input[type="number"], select, textarea {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px; padding: 8px 12px;
+            color: var(--text-primary); font-size: 13px; font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-blue); }
+        ::placeholder { color: var(--text-secondary); }
+
+        /* ── Empty state ────────────────────────────────────────────────── */
+        .empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); font-size: 14px; }
+        .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+
+        /* ── Form ───────────────────────────────────────────────────────── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px; margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: var(--text-secondary); margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .required::after { content: ' *'; color: var(--danger); }
+
+        /* ── Searchable Select ──────────────────────────────────────────── */
+        .searchable-select-container { position: relative; width: 100%; }
+        .search-input-wrapper { position: relative; width: 100%; }
+        .search-input-wrapper input { width: 100%; padding-right: 40px; }
+        .search-input-wrapper i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; font-size: 10px; }
+        .options-list {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: #25292f; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; margin-top: 4px; max-height: 300px;
+            overflow-y: auto; z-index: 1000; display: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .options-list.active { display: block; animation: fadeIn 0.2s ease; }
+        .option-item { padding: 10px 16px; cursor: pointer; color: var(--text-primary); font-size: 14px; transition: all 0.2s; }
+        .option-item:hover { background: rgba(255,255,255,0.05); color: var(--accent-blue); }
+        .option-group-label {
+            padding: 10px 16px; font-size: 11px; font-weight: 800;
+            color: var(--accent-blue); text-transform: uppercase;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.05); margin-top: 8px;
+        }
+        .no-results { padding: 16px; text-align: center; color: var(--text-secondary); font-size: 13px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── Operator block ─────────────────────────────────────────────── */
+        .assignment-block {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; padding: 16px; margin-bottom: 12px;
+        }
+        .assignment-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .assignment-title { font-size: 13px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; }
+        .assignment-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+        .btn-draft { background: rgba(237,137,54,0.15); color: var(--accent-orange); border: 1px solid rgba(237,137,54,0.3); }
+        .btn-draft:hover { background: rgba(237,137,54,0.25); }
+        .btn-start { background: var(--accent-green); color: #fff; border: none; }
+        .btn-start:hover { background: #38a169; }
+        .balance-warn { color: var(--danger) !important; }
+
+        /* ── Grouped JIB cards (In Progress / Completed) ───────────── */
+        .jib-group {
+            border-radius: 12px; margin-bottom: 24px;
+            position: relative; overflow: hidden;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 20px;
+        }
+        .jib-accent { position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+        .jib-accent.progress { background: var(--accent-teal); }
+        .jib-accent.done     { background: var(--accent-green); }
+        .jib-group-title { font-weight: 700; font-size: 18px; margin-bottom: 4px; }
+        .jib-group-sub   { font-size: 13px; color: var(--text-secondary); }
+        .jib-inner {
+            background: rgba(0,0,0,0.2); border-radius: 8px;
+            padding: 12px; margin-top: 16px;
+        }
+        .jib-inner-hdr {
+            display: flex; justify-content: space-between;
+            font-size: 12px; color: var(--text-secondary);
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;
+        }
+        .op-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.03); padding: 14px 16px;
+            border-radius: 10px; gap: 16px; flex-wrap: wrap; margin-bottom: 8px;
+        }
+        .op-row:last-child { margin-bottom: 0; }
+        .op-cols {
+            display: grid; grid-template-columns: 140px 72px 110px 80px;
+            gap: 24px; align-items: center; flex-grow: 1;
+        }
+        .op-col-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .op-col-val   { font-weight: 700; font-size: 14px; }
+        .op-col-sub   { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+        /* ── Inline put-away expansion row ──────────────────────────────── */
+        .expand-row td {
+            background: rgba(56,178,172,0.06);
+            border-top: none;
+            border-bottom: 2px solid rgba(56,178,172,0.25);
+            padding: 10px 12px;
+        }
+        .expand-field { }
+        .expand-field label {
+            display: block; font-size: 10px; font-weight: 700;
+            color: var(--accent-teal); text-transform: uppercase;
+            letter-spacing: 0.4px; margin-bottom: 5px;
+        }
+        .expand-field select {
+            width: 100%; padding: 7px 10px; font-size: 13px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(56,178,172,0.35);
+            border-radius: 7px; color: white;
+        }
+        .expand-field select:focus { border-color: var(--accent-teal); outline: none; }
+        .expand-field input[type="number"] {
+            width: 100%; padding: 7px 10px; font-size: 14px; font-weight: 700;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(56,178,172,0.35);
+            border-radius: 7px; color: white; text-align: center;
+        }
+        .expand-field input[type="number"]:focus { border-color: var(--accent-teal); outline: none; }
+        .expand-qty-val { font-size: 16px; font-weight: 700; text-align: center; padding-top: 6px; }
+        .btn-expand-start {
+            padding: 7px 14px; background: var(--accent-green); color: #fff;
+            border: none; border-radius: 7px; font-size: 12px; font-weight: 700;
+            cursor: pointer; white-space: nowrap; transition: background 0.2s;
+        }
+        .btn-expand-start:hover { background: #38a169; }
+        .btn-expand-cancel {
+            padding: 7px 10px; background: rgba(255,255,255,0.07);
+            color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 7px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .btn-expand-cancel:hover { background: rgba(255,255,255,0.13); color: white; }
+        .expand-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+
+        @media (max-width: 768px) {
+            header { flex-direction: column; }
+            .tabs-header { flex-direction: column; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+
+    <header>
+        <div class="logo-section">
+            <img src="/onesource.png" alt="Onesource Logistics" class="logo">
+            <div class="header-title">
+                <h1>Inbound Put-away</h1>
+                <p>Put-away status and operations</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="refresh-badge">
+                <span class="pulse-dot"></span>
+                <span id="sync-text">Loading...</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="tabs-header">
+        <button class="tab-button active" onclick="switchTab('all-entries')">
+            📦 Put-away Status <span class="tab-count" id="count-all">—</span>
+        </button>
+        <button class="tab-button" id="new-entry-tab" onclick="switchTab('new-entry')">
+            ➕ New Put-away
+        </button>
+        <button class="tab-button" onclick="switchTab('pending-drafts')" style="display:none;">
+            📋 Pending <span class="tab-count" id="count-pending">—</span>
+        </button>
+        <button class="tab-button" onclick="switchTab('in-progress')">
+            ⏱️ In Progress <span class="tab-count" id="count-progress">—</span>
+        </button>
+        <button class="tab-button" onclick="switchTab('completed')">
+            ✅ Completed <span class="tab-count" id="count-completed">—</span>
+        </button>
+    </div>
+
+    <!-- Put-away Status Tab -->
+    <div id="all-entries" class="tab-content active">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">📦</div>
+                    <div>
+                        <div class="card-title">Put-away Status Overview</div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <button class="btn btn-primary" id="btn-toggle-add-jib" onclick="toggleAddJib()" style="height:36px;padding:0 16px;white-space:nowrap;">➕ Add JIB</button>
+                    <input type="text" id="all-search" placeholder="🔍 Search JIB#..."
+                        oninput="renderTab('all-entries')" style="width:240px;height:36px;">
+                </div>
+            </div>
+            <div id="add-jib-panel" style="display:none;margin-bottom:16px;">
+                <div style="padding:18px 20px;background:linear-gradient(135deg,rgba(66,153,225,0.10),rgba(255,255,255,0.02));border:1px solid rgba(66,153,225,0.28);border-radius:10px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                        <span style="font-size:15px;">➕</span>
+                        <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent-blue);">Add JIB to Put-away List</span>
+                        <button onclick="toggleAddJib()" style="margin-left:auto;background:rgba(255,255,255,0.08);border:none;color:var(--text-secondary);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;" title="Close">✕</button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:14px;align-items:end;">
+                        <div class="form-group">
+                            <label class="required">JIB#</label>
+                            <input type="text" id="add-jib" placeholder="JIB00000000"
+                                style="width:100%;height:40px;box-sizing:border-box;font-weight:700;letter-spacing:0.5px;" onkeydown="if(event.key==='Enter')addJibEntry()">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">QTY</label>
+                            <input type="number" id="add-qty" placeholder="Quantity" min="0"
+                                style="width:100%;height:40px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')addJibEntry()">
+                        </div>
+                        <div class="form-group">
+                            <label class="required"># OF PALLETS</label>
+                            <input type="number" id="add-pallets" placeholder="# of Pallets" min="1"
+                                style="width:100%;height:40px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')addJibEntry()">
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-primary" onclick="addJibEntry()" style="height:40px;white-space:nowrap;">➕ Add to Put-away List</button>
+                        </div>
+                    </div>
+                    <div id="add-entry-msg" style="margin-top:12px;font-size:13px;"></div>
+                </div>
+            </div>
+            <div class="table-container">
+                <div id="all-entries-table">
+                    <div class="empty-state"><div class="empty-icon">📦</div>Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Drafts Tab (hidden) -->
+    <div id="pending-drafts" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">📋</div>
+                    <div>
+                        <div class="card-title">Pending Put-away Drafts</div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <input type="text" id="pending-search" placeholder="🔍 Search JIB# or operator..."
+                        oninput="renderTab('pending-drafts')" style="width:240px;">
+                </div>
+            </div>
+            <div class="table-container">
+                <div id="pending-drafts-table">
+                    <div class="empty-state"><div class="empty-icon">📋</div>Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In Progress Tab -->
+    <div id="in-progress" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">⏱️</div>
+                    <div>
+                        <div class="card-title">In Progress</div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <input type="text" id="progress-search" placeholder="🔍 Search JIB#..."
+                        oninput="renderTab('in-progress')" style="width:240px;">
+                </div>
+            </div>
+            <div class="table-container">
+                <div id="in-progress-table">
+                    <div class="empty-state"><div class="empty-icon">⏱️</div>Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Tab -->
+    <div id="completed" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">✅</div>
+                    <div>
+                        <div class="card-title">Completed</div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <input type="text" id="completed-search" placeholder="🔍 Search JIB#..."
+                        oninput="renderTab('completed')" style="width:220px;">
+                    <input type="date" id="completed-from" onchange="renderTab('completed')">
+                    <input type="date" id="completed-to"   onchange="renderTab('completed')">
+                </div>
+            </div>
+            <div class="table-container">
+                <div id="completed-table">
+                    <div class="empty-state"><div class="empty-icon">✅</div>Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Put-away Tab -->
+    <div id="new-entry" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">➕</div>
+                    <div class="card-title">New Put-away</div>
+                </div>
+            </div>
+            <div id="new-entry-form-container">
+                <div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    const API_BASE = '/api';
+
+    let allData        = [];   // Inbound Put-away monitoring rows
+    let headers        = [];   // monitoring headers
+    let putawayRecords = [];   // Put-away Data rows (started/completed operations)
+    let putawayDrafts  = [];   // Pending Put-away rows (saved drafts)
+    let currentUser    = null;
+
+    // Detected column names
+    let colGrDate  = null;
+    let colJib     = null;
+    let colQty     = null;
+    let colPallets = null;
+
+    // Pre-select JIB when switching to New Put-away tab
+    let _preselectedJib = null;
+
+    // Inline expansion state
+    let _expandedJib = null;
+    let _cachedPickers = [];
+
+    // Form state
+    let _paOpCount = 0;
+    let _paOps     = [];
+    let _paJibRow  = null;
+
+    // ── Column detection ──────────────────────────────────────────────
+    function detectCols() {
+        colGrDate  = headers.find(h => /gr.?date/i.test(h.trim()))
+                  || headers.find(h => /^date$/i.test(h.trim()))
+                  || null;
+        colJib     = headers.find(h => /jib/i.test(h.trim())) || null;
+        colQty     = headers.find(h => /\bqty\b/i.test(h.trim()))
+                  || headers.find(h => /quantity/i.test(h.trim()))
+                  || null;
+        colPallets = headers.find(h => /#\s*of\s*pallet/i.test(h.trim()))
+                  || headers.find(h => /no\.?\s*of\s*pallet/i.test(h.trim()))
+                  || headers.find(h => /pallet/i.test(h.trim()))
+                  || null;
+    }
+
+    // ── Status + progress from Put-away Data ──────────────────────────
+    function getJibProgress(jib, totalPallets) {
+        if (!jib || jib === '—') return { completedPal: 0, ongoingPal: 0, completedPct: 0, ongoingPct: 0, status: 'pending' };
+        const recs     = putawayRecords.filter(r => r['JIB#'] === jib);
+        const done     = recs.filter(r => (r['End Put-away'] || '').trim());
+        const going    = recs.filter(r => (r['Start Put-away'] || '').trim() && !(r['End Put-away'] || '').trim());
+        const donePal  = done.reduce((s, r)  => s + (parseFloat(r['# of Pallets']) || 0), 0);
+        const goingPal = going.reduce((s, r) => s + (parseFloat(r['# of Pallets']) || 0), 0);
+        const total    = totalPallets || 0;
+
+        let status;
+        if (total > 0 && donePal >= total) status = 'completed';
+        else if (goingPal > 0 || donePal > 0) status = 'ongoing';
+        else status = 'pending';
+
+        const donePct  = total > 0 ? Math.min(100, Math.floor(donePal  / total * 100)) : (donePal  > 0 ? 100 : 0);
+        const goingPct = total > 0 ? Math.min(100 - donePct, Math.floor(goingPal / total * 100)) : 0;
+
+        return { completedPal: donePal, ongoingPal: goingPal, completedPct: donePct, ongoingPct: goingPct, status };
+    }
+
+    // ── Date helpers ─────────────────────────────────────────────────
+    // Locale-independent datetime string ("6/13/2026, 9:05:30 AM") so the
+    // server's new Date(...) parsing works regardless of the browser locale.
+    function fmtDateTime(d) {
+        return d.toLocaleString('en-US', {
+            month: 'numeric', day: 'numeric', year: 'numeric',
+            hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true
+        });
+    }
+
+    // GR Date stamp in the sheet's "DD-MMM" style (e.g. 13-Jun)
+    function todayGrDate() {
+        const d = new Date();
+        return `${d.getDate()}-${d.toLocaleString('en-US', { month: 'short' })}`;
+    }
+
+    function elapsedStr(start) {
+        const d = new Date(start);
+        if (isNaN(d)) return '—';
+        return Math.max(0, Math.floor((Date.now() - d) / 60000)) + 'm';
+    }
+
+    // ── Status table ─────────────────────────────────────────────────
+    function renderStatusTable(containerId, labelId, rows, showAction) {
+        const canAct = currentUser && ['admin','supervisor','processor'].includes(currentUser.role);
+
+        if (!rows.length) {
+            document.getElementById(containerId).innerHTML =
+                '<div class="empty-state"><div class="empty-icon">📭</div>No entries found</div>';
+            return;
+        }
+
+        const rows_html = rows.map(r => {
+            const grDate   = (colGrDate  ? r[colGrDate]  : '') || '—';
+            const jib      = (colJib     ? r[colJib]     : '') || '—';
+            const qty      = (colQty     ? r[colQty]     : '') || '—';
+            const totalPal = parseFloat(colPallets ? r[colPallets] : 0) || 0;
+            const { completedPct, ongoingPct, status } = getJibProgress(jib, totalPal);
+
+            const rGoing  = ongoingPct > 0 && completedPct === 0 ? '4px' : '0';
+            const rRight  = (completedPct + ongoingPct) >= 100 ? '4px' : '0';
+
+            const progressBar = `
+                <div class="progress-wrapper">
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width:${completedPct}%;background:var(--accent-green);border-radius:4px 0 0 4px;"></div>
+                        <div class="progress-bar-fill" style="width:${ongoingPct}%;background:var(--accent-orange);border-radius:${rGoing} ${rRight} ${rRight} ${rGoing};"></div>
+                    </div>
+                    <div class="progress-text">${completedPct}%</div>
+                </div>`;
+
+            const badge = status === 'completed'
+                ? `<span class="status-badge status-completed" onclick="filterAndSwitch('completed','${jib}')" title="View Completed">COMPLETED</span>`
+                : status === 'ongoing'
+                ? `<span class="status-badge status-ongoing" onclick="filterAndSwitch('in-progress','${jib}')" title="View In Progress">ON-GOING</span>`
+                : `<span class="status-badge status-pending">PENDING</span>`;
+
+            const isExpanded = (_expandedJib === jib);
+            const safeJibId  = jib.replace(/[^a-zA-Z0-9]/g, '_');
+
+            let actionCell = '';
+            if (canAct && showAction) {
+                if (status === 'completed') {
+                    actionCell = `<td style="text-align:center;color:var(--text-secondary);font-size:12px;">Done</td>`;
+                } else if (isExpanded) {
+                    actionCell = `<td style="text-align:center;"><button class="btn-putaway" style="background:rgba(255,255,255,0.08);color:var(--text-secondary);" onclick="cancelInlineExpand()">✕ Cancel</button></td>`;
+                } else {
+                    actionCell = `<td style="text-align:center;"><button class="btn-putaway" onclick="startPutaway('${jib}')">Put-away</button></td>`;
+                }
+            }
+
+            const { completedPal, ongoingPal } = getJibProgress(jib, totalPal);
+            const balance = Math.max(0, totalPal - completedPal - ongoingPal);
+
+            const expandRow = (canAct && showAction && isExpanded) ? `
+            <tr class="expand-row" id="expand-row-${safeJibId}">
+                <td></td>
+                <td>
+                    <div class="expand-field">
+                        <label>Operator</label>
+                        <select id="expand-op-${safeJibId}">
+                            <option value="">— Select Operator —</option>
+                            ${_cachedPickers.map(p => `<option value="${(p.name||p.code).replace(/"/g,'&quot;')}">${p.code} - ${p.name||p.code}</option>`).join('')}
+                        </select>
+                    </div>
+                </td>
+                <td style="text-align:center;">
+                    <div class="expand-field">
+                        <label>QTY</label>
+                        <div class="expand-qty-val">${qty}</div>
+                    </div>
+                </td>
+                <td style="text-align:center;">
+                    <div class="expand-field">
+                        <label>Pallets</label>
+                        <input type="number" id="expand-pal-${safeJibId}" value="${balance}" min="1">
+                    </div>
+                </td>
+                <td></td>
+                <td></td>
+                <td>
+                    <div class="expand-actions">
+                        <button class="btn-expand-start" onclick="submitInlinePutaway('${jib}','${safeJibId}','${qty}')">▶ Start Put-away</button>
+                        <button class="btn-expand-cancel" onclick="cancelInlineExpand()">✕ Cancel</button>
+                    </div>
+                </td>
+            </tr>` : '';
+
+            return `<tr style="${isExpanded ? 'background:rgba(56,178,172,0.05);' : ''}">
+                <td style="color:var(--text-secondary);font-size:12px;white-space:nowrap;">${grDate}</td>
+                <td><span class="jib-badge">${jib}</span></td>
+                <td style="text-align:center;">${qty}</td>
+                <td style="text-align:center;color:${totalPal?'var(--text-primary)':'var(--text-secondary)'};">${totalPal||'—'}</td>
+                <td>${progressBar}</td>
+                <td style="text-align:center;">${badge}</td>
+                ${actionCell}
+            </tr>${expandRow}`;
+        }).join('');
+
+        const actionHeader = (canAct && showAction) ? '<th style="width:110px;text-align:center;">ACTION</th>' : '';
+        document.getElementById(containerId).innerHTML = `
+            <table style="width:100%;">
+                <thead><tr>
+                    <th style="width:110px;">GR DATE</th>
+                    <th style="width:160px;">JIB#</th>
+                    <th style="width:100px;text-align:center;">QTY</th>
+                    <th style="width:120px;text-align:center;"># OF PALLETS</th>
+                    <th style="width:220px;">PROGRESS</th>
+                    <th style="width:130px;text-align:center;">STATUS</th>
+                    ${actionHeader}
+                </tr></thead>
+                <tbody>${rows_html}</tbody>
+            </table>`;
+    }
+
+    // ── Tab rendering ─────────────────────────────────────────────────
+    function renderTab(tabId) {
+        if (tabId === 'new-entry')      { buildNewEntryForm(); return; }
+        if (tabId === 'pending-drafts') { renderPendingDrafts(); return; }
+        if (tabId === 'in-progress')    { renderInProgress(); return; }
+        if (tabId === 'completed')      { renderCompleted(); return; }
+
+        const search = (document.getElementById('all-search')?.value || '').toLowerCase().trim();
+        let rows = allData.map(r => {
+            const jib      = (colJib     ? r[colJib]     : '') || '';
+            const totalPal = parseFloat(colPallets ? r[colPallets] : 0) || 0;
+            return { ...r, _jib: jib, _totalPal: totalPal, _prog: getJibProgress(jib, totalPal) };
+        }).filter(r => {
+            const hasDate = colGrDate  && (r[colGrDate]  || '').trim();
+            const hasQty  = colQty     && (r[colQty]     || '').trim();
+            const hasPal  = colPallets && (r[colPallets] || '').trim();
+            return (hasDate || hasQty || hasPal) && r._prog.status !== 'completed';
+        });
+
+        if (search) rows = rows.filter(r => r._jib.toLowerCase().includes(search));
+
+        renderStatusTable('all-entries-table', 'all-count-label', rows, true);
+    }
+
+    // ── Pending drafts tab ────────────────────────────────────────────
+    function renderPendingDrafts() {
+        const canAct = currentUser && ['admin','supervisor','processor'].includes(currentUser.role);
+        const search = (document.getElementById('pending-search')?.value || '').toLowerCase().trim();
+
+        let rows = putawayDrafts;
+        if (search) rows = rows.filter(d =>
+            (d.jib || '').toLowerCase().includes(search) ||
+            (d.operator || '').toLowerCase().includes(search));
+
+        const el = document.getElementById('pending-drafts-table');
+        if (!rows.length) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>No pending drafts</div>';
+            return;
+        }
+
+        const rows_html = rows.map(d => `<tr>
+            <td><span class="jib-badge">${d.jib}</span></td>
+            <td style="font-weight:600;">${d.operator}</td>
+            <td style="text-align:center;">${d.qty || '—'}</td>
+            <td style="text-align:center;">${d.pallets || '—'}</td>
+            <td style="color:var(--text-secondary);font-size:12px;">${d.user || '—'}</td>
+            <td style="color:var(--text-secondary);font-size:12px;white-space:nowrap;">${d.timestamp || '—'}</td>
+            ${canAct ? `<td style="text-align:center;white-space:nowrap;">
+                <button class="btn-putaway" onclick="startDraft('${d.id}')">▶ Start</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteDraft('${d.id}')">✕</button>
+            </td>` : ''}
+        </tr>`).join('');
+
+        el.innerHTML = `
+            <table style="width:100%;">
+                <thead><tr>
+                    <th>JIB#</th><th>OPERATOR</th>
+                    <th style="text-align:center;">QTY</th><th style="text-align:center;">PALLETS</th>
+                    <th>SAVED BY</th><th>SAVED AT</th>
+                    ${canAct ? '<th style="width:150px;text-align:center;">ACTION</th>' : ''}
+                </tr></thead>
+                <tbody>${rows_html}</tbody>
+            </table>`;
+    }
+
+    // ── In Progress tab — grouped by JIB# ────────────────────────────
+    function renderInProgress() {
+        const canAct    = currentUser && ['admin','supervisor','processor'].includes(currentUser.role);
+        const canDelete = currentUser && ['admin','supervisor'].includes(currentUser.role);
+        const search = (document.getElementById('progress-search')?.value || '').toLowerCase().trim();
+
+        let recs = putawayRecords.filter(r =>
+            (r['Start Put-away'] || '').trim() && !(r['End Put-away'] || '').trim());
+        if (search) recs = recs.filter(r =>
+            (r['JIB#'] || '').toLowerCase().includes(search) ||
+            (r['OPERATOR'] || '').toLowerCase().includes(search));
+
+        const el = document.getElementById('in-progress-table');
+        if (!recs.length) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">⏱️</div>No put-aways in progress</div>';
+            return;
+        }
+
+        const groups = {};
+        recs.forEach(r => {
+            const jib = r['JIB#'] || '—';
+            if (!groups[jib]) groups[jib] = [];
+            groups[jib].push(r);
+        });
+
+        el.innerHTML = Object.entries(groups).map(([jib, ops]) => {
+            const totalPal = ops.reduce((s, r) => s + (parseFloat(r['# of Pallets']) || 0), 0);
+            const grDate   = ops[0]['GR Date'] || '—';
+            const shift    = ops[0]['Shift']   || '—';
+
+            const opRows = ops.map(r => {
+                const safeId   = r.id.replace(/'/g, '');
+                const startD   = new Date(r['Start Put-away']);
+                const startStr = isNaN(startD)
+                    ? (r['Start Put-away'] || '—')
+                    : startD.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                const elapsedMins    = isNaN(startD) ? null : Math.max(0, Math.floor((Date.now() - startD) / 60000));
+                const elapsedDisplay = elapsedMins !== null ? elapsedMins + 'm' : '—';
+                const elapsedColor   = elapsedMins !== null && elapsedMins > 120 ? '#f56565' : 'var(--accent-teal)';
+
+                const actionBtns = canAct ? `
+                    <div style="display:flex;gap:8px;flex-shrink:0;">
+                        <button class="btn btn-sm" style="background:var(--accent-green);color:#fff;" onclick="endPutaway('${safeId}')">✅ End</button>
+                        ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="deletePutawayRecord('${safeId}')">🗑️</button>` : ''}
+                    </div>` : '';
+
+                return `
+                    <div class="op-row">
+                        <div class="op-cols">
+                            <div>
+                                <div class="op-col-label">Staff</div>
+                                <div class="op-col-val">${r['OPERATOR'] || '—'}</div>
+                                ${r['Start User'] ? `<div class="op-col-sub">👤 ${r['Start User']}</div>` : ''}
+                            </div>
+                            <div>
+                                <div class="op-col-label">Pallets</div>
+                                <div class="op-col-val">${r['# of Pallets'] || '—'}</div>
+                            </div>
+                            <div>
+                                <div class="op-col-label">Started</div>
+                                <div style="font-size:13px;color:var(--text-secondary);">${startStr}</div>
+                            </div>
+                            <div>
+                                <div class="op-col-label">Elapsed</div>
+                                <div class="op-col-val" style="color:${elapsedColor};">${elapsedDisplay}</div>
+                            </div>
+                        </div>
+                        ${actionBtns}
+                    </div>`;
+            }).join('');
+
+            return `
+                <div class="jib-group">
+                    <div class="jib-accent progress"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <div class="jib-group-title">JIB# ${jib}</div>
+                            <div class="jib-group-sub">GR Date: ${grDate} &nbsp;·&nbsp; Shift: ${shift}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">In Progress</div>
+                            <div style="font-weight:700;color:var(--accent-teal);background:rgba(56,178,172,0.1);padding:4px 10px;border-radius:4px;display:inline-block;">${totalPal} pallets</div>
+                        </div>
+                    </div>
+                    <div class="jib-inner">
+                        <div class="jib-inner-hdr">
+                            <span>IN PROGRESS (${ops.length} OPERATOR${ops.length !== 1 ? 'S' : ''})</span>
+                            <span>TOTAL: ${totalPal} pallets</span>
+                        </div>
+                        ${opRows}
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    // ── Completed tab — grouped by JIB# ──────────────────────────────
+    function renderCompleted() {
+        const canDelete = currentUser && ['admin','supervisor'].includes(currentUser.role);
+        const search = (document.getElementById('completed-search')?.value || '').toLowerCase().trim();
+        const from   = document.getElementById('completed-from')?.value;
+        const to     = document.getElementById('completed-to')?.value;
+
+        let recs = putawayRecords.filter(r => (r['End Put-away'] || '').trim());
+        if (search) recs = recs.filter(r =>
+            (r['JIB#'] || '').toLowerCase().includes(search) ||
+            (r['OPERATOR'] || '').toLowerCase().includes(search));
+        if (from || to) {
+            recs = recs.filter(r => {
+                const d = new Date(r['End Put-away']);
+                if (isNaN(d)) return true;
+                if (from && d < new Date(from)) return false;
+                if (to   && d > new Date(to + 'T23:59:59')) return false;
+                return true;
+            });
+        }
+
+        const el = document.getElementById('completed-table');
+        if (!recs.length) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div>No completed put-aways</div>';
+            return;
+        }
+
+        const groups = {};
+        recs.forEach(r => {
+            const jib = r['JIB#'] || '—';
+            if (!groups[jib]) groups[jib] = [];
+            groups[jib].push(r);
+        });
+
+        el.innerHTML = Object.entries(groups).map(([jib, ops]) => {
+            const totalPal = ops.reduce((s, r) => s + (parseFloat(r['# of Pallets']) || 0), 0);
+            const grDate   = ops[0]['GR Date'] || '—';
+            const shift    = ops[0]['Shift']   || '—';
+
+            const opRows = ops.map(r => {
+                const safeId  = r.id.replace(/'/g, '');
+                const rawDur  = parseFloat(r['Duration']);
+                const durMins = !isNaN(rawDur) ? Math.round(rawDur * 60) + 'm' : '—';
+                const startD  = new Date(r['Start Put-away']);
+                const endD    = new Date(r['End Put-away']);
+                const startStr = isNaN(startD)
+                    ? (r['Start Put-away'] || '—')
+                    : startD.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                const endStr   = isNaN(endD)
+                    ? (r['End Put-away'] || '—')
+                    : endD.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                const del = canDelete
+                    ? `<button class="btn btn-sm btn-danger" onclick="deletePutawayRecord('${safeId}')">🗑️</button>`
+                    : '';
+
+                return `
+                    <div class="op-row">
+                        <div style="flex:1;min-width:180px;">
+                            <div style="font-weight:700;font-size:14px;">${r['OPERATOR'] || '—'}</div>
+                            <div style="font-size:12px;color:var(--text-secondary);">${r['# of Pallets'] || '—'} pallets &nbsp;·&nbsp; QTY: ${r['QTY'] || '—'}</div>
+                            <div style="font-size:10px;color:var(--accent-green);margin-top:4px;">👤 Start: ${r['Start User'] || '—'} &nbsp;·&nbsp; End: ${r['End User'] || '—'}</div>
+                        </div>
+                        <div style="text-align:right;flex-shrink:0;">
+                            <div style="font-weight:700;font-size:14px;color:var(--accent-green);">${durMins}</div>
+                            <div style="font-size:11px;color:var(--text-secondary);">${startStr} – ${endStr}</div>
+                        </div>
+                        ${del}
+                    </div>`;
+            }).join('');
+
+            return `
+                <div class="jib-group">
+                    <div class="jib-accent done"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <div class="jib-group-title">JIB# ${jib}</div>
+                            <div class="jib-group-sub">GR Date: ${grDate} &nbsp;·&nbsp; Shift: ${shift}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">Completed</div>
+                            <div style="font-weight:700;color:var(--accent-green);background:rgba(72,187,120,0.1);padding:4px 10px;border-radius:4px;display:inline-block;">✅ ${totalPal} pallets</div>
+                        </div>
+                    </div>
+                    <div class="jib-inner">
+                        <div class="jib-inner-hdr">
+                            <span>COMPLETED BY (${ops.length} STAFF)</span>
+                            <span>TOTAL: ${totalPal} pallets</span>
+                        </div>
+                        ${opRows}
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    // ── Draft / put-away actions ──────────────────────────────────────
+    async function startDraft(id) {
+        const d = putawayDrafts.find(x => String(x.id) === String(id));
+        if (!d) return;
+        if (!confirm(`Start put-away for ${d.jib}?\nOperator: ${d.operator}, Pallets: ${d.pallets || '?'}`)) return;
+        try {
+            const res = await AuthGuard.authFetch(`${API_BASE}/putaway-orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jib: d.jib, operator: d.operator, pallets: d.pallets,
+                    startTime: fmtDateTime(new Date()), draftId: d.id
+                }),
+            });
+            if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+            localStorage.setItem('inbound_putaway_tab', 'in-progress');
+            await loadData(false);
+            switchTab('in-progress');
+        } catch (e) {
+            alert('Failed to start put-away: ' + e.message);
+        }
+    }
+
+    async function deleteDraft(id) {
+        if (!confirm('Delete this draft?')) return;
+        try {
+            const res = await AuthGuard.authFetch(`${API_BASE}/putaway-drafts/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+            await loadData(false);
+        } catch (e) {
+            alert('Failed to delete draft: ' + e.message);
+        }
+    }
+
+    async function endPutaway(id) {
+        const r = putawayRecords.find(x => x.id === id);
+        if (!r) return;
+        if (!confirm(`End put-away for ${r['JIB#']}?\nOperator: ${r['OPERATOR']}, Pallets: ${r['# of Pallets'] || '?'}`)) return;
+        try {
+            const res = await AuthGuard.authFetch(`${API_BASE}/putaway-orders/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ endTime: fmtDateTime(new Date()) }),
+            });
+            if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+            await loadData(false);
+        } catch (e) {
+            alert('Failed to end put-away: ' + e.message);
+        }
+    }
+
+    async function cancelPutaway(id, jib, operator) {
+        if (!confirm(`Cancel in-progress put-away for ${jib}?\nOperator: ${operator}\n\nThis will clear the start time and mark the record as Cancelled.`)) return;
+        try {
+            const res = await AuthGuard.authFetch(`${API_BASE}/putaway-orders/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+            await loadData(false);
+        } catch (e) {
+            alert('Failed to cancel put-away: ' + e.message);
+        }
+    }
+
+    async function deletePutawayRecord(id) {
+        const r = putawayRecords.find(x => x.id === id);
+        if (!r) return;
+        const isCompleted = !!(r['End Put-away'] || '').trim();
+        const label = isCompleted ? 'completed' : 'in-progress';
+        if (!confirm(`Delete this ${label} put-away record?\nOperator: ${r['OPERATOR'] || '?'}\nJIB#: ${r['JIB#'] || '?'}\n\nThis permanently removes the record from the sheet.`)) return;
+        try {
+            const res = await AuthGuard.authFetch(`${API_BASE}/putaway-records/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error((await res.json()).error || 'Request failed');
+            await loadData(false);
+        } catch (e) {
+            alert('Failed to delete record: ' + e.message);
+        }
+    }
+
+    function updateTabCounts() {
+        const going = putawayRecords.filter(r => (r['Start Put-away'] || '').trim() && !(r['End Put-away'] || '').trim()).length;
+        const done  = putawayRecords.filter(r => (r['End Put-away'] || '').trim()).length;
+        const activeCount = allData.filter(r => {
+            const jib      = (colJib     ? r[colJib]     : '') || '';
+            const totalPal = parseFloat(colPallets ? r[colPallets] : 0) || 0;
+            const hasDate  = colGrDate  && (r[colGrDate]  || '').trim();
+            const hasQty   = colQty     && (r[colQty]     || '').trim();
+            const hasPal   = colPallets && (r[colPallets] || '').trim();
+            return (hasDate || hasQty || hasPal) && getJibProgress(jib, totalPal).status !== 'completed';
+        }).length;
+        document.getElementById('count-all').textContent       = activeCount;
+        document.getElementById('count-pending').textContent   = putawayDrafts.length;
+        document.getElementById('count-progress').textContent  = going;
+        document.getElementById('count-completed').textContent = done;
+    }
+
+    function filterAndSwitch(tabId, jib) {
+        const searchMap = { 'in-progress': 'progress-search', 'completed': 'completed-search' };
+        const el = document.getElementById(searchMap[tabId]);
+        if (el) el.value = jib;
+        switchTab(tabId);
+    }
+
+    // ── Tab switching ─────────────────────────────────────────────────
+    function switchTab(tabId) {
+        if (!document.getElementById(tabId)) tabId = 'all-entries';
+        localStorage.setItem('inbound_putaway_tab', tabId);
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.querySelector(`[onclick="switchTab('${tabId}')"]`)?.classList.add('active');
+        renderTab(tabId);
+    }
+
+    function startPutaway(jib) {
+        _expandedJib = (_expandedJib === jib) ? null : jib;
+        renderTab('all-entries');
+    }
+
+    function cancelInlineExpand() {
+        _expandedJib = null;
+        renderTab('all-entries');
+    }
+
+    async function submitInlinePutaway(jib, safeJibId, qty) {
+        const operator = document.getElementById(`expand-op-${safeJibId}`)?.value?.trim();
+        const pallets  = document.getElementById(`expand-pal-${safeJibId}`)?.value?.trim();
+        if (!operator) { alert('Please select an operator.'); return; }
+        if (!pallets)  { alert('Please enter pallets count.'); return; }
+
+        const startBtn = document.querySelector(`#expand-row-${safeJibId} .btn-expand-start`);
+        if (startBtn) { startBtn.disabled = true; startBtn.textContent = '⏳ Starting...'; }
+
+        try {
+            const res = await AuthGuard.authFetch(`${API_BASE}/putaway-orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jib, operator, qty, pallets, startTime: fmtDateTime(new Date()) }),
+            });
+            if (!res.ok) throw new Error(await res.text());
+            _expandedJib = null;
+            await loadData(false);
+        } catch (e) {
+            alert('Failed to start put-away: ' + e.message);
+            if (startBtn) { startBtn.disabled = false; startBtn.textContent = '▶ Start Put-away'; }
+        }
+    }
+
+    // ── Data loading ──────────────────────────────────────────────────
+    async function loadData(showLoading = true) {
+        if (showLoading) {
+            ['all-entries-table','pending-drafts-table','in-progress-table','completed-table'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>';
+            });
+        }
+        try {
+            const [r1, r2, r3] = await Promise.all([
+                AuthGuard.authFetch(`${API_BASE}/inbound-putaway/data`),
+                AuthGuard.authFetch(`${API_BASE}/putaway-data`),
+                AuthGuard.authFetch(`${API_BASE}/putaway-drafts`)
+            ]);
+            const j1 = await r1.json();
+            const j2 = r2.ok ? await r2.json() : { data: [] };
+            const j3 = r3.ok ? await r3.json() : [];
+
+            headers        = j1.headers || [];
+            allData        = j1.data    || [];
+            putawayRecords = j2.data    || [];
+            putawayDrafts  = Array.isArray(j3) ? j3 : [];
+
+            if (!_cachedPickers.length) {
+                AuthGuard.authFetch('/api/pickers').then(r => r.json())
+                    .then(p => { _cachedPickers = (p || []).filter(x => x.active !== false); })
+                    .catch(() => {});
+            }
+
+            detectCols();
+            updateTabCounts();
+
+            const activeTab = localStorage.getItem('inbound_putaway_tab') || 'all-entries';
+            renderTab(activeTab);
+            document.getElementById('sync-text').textContent = `Live Sync ${new Date().toLocaleTimeString()}`;
+        } catch (e) {
+            console.error('Inbound load error:', e);
+            document.getElementById('sync-text').textContent = 'Connection error';
+            ['all-entries-table','pending-drafts-table','in-progress-table','completed-table'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div>${e.message}</div>`;
+            });
+        }
+    }
+
+    // ── Next JIB suggestion (last entry + 1) ─────────────────────────
+    function getNextJib() {
+        for (let i = allData.length - 1; i >= 0; i--) {
+            const m = ((colJib ? allData[i][colJib] : '') || '').match(/JIB(\d+)/i);
+            if (m) return 'JIB' + String(parseInt(m[1]) + 1).padStart(8, '0');
+        }
+        return '';
+    }
+
+    // ── New Put-away Form ─────────────────────────────────────────────
+    function buildNewEntryForm() {
+        if (!headers.length) return;
+        const canEdit = currentUser && ['admin','supervisor','processor'].includes(currentUser.role);
+        if (!canEdit) {
+            document.getElementById('new-entry-form-container').innerHTML =
+                '<div class="empty-state"><div class="empty-icon">🔒</div>You don\'t have permission to add entries.</div>';
+            return;
+        }
+
+        const jibOptions = colJib
+            ? [...new Set(allData.filter(r => {
+                const jib      = (colJib     ? r[colJib]     : '') || '';
+                const totalPal = parseFloat(colPallets ? r[colPallets] : 0) || 0;
+                const hasDate  = colGrDate  && (r[colGrDate]  || '').trim();
+                const hasQty   = colQty     && (r[colQty]     || '').trim();
+                const hasPal   = colPallets && (r[colPallets] || '').trim();
+                return (hasDate || hasQty || hasPal) && getJibProgress(jib, totalPal).status !== 'completed';
+            }).map(r => r[colJib]).filter(Boolean))].map(j => ({ value: j, text: j }))
+            : [];
+
+        document.getElementById('new-entry-form-container').innerHTML = `
+            <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:20px;">
+                <div class="form-group">
+                    <label class="required">SELECT JIB#</label>
+                    <div id="jib-select-container" class="searchable-select-container">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="jib-search" placeholder="🔍 Search JIB#..." autocomplete="off">
+                            <i>▼</i>
+                        </div>
+                        <div id="jib-options" class="options-list"></div>
+                    </div>
+                    <input type="hidden" id="nf-jib">
+                </div>
+                <div class="form-group">
+                    <label>TOTAL QTY</label>
+                    <input type="text" id="nf-total-qty" placeholder="Auto-filled" readonly style="width:100%;box-sizing:border-box;opacity:.6;">
+                </div>
+                <div class="form-group">
+                    <label>TOTAL PALLETS</label>
+                    <input type="text" id="nf-total-pallets" placeholder="Auto-filled" readonly style="width:100%;box-sizing:border-box;opacity:.6;">
+                </div>
+                <div class="form-group">
+                    <label>BALANCE TO PUT-AWAY (Pallets)</label>
+                    <input type="text" id="nf-balance-pallets" placeholder="Auto-filled" readonly style="width:100%;box-sizing:border-box;opacity:.6;">
+                </div>
+            </div>
+            <div id="putaway-operator-blocks"></div>
+            <div class="btn-group" style="margin-top:16px;">
+                <button class="btn btn-primary" onclick="addPutawayOperator()">➕ Add Operator</button>
+                <button class="btn btn-secondary" onclick="clearPutawayForm()">🔄 Clear Form</button>
+            </div>
+            <div id="new-entry-msg" style="margin-top:12px;font-size:13px;"></div>`;
+
+        _paOpCount = 0; _paOps = []; _paJibRow = null;
+
+        setupSearchableSelect({
+            containerId: 'jib-select-container',
+            inputId:     'jib-search',
+            optionsId:   'jib-options',
+            hiddenId:    'nf-jib',
+            options: jibOptions.length ? jibOptions : [{ value: '', text: 'No JIB# — add one first' }],
+            onSelect: val => {
+                if (!val) return;
+                const row = allData.find(r => colJib && r[colJib] === val);
+                _paJibRow = row || null;
+                const eq = document.getElementById('nf-total-qty');
+                const ep = document.getElementById('nf-total-pallets');
+                if (eq) eq.value = (row && colQty)     ? (row[colQty]     || '') : '';
+                if (ep) ep.value = (row && colPallets)  ? (row[colPallets] || '') : '';
+                updatePaBalance();
+            }
+        });
+
+        // Handle pre-selected JIB (from "Put-away" action button)
+        if (_preselectedJib) {
+            const jib = _preselectedJib;
+            _preselectedJib = null;
+            setTimeout(() => {
+                const si = document.getElementById('jib-search');
+                const hi = document.getElementById('nf-jib');
+                if (si && hi) {
+                    si.value = jib; hi.value = jib;
+                    const row = allData.find(r => colJib && r[colJib] === jib);
+                    _paJibRow = row || null;
+                    if (row) {
+                        const eq = document.getElementById('nf-total-qty');
+                        const ep = document.getElementById('nf-total-pallets');
+                        if (eq) eq.value = colQty     ? (row[colQty]     || '') : '';
+                        if (ep) ep.value = colPallets  ? (row[colPallets] || '') : '';
+                        updatePaBalance();
+                    }
+                }
+            }, 50);
+        }
+    }
+
+    function clearPutawayForm() {
+        ['jib-search','nf-jib','nf-total-qty','nf-total-pallets','nf-balance-pallets'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.value = ''; el.classList?.remove('balance-warn'); }
+        });
+        _paOps.slice().forEach(op => removePutawayOperator(op.id));
+        _paOps = []; _paOpCount = 0; _paJibRow = null;
+        const msg = document.getElementById('new-entry-msg');
+        if (msg) msg.textContent = '';
+        addPutawayOperator();
+    }
+
+    // ── Add JIB (Put-away Status tab) ─────────────────────────────────
+    function toggleAddJib() {
+        const panel = document.getElementById('add-jib-panel');
+        if (!panel) return;
+        if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+        panel.style.display = 'block';
+        const jibEl = document.getElementById('add-jib');
+        if (jibEl) jibEl.value = getNextJib();
+        jibEl?.focus();
+    }
+
+    async function addJibEntry() {
+        const jib     = (document.getElementById('add-jib')?.value || '').trim().toUpperCase();
+        const qty     = (document.getElementById('add-qty')?.value || '').trim();
+        const pallets = (document.getElementById('add-pallets')?.value || '').trim();
+
+        if (!jib)     { alert('Please enter a JIB#.'); return; }
+        if (!pallets) { alert('Please enter # of Pallets.'); return; }
+
+        if (colJib && allData.some(r => (r[colJib] || '').trim().toUpperCase() === jib)) {
+            alert(`${jib} already exists in the list.`);
+            return;
+        }
+
+        const grDate = todayGrDate();
+
+        const msg = document.getElementById('add-entry-msg');
+        msg.textContent = '⏳ Saving...';
+        msg.style.color = 'var(--accent-blue)';
+
+        try {
+            const res = await AuthGuard.authFetch(`${API_BASE}/inbound-putaway/rows`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ values: [grDate, jib, '', '', '', qty, pallets] }),
+            });
+            if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+
+            // Update local state so getNextJib() recalculates and the row shows
+            if (colJib) allData.push({ [colGrDate || 'GR Date']: grDate, [colJib]: jib, [colQty || 'QTY']: qty, [colPallets || '# of Pallets']: pallets });
+            updateTabCounts();
+            renderTab('all-entries');
+
+            msg.textContent = `✅ ${jib} added.`;
+            msg.style.color = 'var(--accent-green)';
+
+            // Suggest next JIB, clear qty/pallets
+            document.getElementById('add-jib').value    = getNextJib();
+            document.getElementById('add-qty').value    = '';
+            document.getElementById('add-pallets').value = '';
+            document.getElementById('add-qty').focus();
+        } catch (e) {
+            msg.textContent = '❌ Error: ' + e.message;
+            msg.style.color = 'var(--danger)';
+        }
+    }
+
+    function updatePaBalance() {
+        const total    = parseFloat(document.getElementById('nf-total-pallets')?.value) || 0;
+        const assigned = _paOps.reduce((s, op) => s + (parseFloat(document.getElementById(`pa-pallets-${op.id}`)?.value) || 0), 0);
+        const el = document.getElementById('nf-balance-pallets');
+        if (!el) return;
+        el.value = Math.max(0, total - assigned);
+        el.classList.toggle('balance-warn', total - assigned < 0);
+    }
+
+    function addPutawayOperator() {
+        _paOpCount++;
+        const id = _paOpCount;
+        _paOps.push({ id });
+        const block = document.createElement('div');
+        block.className = 'assignment-block';
+        block.id = `pa-block-${id}`;
+        block.innerHTML = `
+            <div class="assignment-header">
+                <span class="assignment-title">👤 OPERATOR ASSIGNMENT #${id}</span>
+                <button class="btn btn-sm btn-danger" onclick="removePutawayOperator(${id})">✕ Remove</button>
+            </div>
+            <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                    <label class="required">OPERATOR</label>
+                    <div id="pa-op-container-${id}" class="searchable-select-container">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="pa-op-search-${id}" placeholder="🔍 Search Operator..." autocomplete="off">
+                            <i>▼</i>
+                        </div>
+                        <div id="pa-op-options-${id}" class="options-list"></div>
+                    </div>
+                    <input type="hidden" id="pa-operator-${id}">
+                </div>
+                <div class="form-group">
+                    <label class="required">PALLETS</label>
+                    <input type="number" id="pa-pallets-${id}" placeholder="# of Pallets" min="1"
+                        oninput="updatePaBalance()" style="width:100%;">
+                </div>
+            </div>
+            <div class="assignment-footer">
+                <button class="btn btn-draft" onclick="submitPutaway('Draft',${id})">💾 Draft</button>
+                <button class="btn btn-start" onclick="submitPutaway('In Progress',${id})">▶ Start Put-away</button>
+            </div>`;
+        document.getElementById('putaway-operator-blocks').appendChild(block);
+
+        // Pre-fill this operator's pallets with whatever balance is left to put away
+        const bal = parseFloat(document.getElementById('nf-balance-pallets')?.value) || 0;
+        if (bal > 0) {
+            const palEl = document.getElementById(`pa-pallets-${id}`);
+            if (palEl) palEl.value = bal;
+            updatePaBalance();
+        }
+
+        AuthGuard.authFetch('/api/pickers').then(r => r.json()).then(pickers => {
+            setupSearchableSelect({
+                containerId: `pa-op-container-${id}`,
+                inputId:     `pa-op-search-${id}`,
+                optionsId:   `pa-op-options-${id}`,
+                hiddenId:    `pa-operator-${id}`,
+                options: pickers.filter(p => p.active !== false).map(p => ({
+                    value: p.name || p.code,
+                    text:  p.name ? `${p.code} - ${p.name}` : p.code,
+                    group: p.shift ? `Shift ${p.shift}` : 'Other'
+                }))
+            });
+        }).catch(() => {});
+    }
+
+    function removePutawayOperator(id) {
+        document.getElementById(`pa-block-${id}`)?.remove();
+        _paOps = _paOps.filter(op => op.id !== id);
+        updatePaBalance();
+    }
+
+    function setupSearchableSelect(config) {
+        const container   = document.getElementById(config.containerId);
+        const searchInput = document.getElementById(config.inputId);
+        const optionsList = document.getElementById(config.optionsId);
+        const hiddenInput = document.getElementById(config.hiddenId);
+        if (!container) return;
+
+        let filtered = config.options;
+
+        function renderOptions() {
+            optionsList.innerHTML = '';
+            if (!filtered.length) { optionsList.innerHTML = '<div class="no-results">No matches found</div>'; return; }
+            let lastGroup = null;
+            filtered.forEach(opt => {
+                if (opt.group && opt.group !== lastGroup) {
+                    const gl = document.createElement('div');
+                    gl.className = 'option-group-label';
+                    gl.textContent = opt.group;
+                    optionsList.appendChild(gl);
+                    lastGroup = opt.group;
+                }
+                const item = document.createElement('div');
+                item.className = 'option-item';
+                item.textContent = opt.text;
+                item.onclick = () => select(opt);
+                optionsList.appendChild(item);
+            });
+        }
+
+        function select(opt) {
+            searchInput.value = opt.text;
+            hiddenInput.value = opt.value;
+            optionsList.classList.remove('active');
+            if (config.onSelect) config.onSelect(opt.value);
+        }
+
+        searchInput.onfocus = () => { optionsList.classList.add('active'); renderOptions(); };
+        searchInput.oninput = e => {
+            const term = e.target.value.toLowerCase();
+            filtered = config.options.filter(o => o.text.toLowerCase().includes(term) || (o.group || '').toLowerCase().includes(term));
+            renderOptions();
+        };
+        document.addEventListener('click', e => { if (!container.contains(e.target)) optionsList.classList.remove('active'); });
+    }
+
+    async function submitPutaway(status, opId) {
+        const jib      = document.getElementById('nf-jib')?.value?.trim();
+        const operator = document.getElementById(`pa-operator-${opId}`)?.value?.trim();
+        const pallets  = document.getElementById(`pa-pallets-${opId}`)?.value?.trim();
+        if (!jib)      { alert('Please select a JIB#.'); return; }
+        if (!operator) { alert('Please select an operator.'); return; }
+        if (!pallets)  { alert('Please enter pallets count.'); return; }
+
+        const block = document.getElementById(`pa-block-${opId}`);
+        const btns = block ? block.querySelectorAll('.btn-draft, .btn-start') : [];
+        btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
+
+        const msg = document.getElementById('new-entry-msg');
+        msg.textContent = '⏳ Saving...';
+        msg.style.color = 'var(--accent-blue)';
+
+        const qty     = (_paJibRow && colQty) ? (_paJibRow[colQty] || '') : '';
+        const isDraft = status === 'Draft';
+
+        try {
+            const res = await AuthGuard.authFetch(
+                isDraft ? `${API_BASE}/putaway-drafts` : `${API_BASE}/putaway-orders`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(isDraft
+                        ? { jib, operator, qty, pallets }
+                        : { jib, operator, qty, pallets, startTime: fmtDateTime(new Date()) }),
+                }
+            );
+            if (!res.ok) throw new Error(await res.text());
+            msg.textContent = isDraft ? '✅ Saved to Pending Put-away.' : '✅ Put-away started.';
+            msg.style.color = 'var(--accent-green)';
+            removePutawayOperator(opId);
+            if (_paOps.length === 0) addPutawayOperator();
+            updatePaBalance();
+            await loadData(false);
+        } catch (e) {
+            msg.textContent = '❌ Error: ' + e.message;
+            msg.style.color = 'var(--danger)';
+            btns.forEach(b => { b.disabled = false; b.style.opacity = ''; });
+        }
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────
+    window.onload = async function () {
+        const user = await AuthGuard.init();
+        if (!user) return;
+        currentUser = user;
+
+        if (['viewer','visitor'].includes(user.role)) {
+            document.getElementById('new-entry-tab').style.display = 'none';
+            const addBtn = document.getElementById('btn-toggle-add-jib');
+            if (addBtn) addBtn.style.display = 'none';
+        }
+
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        document.getElementById('completed-from').value = todayStr;
+        document.getElementById('completed-to').value   = todayStr;
+
+        const savedTab = localStorage.getItem('inbound_putaway_tab') || 'all-entries';
+        switchTab(savedTab);
+
+        await loadData();
+
+        setInterval(async () => {
+            if (!document.hidden) {
+                await loadData(false);
+                const t = localStorage.getItem('inbound_putaway_tab') || 'all-entries';
+                renderTab(t);
+            }
+        }, 60000);
+    };
+</script>
+</body>
+</html>

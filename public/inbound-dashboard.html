@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/auth.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-dark: #1a1d23;
+            --bg-card: #25292f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-blue: #4299e1;
+            --accent-green: #48bb78;
+            --accent-orange: #ed8936;
+            --accent-teal: #38b2ac;
+            --accent-purple: #9f7aea;
+            --accent-yellow: #ecc94b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+
+        .container { max-width: 1600px; margin: 0 auto; padding: 16px; }
+
+        /* ── Header ─────────────────────────────────────────────────────── */
+        header {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo-section { display: flex; align-items: center; gap: 16px; }
+        .logo { height: 40px; }
+        .header-title { border-left: 3px solid var(--accent-teal); padding-left: 14px; }
+        .header-title h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .header-title p { font-size: 14px; color: var(--text-secondary); }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .refresh-badge {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px;
+            background: rgba(56,178,172,0.1);
+            border-radius: 8px; font-size: 13px; font-weight: 500;
+            color: var(--accent-teal);
+        }
+        .pulse-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent-teal);
+            animation: pulseTeal 2s infinite;
+        }
+        @keyframes pulseTeal {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(56,178,172,0.4); }
+            50%       { opacity: 0.7; box-shadow: 0 0 0 5px rgba(56,178,172,0); }
+        }
+
+        /* ── Section label ──────────────────────────────────────────────── */
+        .section-label {
+            font-size: 10px; font-weight: 700; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 8px; padding-left: 2px;
+        }
+
+        /* ── KPI Grid ───────────────────────────────────────────────────── */
+        .kpi-section { margin-bottom: 16px; }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        .kpi-grid-5 { grid-template-columns: repeat(5, 1fr); }
+        .kpi-grid-6 { grid-template-columns: repeat(6, 1fr); }
+        @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } .kpi-grid-5 { grid-template-columns: repeat(3,1fr); } .kpi-grid-6 { grid-template-columns: repeat(3,1fr); } }
+        @media (max-width: 600px)  { .kpi-grid { grid-template-columns: 1fr; } .kpi-grid-5 { grid-template-columns: 1fr; } .kpi-grid-6 { grid-template-columns: 1fr; } }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .kpi-label {
+            font-size: 10px; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .kpi-value { font-size: 28px; font-weight: 700; line-height: 1.1; margin-bottom: 2px; }
+        .kpi-unit  { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .kpi-sub   { font-size: 11px; color: var(--text-secondary); }
+
+        /* ── Charts row ─────────────────────────────────────────────────── */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+
+        .chart-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .chart-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+        .chart-sub   { font-size: 11px; color: var(--text-secondary); margin-bottom: 16px; }
+
+        /* ── Operator table ─────────────────────────────────────────────── */
+        .op-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .op-table th {
+            text-align: left; padding: 8px 10px; color: var(--text-secondary);
+            font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .op-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .hourly-cell {
+            display: inline-block; padding: 3px 8px; border-radius: 5px;
+            font-weight: 600; font-size: 12px; min-width: 38px; text-align: center;
+        }
+        .hourly-high   { background: rgba(72,187,120,0.2);  color: var(--accent-green); }
+        .hourly-medium { background: rgba(237,137,54,0.2);  color: var(--accent-orange); }
+        .hourly-low    { background: rgba(159,122,234,0.2); color: var(--accent-purple); }
+
+        /* ── Card (table section) ───────────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .card-title-row { display: flex; align-items: center; gap: 12px; }
+        .card-icon  { font-size: 20px; }
+        .card-title { font-size: 16px; font-weight: 700; }
+        .card-sub2  { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+        /* ── Table ──────────────────────────────────────────────────────── */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead th {
+            text-align: left; padding: 10px 12px;
+            color: var(--text-secondary); font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            white-space: nowrap;
+        }
+        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+        tbody tr:hover { background: rgba(255,255,255,0.03); }
+        tbody td { padding: 10px 12px; vertical-align: middle; }
+
+        /* ── JIB badge ──────────────────────────────────────────────────── */
+        .jib-badge {
+            display: inline-block; padding: 3px 8px;
+            background: rgba(66,153,225,0.12); color: var(--accent-blue);
+            border-radius: 5px; font-size: 11px; font-weight: 700;
+        }
+
+        /* ── Status badges ──────────────────────────────────────────────── */
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .badge-pending   { background: rgba(160,174,192,0.1); color: var(--text-secondary); }
+        .badge-ongoing   { background: rgba(237,137,54,0.12); color: var(--accent-orange); }
+        .badge-completed { background: rgba(72,187,120,0.12); color: var(--accent-green); }
+
+        /* ── Search ─────────────────────────────────────────────────────── */
+        input[type="text"], select {
+            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px; padding: 8px 12px; color: var(--text-primary);
+            font-size: 13px; font-family: inherit;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--accent-teal); }
+        ::placeholder { color: var(--text-secondary); }
+
+        /* ── Progress bar ───────────────────────────────────────────────── */
+        .progress-wrapper { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+        .progress-bar-bg  { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; display: flex; }
+        .progress-bar-fill { height: 100%; }
+        .progress-text    { font-size: 11px; color: var(--text-secondary); min-width: 30px; text-align: right; }
+
+        /* ── Empty ──────────────────────────────────────────────────────── */
+        .empty-state { text-align: center; padding: 40px 24px; color: var(--text-secondary); font-size: 14px; }
+        .empty-icon  { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
+
+        .scroll-table { overflow-y: auto; max-height: 300px; }
+
+        .shift-btn {
+            background: transparent; border: none; color: var(--text-secondary);
+            padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+        }
+        .shift-btn:hover  { background: rgba(255,255,255,0.1); }
+        .shift-btn.active { background: var(--accent-teal); color: #fff; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <div class="logo-section">
+            <img src="/onesource.png" alt="Onesource Logistics" class="logo">
+            <div class="header-title">
+                <h1>Dashboard</h1>
+                <p>Inbound put-away operations overview</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div style="display: flex; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; gap: 4px;">
+                <button class="shift-btn active" onclick="setShiftFilter('All')">Overall</button>
+                <button class="shift-btn" onclick="setShiftFilter('1st Shift')">1st Shift</button>
+                <button class="shift-btn" onclick="setShiftFilter('2nd Shift')">2nd Shift</button>
+            </div>
+<div class="refresh-badge">
+                <span class="pulse-dot"></span>
+                <span id="refresh-text">Loading...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- KPIs: pallets as main number, qty as subtitle -->
+    <div class="kpi-section">
+        <div class="kpi-grid kpi-grid-6">
+            <div class="kpi-card" style="border-bottom: 3px solid var(--accent-teal);">
+                <div class="kpi-label">Total Pallets</div>
+                <div class="kpi-value" id="kpi-total-pallets" style="color:var(--accent-teal)">—</div>
+                <div class="kpi-sub"><span id="kpi-total-qty">—</span> qty</div>
+            </div>
+            <div class="kpi-card" style="border-bottom: 3px solid var(--accent-green);">
+                <div class="kpi-label">Completed Put-Away (Pallets)</div>
+                <div class="kpi-value" id="kpi-completed-pallets" style="color:var(--accent-green)">—</div>
+                <div class="kpi-sub"><span id="kpi-completed-qty">—</span> qty</div>
+            </div>
+            <div class="kpi-card" style="border-bottom: 3px solid var(--accent-orange);">
+                <div class="kpi-label">Pending for Put-Away</div>
+                <div class="kpi-value" id="kpi-pending-pallets" style="color:var(--accent-orange)">—</div>
+                <div class="kpi-sub"><span id="kpi-pending-qty">—</span> qty</div>
+            </div>
+            <div class="kpi-card" style="border-bottom: 3px solid var(--accent-blue);">
+                <div class="kpi-label">On-Going Put-Away</div>
+                <div class="kpi-value" id="kpi-ongoing-pallets" style="color:var(--accent-blue)">—</div>
+                <div class="kpi-sub"><span id="kpi-ongoing-qty">—</span> qty</div>
+            </div>
+            <div class="kpi-card" style="border-bottom: 3px solid var(--accent-purple);">
+                <div class="kpi-label">Total Output (Operators)</div>
+                <div class="kpi-value" id="kpi-operators" style="color:var(--accent-purple)">—</div>
+            </div>
+            <div class="kpi-card" style="border-bottom: 3px solid var(--accent-yellow);">
+                <div class="kpi-label">Hanging for Location</div>
+                <div class="kpi-value" style="color:var(--accent-yellow)">
+                    <input type="number" id="kpi-hanging-location" value="0" style="background:transparent; border:none; color:inherit; font-size:inherit; font-weight:inherit; width:100%; outline:none;" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts: Total Output bar + Hourly Trend line, side by side -->
+    <div class="charts-row">
+        <div class="chart-card">
+            <div class="chart-title">Total Output (Operators)</div>
+            <div class="chart-sub">Pallets put-away per operator — today</div>
+            <div style="position:relative;height:220px;">
+                <canvas id="totalOutputChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Hourly Trend (Operators)</div>
+            <div class="chart-sub">Pallets put-away per hour — today</div>
+            <div style="position:relative;height:220px;">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hourly Output by Operator table (full width) -->
+    <div class="chart-card" style="margin-bottom:16px;">
+        <div class="chart-title">Hourly Output by Operator</div>
+        <div class="chart-sub">Today's operator performance</div>
+        <div id="op-output-wrap"></div>
+    </div>
+
+
+</div>
+<script>
+    let inboundData    = [];   // monitoring rows
+    let inboundHeaders = [];   // monitoring headers
+    let putawayData    = [];   // Put-away Data rows
+    let putawayDrafts  = [];   // Pending Put-away rows
+    let currentShift   = 'All';
+
+    // Detected column names
+    let colJib     = null;
+    let colGrDate  = null;
+    let colQty     = null;
+    let colPallets = null;
+    let colDate    = null;
+
+    function detectCols() {
+        colJib     = inboundHeaders.find(h => /jib/i.test(h)) || null;
+        colGrDate  = inboundHeaders.find(h => /gr.?date/i.test(h)) || null;
+        colDate    = inboundHeaders.find(h => /^date$/i.test(h.trim())) || null;
+        colQty     = inboundHeaders.find(h => /^qty$/i.test(h.trim())) || inboundHeaders.find(h => /^quantity$/i.test(h.trim())) || null;
+        colPallets = inboundHeaders.find(h => /#\s*of\s*pallet/i.test(h)) || inboundHeaders.find(h => /pallet/i.test(h)) || null;
+    }
+
+    function isToday(dateStr) {
+        if (!dateStr) return false;
+        const dt = new Date(dateStr);
+        if (isNaN(dt)) return false;
+        const t = new Date();
+        return dt.getFullYear() === t.getFullYear() && dt.getMonth() === t.getMonth() && dt.getDate() === t.getDate();
+    }
+
+    // ── Shift filter ─────────────────────────────────────────────────────
+    function setShiftFilter(shift) {
+        currentShift = shift;
+        document.querySelectorAll('.shift-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.trim() === (shift === 'All' ? 'Overall' : shift));
+        });
+        updateKPIs();
+        renderCharts();
+    }
+
+    function filteredPutaway() {
+        let pw = putawayData.filter(r => isToday((r['End Put-away'] || r['Start Put-away'] || '').trim()));
+        if (currentShift !== 'All') pw = pw.filter(r => (r['Shift'] || '').trim() === currentShift);
+        return pw;
+    }
+
+// ── Helpers ──────────────────────────────────────────────────────────
+    function sumNum(arr, key) {
+        return arr.reduce((s, r) => s + (parseFloat(r[key]) || 0), 0);
+    }
+
+    function buildJibMap(arr, key) {
+        const map = {};
+        if (!colJib || !key) return map;
+        arr.forEach(r => { if (r[colJib]) map[r[colJib]] = parseFloat(r[key]) || 0; });
+        return map;
+    }
+
+    function getJibProgress(jib, totalPallets) {
+        const recs  = putawayData.filter(r => r['JIB#'] === jib);
+        const done  = recs.filter(r => (r['End Put-away']   || '').trim());
+        const going = recs.filter(r => (r['Start Put-away'] || '').trim() && !(r['End Put-away'] || '').trim());
+        const donePal  = done.reduce((s, r)  => s + (parseFloat(r['# of Pallets']) || 0), 0);
+        const goingPal = going.reduce((s, r) => s + (parseFloat(r['# of Pallets']) || 0), 0);
+        const total = totalPallets || 0;
+
+        let status;
+        if (total > 0 && donePal >= total) status = 'completed';
+        else if (goingPal > 0 || donePal > 0) status = 'ongoing';
+        else status = 'pending';
+
+        const donePct  = total > 0 ? Math.min(100, Math.floor(donePal  / total * 100)) : (donePal  > 0 ? 100 : 0);
+        const goingPct = total > 0 ? Math.min(100 - donePct, Math.floor(goingPal / total * 100)) : 0;
+
+        return { donePal, goingPal, donePct, goingPct, status };
+    }
+
+    // ── KPI update ────────────────────────────────────────────────────────
+    function updateKPIs() {
+        // Use all valid inbound rows — GR dates are historical (not necessarily today)
+        const validInbound = inboundData.filter(r => {
+            const hasDate  = colGrDate  && (r[colGrDate]  || '').trim();
+            const hasQty   = colQty     && (r[colQty]     || '').trim();
+            const hasPal   = colPallets && (r[colPallets] || '').trim();
+            return hasDate || hasQty || hasPal;
+        });
+
+        const jibQtyMap = buildJibMap(validInbound, colQty);
+        const jibPalMap = buildJibMap(validInbound, colPallets);
+
+        // filteredPutaway() is already scoped to today + current shift
+        const pw = filteredPutaway();
+        const completed  = pw.filter(r => (r['End Put-away'] || '').trim());
+        const ongoing    = pw.filter(r => (r['Start Put-away'] || '').trim() && !(r['End Put-away'] || '').trim());
+
+        const completedPal = sumNum(completed, '# of Pallets');
+        const ongoingPal   = sumNum(ongoing,   '# of Pallets');
+
+        // JIBs with completion records today (End Put-away timestamp = today)
+        const completedTodayJibs = new Set(
+            completed.map(r => r['JIB#']).filter(Boolean)
+        );
+
+        // Per-JIB qty and pallets — count each JIB once, scoped to today's workload:
+        // - Added today (any status)
+        // - Previous-date JIBs still pending/ongoing
+        // - Previous-date JIBs completed TODAY (their completion happened today)
+        // Exclude: previous-date JIBs completed on a prior day (already done, not today's work)
+        let totalPal = 0, totalQty = 0;
+        let completedQty = 0, ongoingQty = 0;
+        const seenJibs = new Set();
+        validInbound.forEach(r => {
+            const jib = colJib ? r[colJib] : '';
+            if (!jib || seenJibs.has(jib)) return;
+            seenJibs.add(jib);
+            const grDate = colGrDate ? (r[colGrDate] || '').trim() : '';
+            const addedToday = isToday(grDate);
+            const { status } = getJibProgress(jib, jibPalMap[jib] || 0);
+            if (!addedToday && status === 'completed' && !completedTodayJibs.has(jib)) return;
+            if (status === 'completed') completedQty += jibQtyMap[jib] || 0;
+            else if (status === 'ongoing') ongoingQty += jibQtyMap[jib] || 0;
+            totalPal += jibPalMap[jib] || 0;
+            totalQty += jibQtyMap[jib] || 0;
+        });
+
+        // Pending = what remains after subtracting today's completed put-away
+        const pendingPal = Math.max(0, totalPal - completedPal);
+        const pendingQty = Math.max(0, totalQty - completedQty);
+
+        const operators = new Set(pw.map(r => r['OPERATOR']).filter(Boolean));
+
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = typeof val === 'number' ? val.toLocaleString() : (val || '0');
+        };
+
+        set('kpi-total-qty',       Math.round(totalQty));
+        set('kpi-completed-qty',   Math.round(completedQty));
+        set('kpi-pending-qty',     Math.round(pendingQty));
+        set('kpi-ongoing-qty',     Math.round(ongoingQty));
+        set('kpi-total-pallets',   Math.round(totalPal));
+        set('kpi-completed-pallets', Math.round(completedPal));
+        set('kpi-pending-pallets',   Math.round(pendingPal));
+        set('kpi-ongoing-pallets',   Math.round(ongoingPal));
+        set('kpi-operators',         operators.size);
+    }
+
+    // ── Charts ────────────────────────────────────────────────────────────
+    let hourlyChartInst = null;
+    let totalOutputChartInst = null;
+
+    function renderCharts() {
+        const today = new Date();
+        const opHourMap = {}; // { operator: { hour: pallets } }
+        const hoursSet  = new Set();
+
+        filteredPutaway().forEach(r => {
+            // Completed work counts at its end hour, ongoing at its start hour
+            const tStr = (r['End Put-away'] || '').trim() || r['Start Put-away'];
+            if (!tStr) return;
+            const dt = new Date(tStr);
+            if (isNaN(dt)) return;
+            if (dt.getFullYear() !== today.getFullYear() ||
+                dt.getMonth()    !== today.getMonth()    ||
+                dt.getDate()     !== today.getDate()) return;
+            const hr = dt.getHours();
+            hoursSet.add(hr);
+            const op = r['OPERATOR'] || 'Unknown';
+            if (!opHourMap[op]) opHourMap[op] = {};
+            opHourMap[op][hr] = (opHourMap[op][hr] || 0) + (parseFloat(r['# of Pallets']) || 0);
+        });
+
+        const currentHour = today.getHours();
+        const minHour = hoursSet.size ? Math.min(...hoursSet, 7) : 7;
+        const maxHour = hoursSet.size ? Math.max(...hoursSet, currentHour) : currentHour;
+        const hours = [];
+        for (let h = minHour; h <= maxHour; h++) {
+            if (h !== 12 && h !== 18) hours.push(h);
+        }
+
+        function fmtHour(h) {
+            const s = h >= 12 ? 'PM' : 'AM';
+            const d = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+            return `${d}${s}`;
+        }
+
+        const COLORS = ['#38b2ac','#48bb78','#4299e1','#ed8936','#9f7aea','#f687b3','#fc8181','#fbd38d','#90cdf4'];
+        const operators = Object.keys(opHourMap);
+
+        const datasets = operators.map((op, i) => ({
+            label: op,
+            data: hours.map(h => opHourMap[op][h] || 0),
+            borderColor: COLORS[i % COLORS.length],
+            backgroundColor: COLORS[i % COLORS.length] + '22',
+            tension: 0.3, fill: false, pointRadius: 4, borderWidth: 2
+        }));
+
+        if (hourlyChartInst) hourlyChartInst.destroy();
+        const ctx = document.getElementById('hourlyChart');
+        if (!datasets.length) {
+            ctx.closest('.chart-card').querySelector('.chart-sub').textContent = 'No put-away activity today';
+            hourlyChartInst = new Chart(ctx, {
+                type: 'line', data: { labels: [], datasets: [] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+            });
+        } else {
+            hourlyChartInst = new Chart(ctx, {
+                type: 'line',
+                data: { labels: hours.map(fmtHour), datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#a0aec0', font: { size: 11 }, boxWidth: 12, padding: 8 } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#a0aec0', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+                        y: { ticks: { color: '#a0aec0', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true,
+                             title: { display: true, text: 'Pallets', color: '#a0aec0', font: { size: 10 } } }
+                    },
+                    interaction: { mode: 'index', intersect: false }
+                }
+            });
+        }
+
+        // Operator output table
+        const opTotals = operators.map(op => ({
+            name: op,
+            total: hours.reduce((s, h) => s + (opHourMap[op][h] || 0), 0),
+            hours: opHourMap[op]
+        })).sort((a, b) => b.total - a.total);
+
+        const maxTotal = opTotals.length ? opTotals[0].total : 1;
+
+        // Total Output (Operators) — horizontal bar chart
+        if (totalOutputChartInst) totalOutputChartInst.destroy();
+        const barCtx = document.getElementById('totalOutputChart');
+        const OP_GOAL = 150;
+        const targetLinePlugin = {
+            id: 'targetLine',
+            afterDraw: chart => {
+                const target = chart.config.options.plugins.targetLine?.value;
+                if (!target) return;
+                const ctx = chart.ctx;
+                const xAxis = chart.scales.x;
+                const yAxis = chart.scales.y;
+                const xTargetPos = xAxis.getPixelForValue(target);
+                if (xTargetPos >= xAxis.left && xTargetPos <= xAxis.right) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(xTargetPos, yAxis.top);
+                    ctx.lineTo(xTargetPos, yAxis.bottom);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#ff4d4d';
+                    ctx.setLineDash([5, 5]);
+                    ctx.stroke();
+                    ctx.fillStyle = '#ff4d4d';
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.fillText(`🏁 Goal: ${target.toLocaleString()}`, xTargetPos - 30, yAxis.top - 5);
+                    ctx.restore();
+                }
+                ctx.save();
+                const meta = chart.getDatasetMeta(0);
+                meta.data.forEach((bar, index) => {
+                    const value = chart.data.datasets[0].data[index];
+                    if (value >= target) {
+                        ctx.font = '16px serif';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('🏆', bar.x + 8, bar.y);
+                    }
+                });
+                ctx.restore();
+            }
+        };
+        if (!opTotals.length) {
+            barCtx.closest('.chart-card').querySelector('.chart-sub').textContent = 'No put-away activity today';
+            totalOutputChartInst = new Chart(barCtx, {
+                type: 'bar', data: { labels: [], datasets: [] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+            });
+        } else {
+            totalOutputChartInst = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: opTotals.map(o => o.name),
+                    datasets: [{
+                        label: 'Pallets',
+                        data: opTotals.map(o => o.total),
+                        backgroundColor: opTotals.map((o, i) => COLORS[i % COLORS.length]),
+                        borderRadius: 4, barThickness: 'flex', maxBarThickness: 22
+                    }]
+                },
+                plugins: [targetLinePlugin],
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 20 } },
+                    plugins: { legend: { display: false }, targetLine: { value: OP_GOAL } },
+                    scales: {
+                        x: { ticks: { color: '#a0aec0', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true,
+                             suggestedMax: OP_GOAL * 1.1,
+                             title: { display: true, text: 'Pallets', color: '#a0aec0', font: { size: 10 } } },
+                        y: { ticks: { color: '#a0aec0', font: { size: 11 } }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        const hourHeaders = hours.map(h => `<th style="text-align:center;min-width:52px;">${h}:00</th>`).join('');
+
+        const opRows = opTotals.length ? opTotals.map(op => {
+            const cells = hours.map(h => {
+                const v = op.hours[h] || 0;
+                const cls = v >= 30 ? 'hourly-high' : v >= 15 ? 'hourly-medium' : 'hourly-low';
+                return `<td style="text-align:center;"><span class="hourly-cell ${cls}">${v}</span></td>`;
+            }).join('');
+            return `<tr>
+                <td><strong>${op.name.toUpperCase()}</strong></td>
+                ${cells}
+                <td><strong>${op.total}</strong></td>
+            </tr>`;
+        }).join('') : `<tr><td colspan="${2 + hours.length}" style="text-align:center;padding:24px;color:var(--text-secondary);">No activity today</td></tr>`;
+
+        document.getElementById('op-output-wrap').innerHTML = `
+            <div class="scroll-table">
+                <table class="op-table">
+                    <thead><tr>
+                        <th>OPERATOR</th>${hourHeaders}<th>TOTAL</th>
+                    </tr></thead>
+                    <tbody>${opRows}</tbody>
+                </table>
+            </div>`;
+    }
+
+    // ── Data loading ──────────────────────────────────────────────────────
+    async function loadAll() {
+        try {
+            const [r1, r2, r3] = await Promise.all([
+                AuthGuard.authFetch('/api/inbound-putaway/data'),
+                AuthGuard.authFetch('/api/putaway-data'),
+                AuthGuard.authFetch('/api/putaway-drafts')
+            ]);
+
+            const j1 = await r1.json();
+            const j2 = r2.ok ? await r2.json() : { data: [] };
+            const j3 = r3.ok ? await r3.json() : [];
+
+            inboundHeaders = j1.headers || [];
+            inboundData    = j1.data    || [];
+            putawayData    = j2.data    || [];
+            putawayDrafts  = Array.isArray(j3) ? j3 : (j3.data || []);
+
+            detectCols();
+            updateKPIs();
+            renderCharts();
+
+            document.getElementById('refresh-text').textContent = `Live Sync ${new Date().toLocaleTimeString()}`;
+        } catch (e) {
+            console.error('Dashboard load error:', e);
+            document.getElementById('refresh-text').textContent = 'Connection error';
+        }
+    }
+
+    window.onload = async function () {
+        const user = await AuthGuard.init();
+        if (!user) return;
+        await loadAll();
+        setInterval(() => { if (!document.hidden) loadAll(); }, 60000);
+    };
+</script>
+</body>
+</html>

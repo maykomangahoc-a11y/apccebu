@@ -480,4 +480,55 @@ router.get('/:id/balance', authenticateToken, async (req, res) => {
   }
 });
 
+// ─── UPLOAD PASTED ORDERS ─────────────────────────────────────────────────────
+// POST /api/dispatch/upload
+router.post('/upload', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { orders } = req.body;
+    if (!orders || !Array.isArray(orders) || orders.length === 0) {
+      return res.status(400).json({ error: 'Array of orders required' });
+    }
+
+    await client.query('BEGIN');
+
+    const fields = [
+      'dispatch_date', 'fo', 'account_name', 'type', 'qty', 
+      'invoiced_value', 'order_received', 'status', 'order_status'
+    ];
+
+    for (const order of orders) {
+      // Check if FO already exists to avoid duplicates
+      const checkRes = await client.query('SELECT id FROM dispatch_orders WHERE fo = $1', [order.fo]);
+      if (checkRes.rows.length > 0) continue; // Skip existing FOs
+
+      const provided = [];
+      const placeholders = [];
+      const values = [];
+      let idx = 1;
+
+      for (const field of fields) {
+        if (order[field] !== undefined) {
+          provided.push(field);
+          placeholders.push(`$${idx++}`);
+          values.push(order[field]);
+        }
+      }
+
+      if (provided.length > 0) {
+        await client.query(`INSERT INTO dispatch_orders (${provided.join(', ')}) VALUES (${placeholders.join(', ')})`, values);
+      }
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, uploaded: orders.length });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Upload orders error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;

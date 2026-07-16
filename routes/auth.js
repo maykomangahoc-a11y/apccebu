@@ -82,7 +82,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json({ user: result.rows[0] });
   } catch (error) {
     console.error('Auth me error:', error.message);
     res.status(500).json({ error: 'Internal server error' });

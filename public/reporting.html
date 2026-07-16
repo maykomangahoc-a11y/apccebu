@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onesource Reporting Hub</title>
+    <style>
+        :root {
+            --onesource-red: #E63946;
+            --bg-dark: #1a1d23;
+            --bg-card: #25292f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-blue: #4299e1;
+            --accent-green: #48bb78;
+            --accent-orange: #ed8936;
+            --accent-purple: #9f7aea;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .header-title {
+            border-left: 3px solid var(--onesource-red);
+            padding-left: 14px;
+        }
+
+        .header-title h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .header-title p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Unified Tabs */
+        .tabs-header {
+            display: flex;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            gap: 8px;
+        }
+
+        .tab-button {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+        }
+
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: white;
+        }
+
+        .tab-button.active {
+            background: var(--onesource-red);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Filters */
+        .filter-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--onesource-red);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td {
+            padding: 12px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-success {
+            background: rgba(72, 187, 120, 0.1);
+            color: var(--accent-green);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--onesource-red);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+        }
+
+        .filter-trigger {
+            cursor: pointer;
+            opacity: 0.4;
+            padding: 4px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+        .filter-trigger:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .filter-trigger.active-filter {
+            opacity: 1;
+            color: var(--onesource-red);
+            background: rgba(230, 57, 70, 0.1);
+        }
+        .excel-filter-card {
+            display: none;
+            position: absolute;
+            z-index: 9999;
+            background: #1e2229;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            width: 220px;
+            max-height: 340px;
+            flex-direction: column;
+            gap: 8px;
+            animation: modalFadeIn 0.15s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo-section">
+            <img src="/onesource.png" alt="Onesource Logistics" class="logo">
+            <div class="header-title">
+                <h1>Reporting</h1>
+                <p>Export and analyze warehouse performance data</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="tabs-header">
+        <button class="tab-button active" onclick="switchTab('outbound')">
+            📦 Outbound Reports
+        </button>
+        <button class="tab-button" onclick="switchTab('inbound')">
+            📥 Order Processing Reports
+        </button>
+    </div>
+
+    <!-- Outbound Reports -->
+    <div id="outbound" class="tab-content active">
+        <div class="filter-card">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label>FO Number</label>
+                    <input type="text" id="report-fo" placeholder="Search FO...">
+                </div>
+                <div class="form-group">
+                    <label>Picker/Operator</label>
+                    <input type="text" id="report-picker" placeholder="Search name...">
+                </div>
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" id="report-start">
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" id="report-end">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end; gap: 8px;">
+                    <button class="btn btn-primary" style="flex: 1;" onclick="loadReportData()">
+                        🔍 Generate Report
+                    </button>
+                    <button class="btn"
+                        style="flex: 1; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.2); color: white;"
+                        onclick="exportToCSV()">
+                        📥 Export CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selection Counter / Toolbar -->
+        <div id="selection-counter-container" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
+            <div id="selection-counter" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                <span>📋</span> Showing: <strong>0</strong> / 0 orders
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); font-style: italic;">
+                Click column header dropdown icons to filter rows
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="report-table">
+                <thead>
+                    <tr>
+                        <th>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <span>Date</span>
+                                <span class="filter-trigger" data-filter-trigger="date" onclick="toggleFilterDropdown('date', event)">
+                                    <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                                </span>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <span>FO#</span>
+                                <span class="filter-trigger" data-filter-trigger="foNumber" onclick="toggleFilterDropdown('foNumber', event)">
+                                    <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                                </span>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <span>Account</span>
+                                <span class="filter-trigger" data-filter-trigger="accountName" onclick="toggleFilterDropdown('accountName', event)">
+                                    <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                                </span>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <span>Picker</span>
+                                <span class="filter-trigger" data-filter-trigger="pickerCode" onclick="toggleFilterDropdown('pickerCode', event)">
+                                    <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                                </span>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <span>Qty</span>
+                                <span class="filter-trigger" data-filter-trigger="pickerQty" onclick="toggleFilterDropdown('pickerQty', event)">
+                                    <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                                </span>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <span>Duration</span>
+                                <span class="filter-trigger" data-filter-trigger="duration" onclick="toggleFilterDropdown('duration', event)">
+                                    <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                                </span>
+                            </div>
+                        </th>
+                        <th>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <span>Status</span>
+                                <span class="filter-trigger" data-filter-trigger="status" onclick="toggleFilterDropdown('status', event)">
+                                    <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                                </span>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="report-body">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+            <div id="report-empty" class="empty-state">
+                <div class="empty-icon">📊</div>
+                <div class="empty-title">Ready to Generate</div>
+                <div class="empty-text">Set your filters and click Generate Report</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Processing Reports -->
+    <div id="inbound" class="tab-content">
+        <div class="empty-state" style="background: var(--bg-card); border-radius: 12px; padding: 100px;">
+            <div class="empty-icon">🏗️</div>
+            <div class="empty-title">Order Processing Reports</div>
+            <div class="empty-text">This module is currently under development. Coming soon!</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api';
+        let allOrders = [];
+        let currentReportData = [];
+        let currentFilterColumn = '';
+        let activeFilters = {
+            date: [],
+            foNumber: [],
+            accountName: [],
+            pickerCode: [],
+            pickerQty: [],
+            duration: [],
+            status: []
+        };
+
+        function resetExcelFilters() {
+            activeFilters = {
+                date: [],
+                foNumber: [],
+                accountName: [],
+                pickerCode: [],
+                pickerQty: [],
+                duration: [],
+                status: []
+            };
+            document.querySelectorAll('.filter-trigger').forEach(el => {
+                el.classList.remove('active-filter');
+            });
+        }
+
+        async function loadReportData() {
+            const foFilter = document.getElementById('report-fo').value.toLowerCase();
+            const pickerFilter = document.getElementById('report-picker').value.toLowerCase();
+            const startDate = document.getElementById('report-start').value;
+            const endDate = document.getElementById('report-end').value;
+
+            try {
+                const [ordersRes, configRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/picking-orders`),
+                    fetch(`${API_BASE_URL}/config`)
+                ]);
+                
+                allOrders = await ordersRes.json();
+                const config = await configRes.json().catch(() => ({ dayStartHour: 3 }));
+                const dayStartHour = config.dayStartHour !== undefined ? config.dayStartHour : 3;
+                
+                let filtered = allOrders.filter(o => o.status === 'completed');
+
+                if (foFilter) filtered = filtered.filter(o => o.foNumber.toLowerCase().includes(foFilter));
+                if (pickerFilter) filtered = filtered.filter(o => o.pickerCode.toLowerCase().includes(pickerFilter));
+                
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(dayStartHour, 0, 0, 0);
+                    filtered = filtered.filter(o => new Date(o.endTime) >= start);
+                }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setDate(end.getDate() + 1);
+                    end.setHours(dayStartHour - 1, 59, 59, 999);
+                    filtered = filtered.filter(o => new Date(o.endTime) <= end);
+                }
+
+                currentReportData = filtered;
+                resetExcelFilters();
+                renderReport(filtered);
+            } catch (error) {
+                console.error('Error loading reports:', error);
+            }
+        }
+
+        function toggleFilterDropdown(column, event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('excel-filter-dropdown');
+            if (!dropdown) return;
+            
+            // Clear search field on open
+            const searchInput = document.getElementById('excel-filter-search');
+            if (searchInput) searchInput.value = '';
+            
+            if (dropdown.style.display === 'flex' && currentFilterColumn === column) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            currentFilterColumn = column;
+            
+            const labelMap = {
+                date: 'Date',
+                foNumber: 'FO#',
+                accountName: 'Account',
+                pickerCode: 'Picker',
+                pickerQty: 'Qty',
+                duration: 'Duration',
+                status: 'Status'
+            };
+            document.getElementById('filter-column-name').textContent = 'Filter ' + (labelMap[column] || column);
+            
+            const uniqueValues = [...new Set(currentReportData.map(order => {
+                if (column === 'date') {
+                    return new Date(order.endTime).toLocaleDateString();
+                } else if (column === 'duration') {
+                    const endTime = new Date(order.endTime);
+                    const dur = Math.floor((endTime - new Date(order.startTime)) / 60000);
+                    return `${dur} min`;
+                } else if (column === 'status') {
+                    return 'Completed';
+                }
+                return String(order[column] || '');
+            }))].sort((a, b) => {
+                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+            });
+            
+            const optionsContainer = document.getElementById('excel-filter-options');
+            optionsContainer.innerHTML = uniqueValues.map((val, idx) => {
+                const isChecked = (activeFilters[column].length === 0 || activeFilters[column].includes(val)) ? 'checked' : '';
+                return `
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: white; cursor: pointer; user-select: none;">
+                        <input type="checkbox" data-val="${val.replace(/"/g, '&quot;')}" ${isChecked} style="width: auto; cursor: pointer; accent-color: var(--onesource-red);">
+                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${val || '(Blank)'}</span>
+                    </label>
+                `;
+            }).join('');
+            
+            const triggerRect = event.currentTarget.getBoundingClientRect();
+            dropdown.style.display = 'flex';
+            
+            let left = triggerRect.left + window.scrollX;
+            if (left + 220 > window.innerWidth) {
+                left = window.innerWidth - 240;
+            }
+            dropdown.style.left = `${left}px`;
+            dropdown.style.top = `${triggerRect.bottom + window.scrollY + 6}px`;
+        }
+
+        function excelSelectAllFilters(isChecked) {
+            const labels = document.querySelectorAll('#excel-filter-options label');
+            labels.forEach(label => {
+                if (label.style.display !== 'none') {
+                    const cb = label.querySelector('input[type="checkbox"]');
+                    if (cb) cb.checked = isChecked;
+                }
+            });
+        }
+
+        function filterExcelFilterOptions() {
+            const query = document.getElementById('excel-filter-search').value.toLowerCase().trim();
+            const labels = document.querySelectorAll('#excel-filter-options label');
+            labels.forEach(label => {
+                const text = label.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    label.style.display = 'flex';
+                } else {
+                    label.style.display = 'none';
+                }
+            });
+        }
+
+        function applyExcelFilter() {
+            const column = currentFilterColumn;
+            const checkboxes = document.querySelectorAll('#excel-filter-options input[type="checkbox"]');
+            
+            const selectedVals = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    selectedVals.push(cb.getAttribute('data-val'));
+                }
+            });
+            
+            const allCbs = [...checkboxes];
+            const allChecked = allCbs.every(cb => cb.checked);
+            
+            if (allChecked) {
+                activeFilters[column] = [];
+            } else {
+                activeFilters[column] = selectedVals;
+            }
+            
+            const trigger = document.querySelector(`[data-filter-trigger="${column}"]`);
+            if (trigger) {
+                if (activeFilters[column].length > 0) {
+                    trigger.classList.add('active-filter');
+                } else {
+                    trigger.classList.remove('active-filter');
+                }
+            }
+            
+            closeExcelFilter();
+            applyFiltersToTable();
+        }
+
+        function closeExcelFilter() {
+            const dropdown = document.getElementById('excel-filter-dropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+
+        function applyFiltersToTable() {
+            const tbody = document.getElementById('report-body');
+            if (!tbody) return;
+            
+            const rows = tbody.querySelectorAll('tr');
+            let visibleCount = 0;
+            
+            rows.forEach((row, idx) => {
+                const order = currentReportData[idx];
+                if (!order) return;
+                
+                let matches = true;
+                const colsToEvaluate = ['date', 'foNumber', 'accountName', 'pickerCode', 'pickerQty', 'duration', 'status'];
+                
+                for (const col of colsToEvaluate) {
+                    const filterVals = activeFilters[col];
+                    if (filterVals && filterVals.length > 0) {
+                        let cellVal = '';
+                        if (col === 'date') {
+                            cellVal = new Date(order.endTime).toLocaleDateString();
+                        } else if (col === 'duration') {
+                            const endTime = new Date(order.endTime);
+                            const dur = Math.floor((endTime - new Date(order.startTime)) / 60000);
+                            cellVal = `${dur} min`;
+                        } else if (col === 'status') {
+                            cellVal = 'Completed';
+                        } else {
+                            cellVal = String(order[col] || '');
+                        }
+                        
+                        if (!filterVals.includes(cellVal)) {
+                            matches = false;
+                            break;
+                        }
+                    }
+                }
+                
+                if (matches) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            const counterEl = document.getElementById('selection-counter');
+            if (counterEl) {
+                counterEl.innerHTML = `<span>📋</span> Showing: <strong>${visibleCount}</strong> / ${currentReportData.length} orders`;
+            }
+        }
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('excel-filter-dropdown');
+            if (dropdown && dropdown.style.display === 'flex') {
+                if (!dropdown.contains(e.target) && !e.target.closest('.filter-trigger')) {
+                    closeExcelFilter();
+                }
+            }
+        });
+
+        function renderReport(data) {
+            const tbody = document.getElementById('report-body');
+            const empty = document.getElementById('report-empty');
+            const counterContainer = document.getElementById('selection-counter-container');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+                empty.style.display = 'block';
+                if (counterContainer) counterContainer.style.display = 'none';
+                return;
+            }
+
+            empty.style.display = 'none';
+            if (counterContainer) counterContainer.style.display = 'flex';
+            
+            tbody.innerHTML = data.map(order => {
+                const endTime = new Date(order.endTime);
+                const duration = Math.floor((endTime - new Date(order.startTime)) / 60000);
+                
+                return `
+                    <tr>
+                        <td>${endTime.toLocaleDateString()}</td>
+                        <td><strong>${order.foNumber}</strong></td>
+                        <td>${order.accountName}</td>
+                        <td>${order.pickerCode}</td>
+                        <td>${order.pickerQty.toLocaleString()}</td>
+                        <td>${duration.toLocaleString()} min</td>
+                        <td><span class="badge badge-success">Completed</span></td>
+                    </tr>
+                `;
+            }).join('');
+
+            applyFiltersToTable();
+        }
+
+        function exportToCSV() {
+            if (!currentReportData || currentReportData.length === 0) {
+                alert("No data to export. Please generate a report first.");
+                return;
+            }
+
+            const filteredOrders = currentReportData.filter(order => {
+                const colsToEvaluate = ['date', 'foNumber', 'accountName', 'pickerCode', 'pickerQty', 'duration', 'status'];
+                for (const col of colsToEvaluate) {
+                    const filterVals = activeFilters[col];
+                    if (filterVals && filterVals.length > 0) {
+                        let cellVal = '';
+                        if (col === 'date') {
+                            cellVal = new Date(order.endTime).toLocaleDateString();
+                        } else if (col === 'duration') {
+                            const endTime = new Date(order.endTime);
+                            const dur = Math.floor((endTime - new Date(order.startTime)) / 60000);
+                            cellVal = `${dur} min`;
+                        } else if (col === 'status') {
+                            cellVal = 'Completed';
+                        } else {
+                            cellVal = String(order[col] || '');
+                        }
+                        if (!filterVals.includes(cellVal)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
+
+            if (filteredOrders.length === 0) {
+                alert("No matching orders to export. Check your filters.");
+                return;
+            }
+
+            let csvContent = "Date,FO Number,Account Name,Picker,Qty,Duration (min),Status\n";
+
+            filteredOrders.forEach(order => {
+                const endTime = new Date(order.endTime);
+                const duration = Math.floor((endTime - new Date(order.startTime)) / 60000);
+                const accountName = order.accountName ? order.accountName.replace(/"/g, '""') : '';
+                
+                const row = [
+                    endTime.toLocaleDateString(),
+                    order.foNumber,
+                    `"${accountName}"`,
+                    order.pickerCode,
+                    order.pickerQty,
+                    duration,
+                    "Completed"
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `warehouse_report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function switchTab(tabId) {
+            localStorage.setItem('reporting_tab', tabId);
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+
+    <!-- Excel Column Filter Dropdown Container -->
+    <div id="excel-filter-dropdown" class="excel-filter-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 4px;">
+            <span id="filter-column-name" style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Filter</span>
+            <span onclick="closeExcelFilter()" style="cursor: pointer; color: var(--text-secondary); font-weight: bold; font-size: 14px; line-height: 1;">&times;</span>
+        </div>
+        <div style="padding: 2px 0;">
+            <input type="text" id="excel-filter-search" placeholder="Search values..." style="width: 100%; font-size: 12px; padding: 6px 8px; background: #252932; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white; outline: none;" oninput="filterExcelFilterOptions()">
+        </div>
+        <div style="display: flex; gap: 6px;">
+            <button class="btn" style="flex: 1; padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;" onclick="excelSelectAllFilters(true)">Select All</button>
+            <button class="btn" style="flex: 1; padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;" onclick="excelSelectAllFilters(false)">Clear</button>
+        </div>
+        <div id="excel-filter-options" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 4px 0; max-height: 160px;">
+            <!-- Options loaded dynamically -->
+        </div>
+        <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px; margin-top: 4px;">
+            <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px; border-radius: 4px;" onclick="applyExcelFilter()">Apply</button>
+        </div>
+    </div>
+</body>
+</html>

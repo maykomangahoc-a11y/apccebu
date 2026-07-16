@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dispatch Plan & Truck Assignment</title>
+    <script src="/auth.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --onesource-red: #E63946;
+            --bg-dark: #1a1d23;
+            --bg-card: #25292f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-blue: #4299e1;
+            --accent-green: #48bb78;
+            --accent-orange: #ed8936;
+            --accent-purple: #9f7aea;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .app-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        /* Header Styles */
+        header {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .header-title {
+            border-left: 3px solid var(--onesource-red);
+            padding-left: 14px;
+        }
+
+        .header-title h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .header-title p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Tab Navigation */
+        .tabs-header {
+            display: flex;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            gap: 8px;
+        }
+
+        .tab-button {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .tab-button.active {
+            background: var(--onesource-red);
+            color: white;
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--onesource-red), #c8102e);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td {
+            padding: 12px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-todays-plan { background: #c8e6c9; color: #1b5e20; }
+        .status-pending-plan { background: #ffe0b2; color: #e65100; }
+        .status-additional-plan { background: #bbdefb; color: #0d47a1; }
+        .status-grand-advance { background: #ffcdd2; color: #b71c1c; }
+        .status-tomorrows-plan { background: #e8d5f5; color: #6b21a8; }
+        .status-archive-order { background: #e5e7eb; color: #374151; }
+
+        /* Truck Status Colors */
+        .status-on-site { background: rgba(66,153,225,0.15); color: #4299e1; }
+        .status-dispatched { background: rgba(72,187,120,0.15); color: #48bb78; }
+
+        /* Outbound Status Colors */
+        .status-pending { background: transparent; color: var(--text-secondary); padding: 0; }
+        .status-ongoing { background: transparent; color: var(--accent-orange); padding: 0; }
+        .status-completed { background: transparent; color: var(--accent-green); padding: 0; }
+
+        /* FO Badge Wrapping */
+        .fo-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-width: 400px;
+        }
+
+        .fo-badge-pill {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--onesource-red);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .refresh-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(66, 153, 225, 0.1);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        .pulse-dot-blue {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-blue);
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-blue 2s infinite;
+        }
+
+        @keyframes pulse-blue {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(66, 153, 225, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(66, 153, 225, 0);
+            }
+        }
+
+        /* ── Order Status Combobox ─────────────────────────────── */
+        .order-status-colors {
+            --os-ready:    #f4a261;
+            --os-sorting:  #e9c46a;
+            --os-sorted:   #c77dff;
+            --os-picking:  #a8c4d4;
+            --os-picksort: #90e0ef;
+            --os-loading:  #f9e03a;
+            --os-loaded:   #57cc99;
+            --os-dispatch: #48bb78;
+            --os-checking: #ffb4a2;
+        }
+
+        .os-combobox {
+            position: relative;
+            display: inline-block;
+            min-width: 160px;
+        }
+        .os-trigger {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            color: white;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            transition: border-color 0.2s;
+        }
+        .os-trigger:hover { border-color: rgba(255,255,255,0.3); }
+        .os-trigger .os-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .os-trigger .os-caret { margin-left: auto; opacity: 0.5; font-size: 10px; }
+        .os-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            z-index: 9999;
+            background: #1e2229;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            min-width: 200px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        .os-dropdown.open { display: block; }
+        .os-search {
+            width: 100%;
+            background: rgba(255,255,255,0.07);
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 8px 12px;
+            color: white;
+            font-size: 12px;
+            outline: none;
+        }
+        .os-search::placeholder { color: rgba(255,255,255,0.3); }
+        .os-options { max-height: 220px; overflow-y: auto; }
+        .os-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            font-size: 12px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .os-option:hover { background: rgba(255,255,255,0.07); }
+        .os-option .os-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .os-option.hidden { display: none; }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Truck Assignment Editable Inputs */
+        .ta-input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: white;
+            padding: 5px 8px;
+            font-size: 12px;
+            width: 100%;
+            min-width: 100px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .ta-input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(66,153,225,0.2);
+        }
+        .ta-input.saved {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 2px rgba(72,187,120,0.2);
+        }
+        .ta-input::placeholder {
+            color: rgba(255,255,255,0.25);
+        }
+        .ta-meta {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            opacity: 0.7;
+        }
+
+        /* ── Order Date filter dropdown ─────────────────────── */
+        #dispatch-date-filter option {
+            background: #1a1f2e;
+            color: white;
+        }
+
+        /* ── Bulk Action Styles ─────────────────────────────── */
+        .btn-bulk {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-bulk:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+            color: var(--text-primary);
+        }
+        .btn-bulk.active {
+            background: rgba(230, 57, 70, 0.15);
+            border-color: var(--onesource-red);
+            color: var(--onesource-red);
+        }
+
+        .bulk-checkbox {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--onesource-red);
+            cursor: pointer;
+        }
+
+        .bulk-action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e2229;
+            border-top: 2px solid var(--onesource-red);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            z-index: 9999;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+            animation: slideUp 0.25s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .bulk-action-bar .bulk-count {
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            background: var(--onesource-red);
+            padding: 4px 12px;
+            border-radius: 20px;
+            min-width: 28px;
+            text-align: center;
+        }
+
+        .bulk-action-bar .bulk-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .bulk-status-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .bulk-status-btn:hover {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.25);
+            transform: translateY(-1px);
+        }
+        .bulk-status-btn .bulk-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .bulk-cancel-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .bulk-cancel-btn:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        th.bulk-th, td.bulk-td {
+            width: 40px;
+            text-align: center;
+            padding: 10px 8px;
+        }
+        /* ── Auto Sync Button ─────────────────────────────── */
+        .btn-auto-sync {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a1d23;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            letter-spacing: 0.2px;
+            box-shadow: 0 2px 10px rgba(253, 160, 133, 0.35);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+        }
+        .btn-auto-sync:hover {
+            background: linear-gradient(135deg, #fde68a 0%, #f6a35b 100%);
+            box-shadow: 0 4px 16px rgba(253, 160, 133, 0.5);
+            transform: translateY(-1px);
+        }
+        .btn-auto-sync:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 6px rgba(253, 160, 133, 0.3);
+        }
+        .btn-auto-sync:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo-section">
+                <img src="/onesource.png" alt="Onesource Logistics" class="logo">
+                <div class="header-title">
+                    <h1>Dispatch Plan & Truck Assignment</h1>
+                    <p>Real-time dispatch and truck tracking</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <button class="btn btn-primary" onclick="document.getElementById('paste-modal').style.display='flex'" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 13px; font-weight: 700; background: var(--onesource-red); color: white; border: none; border-radius: 8px; cursor: pointer; letter-spacing: 0.2px; box-shadow: 0 2px 10px rgba(220, 38, 38, 0.4); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;" id="btn-sync"
+                    onmouseover="this.style.boxShadow='0 4px 16px rgba(220,38,38,0.55)'; this.style.transform='translateY(-1px)'"
+                    onmouseout="this.style.boxShadow='0 2px 10px rgba(220,38,38,0.4)'; this.style.transform=''"
+                    onmousedown="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 6px rgba(220,38,38,0.3)'"
+                    onmouseup="this.style.boxShadow='0 2px 10px rgba(220,38,38,0.4)'; this.style.transform='translateY(-1px)'">
+                    📋 Paste Orders
+                </button>
+                <button id="btn-sync-dashboard" class="btn-auto-sync" onclick="syncOutboundDashboard()" style="display: none;" title="Sync OSLAI Dashboard data">
+                    📂 Upload Dashboard
+                </button>
+                <div class="refresh-badge">
+                    <div class="pulse-dot-blue"></div>
+                    <span id="last-update">Live Sync</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="tabs-header">
+            <button class="tab-button active" onclick="switchTab('dispatch-plan')">📋 Dispatch Plan</button>
+            <button class="tab-button" onclick="switchTab('truck-assignment')">🚛 Truck Assignment</button>
+            <button class="tab-button" onclick="switchTab('archived-orders')">🗄️ Archived Orders</button>
+        </div>
+
+        <!-- Dispatch Plan Tab -->
+        <div id="dispatch-plan" class="tab-content active">
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-icon">📋</div>
+                        <h2 class="card-title">Dispatch Plan</h2>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1; max-width: 520px;">
+                        <button class="btn-bulk" id="btn-bulk-toggle" onclick="toggleBulkMode()" style="display: none;">
+                            ☑ Bulk Action
+                        </button>
+                        <select id="dispatch-date-filter" onchange="filterDispatchTable()" title="Filter by Order Date" style="flex: 0 0 auto; min-width: 150px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                            <option value="">📅 All Order Dates</option>
+                        </select>
+                        <input type="text" id="dispatch-search" placeholder="🔍 Search FO# or Account..." oninput="filterDispatchTable()" style="flex: 1; min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div id="dispatch-loading" class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading Dispatch Plan...</p>
+                    </div>
+                    <table id="dispatch-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Plan Status</th>
+                                <th>Order Date</th>
+                                <th>FO#</th>
+                                <th>Account Name</th>
+                                <th>Type</th>
+                                <th style="text-align: center;">Order Qty</th>
+                                <th style="text-align: center;">Invoiced Value</th>
+                                <th style="text-align: center;">Order Status</th>
+                                <th style="text-align: center;">Picking Status</th>
+                                <th>Staging Area</th>
+                                <th style="text-align: center;">Truck Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dispatch-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Truck Assignment Tab -->
+        <div id="truck-assignment" class="tab-content">
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-icon">🚛</div>
+                        <h2 class="card-title">Truck Assignment</h2>
+                    </div>
+                    <div style="min-width: 300px; flex-grow: 1; max-width: 400px;">
+                        <input type="text" id="truck-search" placeholder="🔍 Search FO# or Account..." oninput="filterTruckTable()" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div id="truck-loading" class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading Truck Assignments...</p>
+                    </div>
+                    <table id="truck-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>FO#</th>
+                                <th>Account Name</th>
+                                <th style="text-align: center;">Order Qty</th>
+                                <th style="text-align: center;">CBM</th>
+                                <th style="text-align: center;">Weight</th>
+                                <th>Truck Size</th>
+                                <th>Trucker</th>
+                                <th>Plate No</th>
+                                <th style="text-align: center;">Loading Time</th>
+                                <th>Linechecker</th>
+                                <th>Dispatcher</th>
+                                <th style="text-align: center;">Time Arrival</th>
+                                <th style="text-align: center;">Start Loading</th>
+                                <th style="text-align: center;">Loading End</th>
+                            </tr>
+                        </thead>
+                        <tbody id="truck-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Archived Orders Tab -->
+        <div id="archived-orders" class="tab-content">
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="card-icon">🗄️</div>
+                        <h2 class="card-title">Archived Orders</h2>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-grow: 1; justify-content: flex-end;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 12px; color: var(--text-secondary);">From</span>
+                            <input type="date" id="archived-date-from" onchange="filterArchivedTable()" style="padding: 8px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 12px; outline: none; color-scheme: dark;">
+                            <span style="font-size: 12px; color: var(--text-secondary);">To</span>
+                            <input type="date" id="archived-date-to" onchange="filterArchivedTable()" style="padding: 8px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 12px; outline: none; color-scheme: dark;">
+                            <button onclick="clearArchivedDateRange()" title="Clear date filter" style="padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">All</button>
+                        </div>
+                        <input type="text" id="archived-search" placeholder="🔍 Search FO# or Account..." oninput="filterArchivedTable()" style="min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="archived-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>FO#</th>
+                                <th>Account Name</th>
+                                <th>Type</th>
+                                <th style="text-align: center;">Order Qty</th>
+                                <th style="text-align: center;">Invoiced Value</th>
+                                <th style="text-align: center;">Picking Status</th>
+                                <th>Pickers</th>
+                                <th>Operator</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archived-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Status Modal -->
+        <div id="status-modal" class="modal" onclick="closePlanStatusModal()" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e2229; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: white;">Update Order Status</h3>
+                    <span onclick="closePlanStatusModal()" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
+                </div>
+                <div id="status-modal-grid" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
+                    <!-- Status options loaded dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Paste Orders Modal -->
+        <div id="paste-modal" class="modal" onclick="document.getElementById('paste-modal').style.display='none'" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e2229; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: white;">Paste Orders from Excel</h3>
+                    <span onclick="document.getElementById('paste-modal').style.display='none'" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
+                </div>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Paste rows directly from Excel. Expected columns (no headers needed if matching this order): <br><strong style="color:white">Date | FO# | Account Name | Type | Qty | Value</strong></p>
+                <textarea id="paste-area" placeholder="Paste data here..." style="width: 100%; height: 200px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 12px; font-family: monospace; font-size: 12px; outline: none; margin-bottom: 16px; resize: vertical;"></textarea>
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <button onclick="document.getElementById('paste-modal').style.display='none'" style="padding: 8px 16px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer;">Cancel</button>
+                    <button onclick="processPastedOrders()" id="btn-process-paste" style="padding: 8px 16px; background: var(--onesource-red); border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;">Upload Orders</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Action Bar (hidden by default) -->
+    <div id="bulk-action-bar" class="bulk-action-bar" style="display: none;">
+        <span class="bulk-count" id="bulk-count">0</span>
+        <span class="bulk-label">selected — Set Plan Status:</span>
+        <button class="bulk-status-btn" onclick="bulkApplyStatus('Today\'s Plan')">
+            <span class="bulk-dot" style="background: #48bb78;"></span> Today's Plan
+        </button>
+        <button class="bulk-status-btn" onclick="bulkApplyStatus('Pending Plan')">
+            <span class="bulk-dot" style="background: #ed8936;"></span> Pending Plan
+        </button>
+        <button class="bulk-status-btn" onclick="bulkApplyStatus('Additional Plan')">
+            <span class="bulk-dot" style="background: #8b5cf6;"></span> Additional Plan
+        </button>
+        <button class="bulk-status-btn" onclick="bulkApplyStatus('Tomorrow\'s Plan')">
+            <span class="bulk-dot" style="background: #10b981;"></span> Tomorrow's Plan
+        </button>
+        <button class="bulk-status-btn" onclick="bulkApplyStatus('Grand Advance')">
+            <span class="bulk-dot" style="background: #e53e3e;"></span> Grand Advance
+        </button>
+        <button class="bulk-status-btn" onclick="bulkArchiveOrders()">
+            <span class="bulk-dot" style="background: #6b7280;"></span> Archive
+        </button>
+        <button class="bulk-cancel-btn" onclick="toggleBulkMode()">✕ Cancel</button>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/api';
+
+        let pickingOrders = [];
+        let pickersList = [];
+        let dispatchPlanData = [];
+        let archivedData = [];
+        let archivedDefaultsSet = false;
+        let bulkMode = false;
+        let bulkSelectedIds = new Set();
+        let currentUser = null; // set on init
+
+        async function loadData() {
+            try {
+                const [dispatchRes, pickingRes, archivedRes, pickersRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/dispatch-plan`),
+                    fetch(`${API_BASE_URL}/picking-orders`),
+                    fetch(`${API_BASE_URL}/dispatch-plan/archived`),
+                    fetch(`${API_BASE_URL}/pickers`)
+                ]);
+                const data = await dispatchRes.json();
+                dispatchPlanData = data;
+                populateDispatchDateFilter();
+                pickingOrders = await pickingRes.json();
+                const archivedResult = await archivedRes.json();
+                pickersList = await pickersRes.json().catch(() => []);
+                if (!Array.isArray(pickersList)) pickersList = [];
+
+                if (!Array.isArray(data)) {
+                    console.error('Data is not an array:', data);
+                    return;
+                }
+
+                // Auto-advance order status when outbound is On-going.
+                // Grand orders: blank/early/"In progress picking" → "picked for sort"
+                // Regular orders: blank/early → "In progress picking"
+                const GRAND_PLAN_STATUSES = new Set(['grand advance', 'grand advanced']);
+                dispatchPlanData.forEach(item => {
+                    if (item.archiveStatus === 'Archived') return;
+
+                    const planStatusKey = (item.status || '').toLowerCase().trim();
+                    const isGrand = GRAND_PLAN_STATUSES.has(planStatusKey);
+                    const currentStatusKey = (item.orderStatus || '').toLowerCase().trim();
+
+                    const EARLY_STATUSES = new Set(['']);
+                    const GRAND_EARLY_STATUSES = new Set(['']);
+                    const eligibleSet = isGrand ? GRAND_EARLY_STATUSES : EARLY_STATUSES;
+                    if (!eligibleSet.has(currentStatusKey)) return;
+
+                    const itemFoStr = String(item.fo || '');
+                    let completedQty = 0, ongoingPickers = 0;
+                    (pickingOrders || []).forEach(order => {
+                        if (String(order.foNumber) === itemFoStr &&
+                            String(order.partyCode) === String(item.partyCode) &&
+                            Number(order.totalOrderQty) === Number(item.qty)) {
+                            if (order.status === 'completed') completedQty += parseInt(order.pickerQty) || 0;
+                            else if (order.status === 'in-progress') ongoingPickers++;
+                        }
+                    });
+
+                    if (ongoingPickers > 0 || completedQty > 0) {
+                        const targetStatus = isGrand ? 'picked for sort' : 'In progress picking';
+                        item.orderStatus = targetStatus;
+                        AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/order-status/${item.id}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: targetStatus })
+                        }).catch(err => console.warn(`[Auto-status] Failed for ${item.id}:`, err));
+                    }
+                });
+
+                filterDispatchTable();
+                const truckData = data.filter(item => {
+                    if (item.archiveStatus === 'Archived') return false;
+                    const status = (item.status || '').toLowerCase().trim();
+                    return status === "today's plan" || status === "pending plan";
+                });
+                renderTruckAssignment(truckData);
+                archivedData = Array.isArray(archivedResult) ? archivedResult : [];
+                if (!archivedDefaultsSet) {
+                    const today = new Date();
+                    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                    const fromEl = document.getElementById('archived-date-from');
+                    const toEl = document.getElementById('archived-date-to');
+                    if (fromEl) fromEl.value = iso;
+                    if (toEl) toEl.value = iso;
+                    archivedDefaultsSet = true;
+                }
+                filterArchivedTable();
+
+                document.getElementById('dispatch-loading').style.display = 'none';
+                document.getElementById('truck-loading').style.display = 'none';
+                document.getElementById('dispatch-table').style.display = 'table';
+                document.getElementById('truck-table').style.display = 'table';
+                document.getElementById('archived-table').style.display = 'table';
+
+                const now = new Date();
+                document.getElementById('last-update').textContent = `Live Sync ${now.toLocaleTimeString()}`;
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function populateDispatchDateFilter() {
+            const select = document.getElementById('dispatch-date-filter');
+            if (!select) return;
+            const prev = select.value;
+            // Build map of ISO date -> display label, keeping distinct order dates
+            const dateMap = new Map();
+            (dispatchPlanData || []).forEach(item => {
+                const iso = toISODate(item.orderReceived);
+                if (iso && !dateMap.has(iso)) {
+                    dateMap.set(iso, formatISODisplay(iso));
+                }
+            });
+            const sortedIsos = Array.from(dateMap.keys()).sort((a, b) => b.localeCompare(a)); // newest first
+            select.innerHTML = '<option value="">📅 All Order Dates</option>' +
+                sortedIsos.map(iso => `<option value="${iso}">${dateMap.get(iso)}</option>`).join('');
+            // Restore previous selection if still available
+            if (prev && dateMap.has(prev)) select.value = prev;
+        }
+
+        function filterDispatchTable() {
+            const searchTerm = document.getElementById('dispatch-search')?.value.toLowerCase() || '';
+            const dateFilter = document.getElementById('dispatch-date-filter')?.value || '';
+            const filteredData = dispatchPlanData.filter(item => {
+                const searchStr = searchTerm.toLowerCase();
+                const foStr = String(item.fo || '').toLowerCase();
+                const accStr = String(item.accountName || '').toLowerCase();
+                const matchesSearch = foStr.includes(searchStr) || accStr.includes(searchStr);
+                if (!matchesSearch) return false;
+                if (dateFilter && toISODate(item.orderReceived) !== dateFilter) return false;
+                return true;
+            });
+            renderDispatchPlan(filteredData, pickingOrders);
+        }
+
+        function formatISODisplay(iso) {
+            // Convert "YYYY-MM-DD" -> "M/D/YYYY" for consistent dropdown labels
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+            if (!m) return iso || '-';
+            return `${parseInt(m[2], 10)}/${parseInt(m[3], 10)}/${m[1]}`;
+        }
+
+        function formatOrderDate(value) {
+            if (!value) return '-';
+            // Strip any time portion: handles "2026-07-03T10:30", "2026-07-03 10:30:00", "7/3/2026 10:30 AM", "7/3/2026, 10:30:00 AM"
+            const datePart = String(value).trim().split(/[T ,]/)[0];
+            return datePart || '-';
+        }
+
+        function renderDispatchPlan(data, pickingOrders) {
+            const body = document.getElementById('dispatch-body');
+            body.innerHTML = '';
+
+            // Handle checkbox header column
+            const thead = document.querySelector('#dispatch-table thead tr');
+            const existingBulkTh = thead.querySelector('.bulk-th');
+            if (bulkMode && !existingBulkTh) {
+                const th = document.createElement('th');
+                th.className = 'bulk-th';
+                th.innerHTML = '<input type="checkbox" class="bulk-checkbox" id="bulk-select-all" onchange="toggleSelectAll(this)" title="Select All">';
+                thead.insertBefore(th, thead.firstChild);
+            } else if (!bulkMode && existingBulkTh) {
+                existingBulkTh.remove();
+            }
+
+            const getStatusRank = (status) => {
+                if (!status) return 999;
+                const normalized = status.toLowerCase().trim();
+                const statusToMatch = normalized === 'grand advanced' ? 'grand advance' : normalized;
+                const idx = ALL_PLAN_STATUSES.findIndex(s => s.toLowerCase().trim() === statusToMatch);
+                return idx === -1 ? 999 : idx;
+            };
+
+            const sortedData = data
+                .map((item, idx) => ({ item, idx }))
+                .sort((a, b) => {
+                    const rankA = getStatusRank(a.item.status);
+                    const rankB = getStatusRank(b.item.status);
+                    if (rankA !== rankB) {
+                        return rankA - rankB;
+                    }
+                    return a.idx - b.idx;
+                })
+                .map(wrapper => wrapper.item);
+
+            sortedData.filter(item => item.archiveStatus !== 'Archived').forEach(item => {
+                let completedQty = 0;
+                let ongoingQty = 0;
+                let ongoingPickers = 0;
+                const itemFoStr = String(item.fo || '');
+                const itemQty = parseInt(item.qty) || 0;
+                let stagingArea = '-';
+
+                (pickingOrders || []).forEach(order => {
+                    if (String(order.foNumber) === itemFoStr && 
+                        String(order.partyCode) === String(item.partyCode) && 
+                        Number(order.totalOrderQty) === Number(item.qty)) {
+                        
+                        if (order.stagingArea) stagingArea = order.stagingArea;
+
+                        if (order.status === 'completed') {
+                            completedQty += parseInt(order.pickerQty) || 0;
+                        } else if (order.status === 'in-progress') {
+                            ongoingQty += parseInt(order.pickerQty) || 0;
+                            ongoingPickers++;
+                        }
+                    }
+                });
+
+                const pendingQty = Math.max(0, itemQty - completedQty);
+                const completedProgress = itemQty > 0 ? (completedQty >= itemQty ? 100 : Math.floor((completedQty / itemQty) * 100)) : 0;
+                const ongoingProgress = itemQty > 0 ? (completedQty + ongoingQty >= itemQty ? (100 - completedProgress) : Math.floor((ongoingQty / itemQty) * 100)) : 0;
+                const totalProgress = completedQty + ongoingQty >= itemQty ? 100 : Math.floor(((completedQty + ongoingQty) / itemQty) * 100);
+
+                let statusLabel = 'Pending';
+                let statusClass = 'status-pending';
+
+                if (completedQty >= itemQty && itemQty > 0) {
+                    statusLabel = 'Completed';
+                    statusClass = 'status-completed';
+                } else if (ongoingPickers > 0 || completedQty > 0) {
+                    statusLabel = 'On-going';
+                    statusClass = 'status-ongoing';
+                }
+
+                const foList = itemFoStr.split(',').map(f => f.trim()).filter(f => f);
+                const foDisplay = `
+                    <div class="fo-container">
+                        ${foList.map(f => `<span class="fo-badge-pill">${f}</span>`).join('')}
+                    </div>
+                `;
+
+                const tr = document.createElement('tr');
+                
+                const rawVal = String(item.invoicedValue || '').replace(/[^0-9.-]+/g, '');
+                const numericVal = parseFloat(rawVal);
+                const hasValue = !isNaN(numericVal) && rawVal.length > 0;
+                const setter = item.invoicedValueUser || '';
+                const canSetValue = currentUser && ['admin', 'supervisor', 'processor'].includes(currentUser.role);
+                const canEdit = canSetValue;
+
+                const valueDisplay = hasValue ?
+                    `<span style="cursor: ${canEdit ? 'pointer' : 'default'}; font-weight: 500; font-size: 13px; color: var(--accent-green);" ${canEdit ? `onclick="promptInvoicedValue('${item.id}', '${item.invoicedValue}')"` : `title="Set by ${setter}"`}>₱${numericVal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>` :
+                    `<span style="color: rgba(255,255,255,0.3); cursor: ${canEdit ? 'pointer' : 'default'}; text-decoration: ${canEdit ? 'underline' : 'none'}; font-style: italic; font-size: 12px;" ${canEdit ? `onclick="promptInvoicedValue('${item.id}', '')"` : ''}>Add Value</span>`;
+
+                const checkboxTd = bulkMode ? `<td class="bulk-td"><input type="checkbox" class="bulk-checkbox" data-id="${item.id}" ${bulkSelectedIds.has(item.id) ? 'checked' : ''} onchange="toggleBulkItem(this)"></td>` : '';
+
+                tr.innerHTML = `
+                    ${checkboxTd}
+                    <td style="text-align:center;">${buildPlanStatusBadge(item.status, item.id, item.orderStatus)}</td>
+                    <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary);">${formatOrderDate(item.orderReceived)}</td>
+                    <td style="width: 140px;">${foDisplay}</td>
+                    <td style="font-weight: 600;">${item.accountName || 'Unknown'}</td>
+                    <td style="text-align: center; font-weight: 500;">${item.type || '-'}</td>
+                    <td style="text-align: center;">${itemQty.toLocaleString()}</td>
+                    <td style="text-align: center;">${valueDisplay}</td>
+                    <td style="text-align: center;">
+                        ${buildOrderStatusCombo(item.id, item.orderStatus)}
+                    </td>
+                    <td style="text-align: center;">
+                        <span class="status-badge ${statusClass}" style="cursor: pointer;" onclick="navigateToOutbound('${(foList[0] || '').replace(/'/g, "\\'")}')"> ${statusLabel}</span>
+                    </td>
+                    <td>
+                        ${stagingArea !== '-' ? `<span style="color: var(--accent-green); font-weight: 600; font-size: 11px;">📍 ${stagingArea}</span>` : '-'}
+                    </td>
+                    <td style="text-align: center;">
+                        ${item.truckStatus === 'Dispatched' ? '<span class="status-badge status-dispatched">Dispatched</span>' : item.truckStatus === 'On Site' ? '<span class="status-badge status-on-site">On Site</span>' : '<span style="color: rgba(255,255,255,0.2); font-size: 11px;">—</span>'}
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        // Normalize an order date value to yyyy-mm-dd for comparison
+        function toISODate(value) {
+            if (!value) return '';
+            const datePart = String(value).trim().split(/[T ,]/)[0];
+            if (!datePart) return '';
+            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
+            const m = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); // m/d/yyyy
+            if (m) return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+            const d = new Date(datePart);
+            return isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        // Trace date column: prefer the real archived-at timestamp (date + time);
+        // for rows archived before the timestamp existed, fall back to the
+        // invoiced date, then dispatch date, then pick-end date.
+        function formatArchivedAt(item) {
+            const stamp = String(item.archivedAt || '').trim();
+            if (stamp) {
+                const parts = stamp.split(/[T ]/);
+                const datePart = formatOrderDate(parts[0]);
+                const timePart = (parts[1] || '').slice(0, 5); // HH:mm
+                return timePart ? `${datePart} ${timePart}` : datePart;
+            }
+            return formatOrderDate(item.invoicedAt || item.dispatch || item.donePick);
+        }
+
+        function clearArchivedDateRange() {
+            const fromEl = document.getElementById('archived-date-from');
+            const toEl = document.getElementById('archived-date-to');
+            if (fromEl) fromEl.value = '';
+            if (toEl) toEl.value = '';
+            filterArchivedTable();
+        }
+
+        function filterArchivedTable() {
+            const searchTerm = (document.getElementById('archived-search')?.value || '').toLowerCase().trim();
+            const fromVal = document.getElementById('archived-date-from')?.value || '';
+            const toVal = document.getElementById('archived-date-to')?.value || '';
+            const filtered = (archivedData || []).filter(item => {
+                const foStr = String(item.fo || '').toLowerCase();
+                const accStr = String(item.accountName || '').toLowerCase();
+                const matchesSearch = !searchTerm || foStr.includes(searchTerm) || accStr.includes(searchTerm);
+                if (!matchesSearch) return false;
+                if (fromVal || toVal) {
+                    const iso = toISODate(item.archivedAt || item.invoicedAt || item.dispatch || item.donePick);
+                    if (!iso) return false;
+                    if (fromVal && iso < fromVal) return false;
+                    if (toVal && iso > toVal) return false;
+                }
+                return true;
+            });
+            renderArchived(filtered);
+        }
+
+        function renderArchived(data) {
+            const body = document.getElementById('archived-body');
+            body.innerHTML = '';
+
+            // Map picker code -> designation ('Picker' | 'Operator')
+            const designationByCode = {};
+            (pickersList || []).forEach(p => {
+                if (p && p.code) designationByCode[String(p.code).trim().toUpperCase()] = (p.designation || 'Picker');
+            });
+
+            const codePills = (set) => set.size
+                ? `<div class="fo-container" style="flex-direction: column;">${[...set].map(c => `<span class="fo-badge-pill">${c}</span>`).join('')}</div>`
+                : '<span style="color: rgba(255,255,255,0.2); font-size: 11px;">—</span>';
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                const itemFoStr = String(item.fo || '');
+                const foList = itemFoStr.split(',').map(f => f.trim()).filter(f => f);
+                const foDisplay = `<div class="fo-container" style="flex-direction: column;">${foList.map(f => `<span class="fo-badge-pill">${f}</span>`).join('')}</div>`;
+
+                // Gather pickers / operators + picking status from picking orders
+                const itemQty = parseInt(item.qty) || 0;
+                let completedQty = 0, ongoingPickers = 0;
+                const pickerCodes = new Set();
+                const operatorCodes = new Set();
+
+                (pickingOrders || []).forEach(order => {
+                    const foMatch = foList.includes(String(order.foNumber).trim()) || String(order.foNumber) === itemFoStr;
+                    const partyMatch = String(order.partyCode) === String(item.partyCode);
+                    const qtyMatch = Number(order.totalOrderQty) === Number(item.qty);
+                    if (!(foMatch && partyMatch && qtyMatch)) return;
+
+                    const code = String(order.pickerCode || '').trim();
+                    if (code) {
+                        const desig = designationByCode[code.toUpperCase()] || 'Picker';
+                        if (desig === 'Operator') operatorCodes.add(code);
+                        else pickerCodes.add(code);
+                    }
+                    if (order.status === 'completed') completedQty += parseInt(order.pickerQty) || 0;
+                    else if (order.status === 'in-progress') ongoingPickers++;
+                });
+
+                let statusLabel = 'Pending', statusClass = 'status-pending';
+                if (completedQty >= itemQty && itemQty > 0) { statusLabel = 'Completed'; statusClass = 'status-completed'; }
+                else if (ongoingPickers > 0 || completedQty > 0) { statusLabel = 'On-going'; statusClass = 'status-ongoing'; }
+
+                const rawVal = String(item.invoicedValue || '').replace(/[^0-9.-]+/g, '');
+                const numericVal = parseFloat(rawVal);
+                const hasValue = !isNaN(numericVal) && rawVal.length > 0;
+                const valueDisplay = hasValue
+                    ? `<span style="font-weight: 500; font-size: 13px; color: var(--accent-green);">₱${numericVal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`
+                    : '<span style="color: rgba(255,255,255,0.3); font-size: 12px;">-</span>';
+
+                tr.innerHTML = `
+                    <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary);">${formatArchivedAt(item)}</td>
+                    <td style="width: 140px;">${foDisplay}</td>
+                    <td style="font-weight: 600;">${item.accountName || 'Unknown'}</td>
+                    <td style="text-align: center; font-weight: 500;">${item.type || '-'}</td>
+                    <td style="text-align: center;">${itemQty.toLocaleString()}</td>
+                    <td style="text-align: center;">${valueDisplay}</td>
+                    <td style="text-align: center;"><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                    <td>${codePills(pickerCodes)}</td>
+                    <td>${codePills(operatorCodes)}</td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        async function archiveOrder(id) {
+            if (!confirm('Are you sure you want to archive this order?')) return;
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/archive/${id}`, {
+                    method: 'POST'
+                });
+                if (res.ok) {
+                    loadData();
+                } else {
+                    alert('Failed to archive order. Are you logged in?');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error archiving order: ' + err.message);
+            }
+        }
+
+        async function promptInvoicedValue(id, currentValue) {
+            const val = prompt("Enter Invoiced Value (₱):", currentValue || "");
+            if (val === null) return;
+            const cleanVal = val.replace(/[^0-9.-]+/g, '');
+            const parsedVal = cleanVal ? parseFloat(cleanVal) : 0;
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/invoiced-value/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: parsedVal })
+                });
+                if (res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    if (data.warning) alert('⚠️ ' + data.warning);
+                    loadData();
+                } else {
+                    alert('Failed to update invoiced value. Check authorization.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error updating value: ' + err.message);
+            }
+        }
+
+        const PLAN_STATUS_MAP = {
+            "today's plan":      { cls: 'status-todays-plan',    label: "Today's Plan"    },
+            "pending plan":      { cls: 'status-pending-plan',   label: 'Pending Plan'    },
+            "additional plan":   { cls: 'status-additional-plan',label: 'Additional Plan' },
+            "grand advance":     { cls: 'status-grand-advance',  label: 'Grand Advance'   },
+            "grand advanced":    { cls: 'status-grand-advance',  label: 'Grand Advanced'  },
+            "archive order":     { cls: 'status-archive-order',  label: 'Archive Order'   },
+            "tomorrow's plan":   { cls: 'status-tomorrows-plan', label: "Tomorrow's Plan" },
+        };
+
+        function buildPlanStatusBadge(status, id, orderStatus) {
+            if (!status) return '<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>';
+            const key = status.toLowerCase().trim();
+            const match = PLAN_STATUS_MAP[key];
+            const cls = match ? match.cls : '';
+            const label = match ? match.label : status;
+            
+            return `<span class="status-badge ${cls}" style="font-size:11px;white-space:nowrap;padding:2px 6px;cursor:pointer;" onclick="openPlanStatusModal('${id}', '${status.replace(/'/g, "\\'")}')">${label}</span>`;
+        }
+
+        const ORDER_STATUS_COLORS = {
+            'Ready to Dispatch':   '#f4a261',
+            'Sorting in progress': '#e9c46a',
+            'Sorted':              '#c77dff',
+            'In progress picking': '#a8c4d4',
+            'picked for sort':     '#90e0ef',
+            'Loading in progress': '#f9e03a',
+            'Loaded':              '#57cc99',
+            'dispatched':          '#48bb78',
+            'Checking':            '#ffb4a2',
+        };
+
+        const ALL_ORDER_STATUSES = Object.keys(ORDER_STATUS_COLORS);
+
+        function buildOrderStatusCombo(id, current) {
+            const color = ORDER_STATUS_COLORS[current] || 'rgba(255,255,255,0.3)';
+            const label = current || '-- Select Status --';
+            const dotStyle = current ? `background:${color};` : 'background:rgba(255,255,255,0.2);';
+
+            const isDispatched = String(current || '').trim().toLowerCase() === 'dispatched';
+            if (isDispatched) {
+                return `
+                    <div class="os-combobox disabled" id="osc-${id}" style="pointer-events: none; opacity: 0.85;">
+                        <div class="os-trigger" style="cursor: not-allowed; border-color: rgba(72,187,120,0.3); background: rgba(72,187,120,0.05);">
+                            <span class="os-dot" style="${dotStyle}"></span>
+                            <span class="os-label" style="color: #48bb78; font-weight: 600;">${label}</span>
+                            <span class="os-lock" style="margin-left: auto; font-size: 10px; opacity: 0.7;">🔒</span>
+                        </div>
+                    </div>`;
+            }
+
+            const options = ALL_ORDER_STATUSES.map(s => `
+                <div class="os-option" data-value="${s}" onclick="selectOrderStatus('${id}', '${s}', this)">
+                    <span class="os-dot" style="background:${ORDER_STATUS_COLORS[s]};"></span>
+                    ${s}
+                </div>
+            `).join('');
+
+            return `
+                <div class="os-combobox" id="osc-${id}">
+                    <div class="os-trigger" onclick="toggleOrderStatusCombo('${id}', event)">
+                        <span class="os-dot" style="${dotStyle}"></span>
+                        <span class="os-label">${label}</span>
+                        <span class="os-caret">▼</span>
+                    </div>
+                    <div class="os-dropdown" id="osd-${id}">
+                        <input class="os-search" type="text" placeholder="Search..." oninput="filterOrderStatus('${id}', this.value)" onclick="event.stopPropagation()">
+                        <div class="os-options">${options}</div>
+                    </div>
+                </div>`;
+        }
+
+        function toggleOrderStatusCombo(id, e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById(`osd-${id}`);
+            const isOpen = dropdown.classList.contains('open');
+            // Close all open dropdowns
+            document.querySelectorAll('.os-dropdown.open').forEach(d => {
+                d.classList.remove('open');
+                const inp = d.querySelector('.os-search');
+                if (inp) { inp.value = ''; filterOrderStatus(d.id.replace('osd-',''), ''); }
+            });
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                setTimeout(() => dropdown.querySelector('.os-search').focus(), 50);
+            }
+        }
+
+        function filterOrderStatus(id, query) {
+            const dropdown = document.getElementById(`osd-${id}`);
+            if (!dropdown) return;
+            const q = query.toLowerCase();
+            dropdown.querySelectorAll('.os-option').forEach(opt => {
+                opt.classList.toggle('hidden', !opt.dataset.value.toLowerCase().includes(q));
+            });
+        }
+
+        function selectOrderStatus(id, value, optEl) {
+            const dropdown = document.getElementById(`osd-${id}`);
+            dropdown.classList.remove('open');
+            const inp = dropdown.querySelector('.os-search');
+            if (inp) { inp.value = ''; filterOrderStatus(id, ''); }
+
+            if (String(value).trim().toLowerCase() === 'dispatched') {
+                const item = dispatchPlanData.find(d => d.id === id);
+                if (item) {
+                    // 1. Check invoiced value
+                    const hasValue = item.invoicedValue !== undefined && item.invoicedValue !== null && String(item.invoicedValue).trim() !== '';
+                    if (!hasValue) {
+                        alert('Cannot select "dispatched": Invoiced Value must be set first.');
+                        filterDispatchTable(); // Revert UI
+                        return;
+                    }
+
+                    // 2. Check picking status
+                    let completedQty = 0;
+                    const itemQty = parseInt(item.qty) || 0;
+                    const itemFoStr = String(item.fo || '');
+                    
+                    (pickingOrders || []).forEach(order => {
+                        if (String(order.foNumber) === itemFoStr && 
+                            String(order.partyCode) === String(item.partyCode) && 
+                            Number(order.totalOrderQty) === Number(item.qty)) {
+                            if (order.status === 'completed') {
+                                completedQty += parseInt(order.pickerQty) || 0;
+                            }
+                        }
+                    });
+
+                    const isPickingCompleted = (completedQty >= itemQty && itemQty > 0);
+                    if (!isPickingCompleted) {
+                        alert('Cannot select "dispatched": Picking Status must be Completed first.');
+                        filterDispatchTable(); // Revert UI
+                        return;
+                    }
+                }
+            }
+
+            const trigger  = document.querySelector(`#osc-${id} .os-trigger`);
+            const color    = ORDER_STATUS_COLORS[value] || 'rgba(255,255,255,0.2)';
+            trigger.querySelector('.os-dot').style.background   = color;
+            trigger.querySelector('.os-label').textContent = value;
+            updateOrderStatus(id, value);
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.os-dropdown.open').forEach(d => {
+                d.classList.remove('open');
+                const inp = d.querySelector('.os-search');
+                if (inp) { inp.value = ''; filterOrderStatus(d.id.replace('osd-',''), ''); }
+            });
+        });
+
+        async function updateOrderStatus(id, newStatus) {
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/order-status/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    if (data.warning) alert('⚠️ ' + data.warning);
+                    loadData();
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    alert(errData.error || 'Failed to update order status. Check authorization.');
+                    loadData();
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error updating status: ' + err.message);
+                loadData();
+            }
+        }
+
+        /* ── Plan Status Modal Helpers ─────────────────────────── */
+        const ALL_PLAN_STATUSES = ["Pending Plan", "Today's Plan", "Additional Plan", "Tomorrow's Plan", "Grand Advance", "Archive Order"];
+        const PLAN_STATUS_COLORS = {
+            "Today's Plan":      "#48bb78",
+            "Pending Plan":      "#ed8936",
+            "Additional Plan":   "#8b5cf6",
+            "Tomorrow's Plan":   "#10b981",
+            "Grand Advance":     "#e53e3e",
+            "Archive Order":     "#6b7280"
+        };
+
+        let activePlanOrderId = null;
+
+        function openPlanStatusModal(id, currentStatus) {
+            activePlanOrderId = id;
+            const statusList = ALL_PLAN_STATUSES;
+            
+            const grid = document.getElementById('status-modal-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = statusList.map(s => {
+                const isCurrent = s.toLowerCase().trim() === currentStatus.toLowerCase().trim();
+                const color = PLAN_STATUS_COLORS[s];
+                const activeStyle = isCurrent ? `background: ${color}20; border-color: ${color}; font-weight: bold;` : '';
+                return `
+                    <div data-plan-status="${s.replace(/"/g, '&quot;')}" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; cursor: pointer; transition: all 0.2s; ${activeStyle}" onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.borderColor='${color}'" onmouseout="this.style.background='${isCurrent ? color + '20' : 'rgba(255,255,255,0.03)'}'; this.style.borderColor='${isCurrent ? color : 'rgba(255,255,255,0.08)'}'"> 
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${color}; display: inline-block;"></span>
+                        <span style="color: ${isCurrent ? color : 'white'}; font-size: 13px;">${s}</span>
+                        ${isCurrent ? `<span style="margin-left: auto; color: ${color}; font-size: 12px;">✓</span>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            // Use event delegation to handle clicks (avoids apostrophe-in-onclick bugs)
+            grid.querySelectorAll('[data-plan-status]').forEach(el => {
+                el.addEventListener('click', () => {
+                    selectPlanStatusModal(el.dataset.planStatus);
+                });
+            });
+            
+            const modal = document.getElementById('status-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closePlanStatusModal() {
+            const modal = document.getElementById('status-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            activePlanOrderId = null;
+        }
+
+        function selectPlanStatusModal(status) {
+            if (activePlanOrderId) {
+                if (status === 'Archive Order') {
+                    archiveOrder(activePlanOrderId);
+                } else {
+                    updatePlanStatus(activePlanOrderId, status);
+                }
+            }
+            closePlanStatusModal();
+        }
+
+        /* ── Bulk Action Functions ─────────────────────────── */
+        function toggleBulkMode() {
+            bulkMode = !bulkMode;
+            bulkSelectedIds.clear();
+            const btn = document.getElementById('btn-bulk-toggle');
+            const bar = document.getElementById('bulk-action-bar');
+            if (bulkMode) {
+                btn.classList.add('active');
+                btn.innerHTML = '✕ Cancel Bulk';
+                bar.style.display = 'flex';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '☑ Bulk Action';
+                bar.style.display = 'none';
+            }
+            updateBulkCount();
+            filterDispatchTable();
+        }
+
+        function toggleBulkItem(checkbox) {
+            const id = checkbox.dataset.id;
+            if (checkbox.checked) {
+                bulkSelectedIds.add(id);
+            } else {
+                bulkSelectedIds.delete(id);
+            }
+            updateBulkCount();
+            // Update select-all checkbox state
+            const selectAll = document.getElementById('bulk-select-all');
+            if (selectAll) {
+                const allBoxes = document.querySelectorAll('#dispatch-body .bulk-checkbox');
+                const checkedBoxes = document.querySelectorAll('#dispatch-body .bulk-checkbox:checked');
+                selectAll.checked = allBoxes.length > 0 && allBoxes.length === checkedBoxes.length;
+                selectAll.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < allBoxes.length;
+            }
+        }
+
+        function toggleSelectAll(masterCheckbox) {
+            const allBoxes = document.querySelectorAll('#dispatch-body .bulk-checkbox');
+            allBoxes.forEach(cb => {
+                cb.checked = masterCheckbox.checked;
+                const id = cb.dataset.id;
+                if (masterCheckbox.checked) {
+                    bulkSelectedIds.add(id);
+                } else {
+                    bulkSelectedIds.delete(id);
+                }
+            });
+            updateBulkCount();
+        }
+
+        function updateBulkCount() {
+            const countEl = document.getElementById('bulk-count');
+            if (countEl) {
+                countEl.textContent = bulkSelectedIds.size;
+            }
+        }
+
+        async function bulkApplyStatus(status) {
+            if (bulkSelectedIds.size === 0) {
+                alert('No orders selected. Please check the boxes first.');
+                return;
+            }
+            if (!confirm(`Set ${bulkSelectedIds.size} order(s) to "${status}"?`)) return;
+
+            const bar = document.getElementById('bulk-action-bar');
+            const btns = bar.querySelectorAll('.bulk-status-btn');
+            btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
+
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/bulk-plan-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: Array.from(bulkSelectedIds), status })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    let msg = `Updated ${result.updated} order(s) to "${status}".`;
+                    if (result.skipped > 0) msg += ` ${result.skipped} skipped.`;
+                    if (result.errors && result.errors.length > 0) msg += '\n' + result.errors.join('\n');
+                    alert(msg);
+                    toggleBulkMode();
+                    loadData();
+                } else {
+                    alert('Bulk update failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error during bulk update: ' + err.message);
+            } finally {
+                btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+            }
+        }
+
+        async function bulkArchiveOrders() {
+            if (bulkSelectedIds.size === 0) {
+                alert('No orders selected. Please check the boxes first.');
+                return;
+            }
+            if (!confirm(`Are you sure you want to archive ${bulkSelectedIds.size} selected order(s)? Note: Only dispatched orders can be archived.`)) return;
+
+            const bar = document.getElementById('bulk-action-bar');
+            const btns = bar.querySelectorAll('.bulk-status-btn, .bulk-cancel-btn');
+            btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
+
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/bulk-archive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: Array.from(bulkSelectedIds) })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    let msg = `Archived ${result.updated} order(s).`;
+                    if (result.skipped > 0) msg += ` ${result.skipped} skipped.`;
+                    if (result.errors && result.errors.length > 0) msg += '\n' + result.errors.join('\n');
+                    alert(msg);
+                    toggleBulkMode();
+                    loadData();
+                } else {
+                    alert('Bulk archive failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error during bulk archive: ' + err.message);
+            } finally {
+                btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+            }
+        }
+
+        async function updatePlanStatus(id, newStatus) {
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/plan-status/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    if (data.warning) alert('⚠️ ' + data.warning);
+                    loadData();
+                } else {
+                    alert('Failed to update plan status. Check authorization.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error updating plan status: ' + err.message);
+            }
+        }
+
+        function navigateToOutbound(fo) {
+            const searchVal = fo || '';
+            if (window.parent && typeof window.parent.switchPage === 'function') {
+                const outboundFrame = window.parent.document.getElementById('frame-outbound');
+                if (outboundFrame) {
+                    outboundFrame.src = `/outbound.html?search=${encodeURIComponent(searchVal)}`;
+                }
+                window.parent.switchPage('outbound');
+            } else {
+                window.location.href = `outbound.html?search=${encodeURIComponent(searchVal)}`;
+            }
+        }
+
+        async function syncMaster() {
+            const btn = document.getElementById('btn-sync');
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/sync`, {
+                    method: 'POST'
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    let msg = `Sync complete! ${result.newOrdersAdded} new order(s) added, ${result.ordersUpdated} updated.`;
+                    if (result.ordersAutoArchived > 0) msg += ` ${result.ordersAutoArchived} row(s) archived.`;
+                    if (result.skippedOrders && result.skippedOrders.length > 0) {
+                        msg += `\n\n⚠️ ${result.skippedOrders.length} order(s) skipped (invalid FO number):\n`;
+                        msg += result.skippedOrders.map(s => `• FO "${s.fo}" — ${s.accountName}`).join('\n');
+                    }
+                    if (result.warnings && result.warnings.length > 0) {
+                        msg += `\n\n📦 ${result.warnings.length} order(s) removed from master — moved to archive:\n`;
+                        msg += result.warnings.map(w => `• FO ${w.fo} — ${w.accountName} (${w.partyCode})`).join('\n');
+                    }
+                    alert(msg);
+                    loadData();
+                } else {
+                    alert('Sync failed: ' + result.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error syncing orders: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sync Orders';
+            }
+        }
+
+        let relayAvailable = false;
+
+        function syncOutboundDashboard() {
+            if (relayAvailable) {
+                autoSyncDashboard();
+            } else {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.xlsx,.xls,.csv';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    await processDashboardFile(file);
+                };
+                input.click();
+            }
+        }
+
+        function showToast(msg, type = 'error') {
+            const existing = document.getElementById('dp-toast');
+            if (existing) existing.remove();
+            const t = document.createElement('div');
+            t.id = 'dp-toast';
+            const bg = type === 'error' ? 'rgba(254,178,178,0.12)' : 'rgba(72,187,120,0.12)';
+            const color = type === 'error' ? '#fc8181' : '#68d391';
+            const border = type === 'error' ? '#fc8181' : '#68d391';
+            t.style.cssText = `position:fixed;bottom:24px;right:24px;background:${bg};border:1px solid ${border};color:${color};padding:12px 18px;border-radius:10px;font-size:13px;z-index:9999;max-width:420px;line-height:1.5;box-shadow:0 4px 16px rgba(0,0,0,0.4);`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 6000);
+        }
+
+        async function autoSyncDashboard() {
+            const btn = document.getElementById('btn-sync-dashboard');
+            btn.disabled = true;
+            btn.textContent = '⏳ Syncing...';
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/auto-sync-dashboard`, { method: 'POST' });
+                const result = await res.json();
+                if (!res.ok) {
+                    showToast('Sync WMS DB failed: ' + result.error);
+                    return;
+                }
+                showDashboardSyncModal(result);
+            } catch (err) {
+                showToast('Sync WMS DB error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⚡ Sync WMS DB';
+            }
+        }
+
+        async function processDashboardFile(file) {
+            let rows;
+            try {
+                const buf = await file.arrayBuffer();
+                const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+            } catch (err) {
+                alert('Could not read the file: ' + err.message);
+                return;
+            }
+            if (!rows || rows.length === 0) {
+                alert('No data rows found.\n\nExport from "Outbound Picking Category" in the OSLAI Dashboard, then upload the file here.');
+                return;
+            }
+            const btn = document.getElementById('btn-sync-dashboard');
+            btn.disabled = true;
+            btn.textContent = '⏳ Saving...';
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/sync-outbound-dashboard`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rows })
+                });
+                const result = await res.json();
+                if (!res.ok) {
+                    alert('Dashboard sync failed: ' + result.error);
+                    return;
+                }
+                showDashboardSyncModal(result);
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📂 Upload Dashboard';
+            }
+        }
+
+        function showDashboardSyncModal(result) {
+            const existing = document.getElementById('dashboard-sync-modal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'dashboard-sync-modal';
+            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(8px);';
+
+            const rows = result.data || [];
+            const tableRows = rows.map(r => `
+                <tr>
+                    <td style="padding:6px 10px;font-size:12px;white-space:nowrap;">${r.bl}</td>
+                    <td style="padding:6px 10px;font-size:12px;">${r.account}</td>
+                    <td style="padding:6px 10px;font-size:12px;font-weight:600;">${r.fo}</td>
+                    <td style="padding:6px 10px;font-size:12px;color:var(--text-secondary);">${r.po}</td>
+                    <td style="padding:6px 10px;font-size:12px;text-align:center;color:#63b3ed;">${r.operatorQty.toLocaleString()}</td>
+                    <td style="padding:6px 10px;font-size:12px;text-align:center;color:#48bb78;">${r.pickerQty.toLocaleString()}</td>
+                </tr>`).join('');
+
+            modal.innerHTML = `
+                <div style="background:#1a202c;border-radius:16px;border:1px solid rgba(255,255,255,0.1);width:90%;max-width:900px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
+                    <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <h3 style="margin:0 0 4px;font-size:18px;">📊 Dashboard Sync Complete</h3>
+                            <p style="margin:0;font-size:13px;color:var(--text-secondary);">${result.synced} rows • ${result.appended} new • ${result.updated} updated → saved to <strong>Outbound BL Data</strong> sheet</p>
+                        </div>
+                        <button onclick="document.getElementById('dashboard-sync-modal').remove()" style="background:rgba(255,255,255,0.08);border:none;color:var(--text-primary);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">✕ Close</button>
+                    </div>
+                    <div style="overflow-y:auto;flex:1;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead style="position:sticky;top:0;background:#1a202c;">
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">BL#</th>
+                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Account</th>
+                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">FO#</th>
+                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">PO#</th>
+                                    <th style="padding:8px 10px;text-align:center;font-size:11px;color:#63b3ed;text-transform:uppercase;">Operator Qty</th>
+                                    <th style="padding:8px 10px;text-align:center;font-size:11px;color:#48bb78;text-transform:uppercase;">Picker Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tableRows || '<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-secondary);">No data returned</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        }
+
+        async function backfillPickingIds() {
+            const btn = document.getElementById('btn-backfill-pick');
+            btn.disabled = true;
+            btn.textContent = 'Backfilling...';
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/picking-orders/backfill-system-ids`, { method: 'POST' });
+                const result = await res.json();
+                if (res.ok) {
+                    alert(`Backfill complete! ${result.total} row(s) updated (${result.today} today).`);
+                } else {
+                    alert('Backfill failed: ' + result.error);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Backfill Picking IDs';
+            }
+        }
+
+        async function migrateArchived() {
+            const btn = document.getElementById('btn-migrate-archived');
+            btn.disabled = true;
+            btn.textContent = 'Migrating...';
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/migrate-archived`, { method: 'POST' });
+                const result = await res.json();
+                if (res.ok) {
+                    alert(result.message + (result.moved ? ` (${result.moved} rows moved to Dispatch Plan Archive tab)` : ''));
+                    if (result.moved) loadData();
+                } else {
+                    alert('Failed: ' + result.error);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Migrate Archived';
+            }
+        }
+
+        async function patchHeaders() {
+            const btn = document.getElementById('btn-patch-headers');
+            btn.disabled = true;
+            btn.textContent = 'Patching...';
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/patch-headers`, { method: 'POST' });
+                const result = await res.json();
+                if (res.ok) {
+                    alert('Headers updated: ' + result.message);
+                } else {
+                    alert('Failed: ' + result.error);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Patch Headers';
+            }
+        }
+
+        function filterTruckTable() {
+            const searchTerm = document.getElementById('truck-search')?.value.toLowerCase() || '';
+            const filteredData = dispatchPlanData.filter(item => {
+                if (item.archiveStatus === 'Archived') return false;
+                const status = (item.status || '').toLowerCase().trim();
+                if (status !== "today's plan" && status !== "pending plan") return false;
+
+                const foStr = String(item.fo || '').toLowerCase();
+                const accStr = String(item.accountName || '').toLowerCase();
+                return foStr.includes(searchTerm) || accStr.includes(searchTerm);
+            });
+            renderTruckAssignment(filteredData);
+        }
+
+        async function saveTruckField(id, field, value, inputEl) {
+            try {
+                inputEl.style.opacity = '0.6';
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/truck-field/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field, value })
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    inputEl.classList.add('saved');
+                    setTimeout(() => inputEl.classList.remove('saved'), 1500);
+                    // Update the local data so the meta line refreshes
+                    const item = dispatchPlanData.find(d => d.id === id);
+                    if (item) {
+                        item[field] = value;
+                        item[`${field}_TS`] = result.timestamp;
+                        item[`${field}_User`] = result.username;
+                    }
+                    // Update the meta line in the same row
+                    const metaEl = document.getElementById(`meta-${field}-${id}`);
+                    if (metaEl) {
+                        metaEl.textContent = result.username ? `${result.username} • ${result.timestamp}` : '';
+                    }
+                } else {
+                    alert('Failed to save. Check authorization.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error saving: ' + err.message);
+            } finally {
+                inputEl.style.opacity = '1';
+            }
+        }
+
+        function renderTruckAssignment(data) {
+            const body = document.getElementById('truck-body');
+            body.innerHTML = '';
+
+            data.filter(item => item.archiveStatus !== 'Archived').forEach(item => {
+                const foList = String(item.fo || '').split(',').map(f => f.trim()).filter(f => f);
+                const foDisplay = `<div class="fo-container">${foList.map(f => `<span class="fo-badge-pill">${f}</span>`).join('')}</div>`;
+
+                const itemQty = parseInt(item.qty) || 0;
+
+                function toDatetimeLocal(s) {
+                    if (!s) return '';
+                    s = String(s).trim();
+                    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) return s.slice(0, 16);
+                    // M/D/YY or M/D/YYYY h:mm AM/PM
+                    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+                    if (m) {
+                        let [, mo, da, yr, hr, min, ap] = m;
+                        if (yr.length === 2) yr = '20' + yr;
+                        hr = parseInt(hr);
+                        if ((ap || '').toUpperCase() === 'PM' && hr < 12) hr += 12;
+                        if ((ap || '').toUpperCase() === 'AM' && hr === 12) hr = 0;
+                        return `${yr}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}T${String(hr).padStart(2,'0')}:${min}`;
+                    }
+                    return ''; // time-only or unparseable → fall back to text
+                }
+
+                function mkInput(field, val, type, placeholder, ts, user) {
+                    let inputType = type === 'datetime' ? 'datetime-local' : 'text';
+                    let displayVal = String(val || '');
+                    if (type === 'datetime' && displayVal) {
+                        const iso = toDatetimeLocal(displayVal);
+                        if (iso) { displayVal = iso; }
+                        else { inputType = 'text'; } // can't convert (e.g. time-only) — show as text
+                    }
+                    const escaped = displayVal.replace(/"/g, '&quot;');
+                    const metaText = user ? `${user} • ${ts}` : '';
+                    const isDispatched = String(item.orderStatus || '').trim().toLowerCase() === 'dispatched';
+                    return `
+                        <input class="ta-input" type="${inputType}" value="${escaped}" placeholder="${placeholder}"
+                            onchange="saveTruckField('${item.id}', '${field}', this.value, this)" ${isDispatched ? 'disabled style="cursor: not-allowed; opacity: 0.65;"' : ''} />
+                        <div class="ta-meta" id="meta-${field}-${item.id}">${metaText}</div>
+                    `;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="width:140px;">${foDisplay}</td>
+                    <td style="font-weight:600;">${item.accountName || 'Unknown'}</td>
+                    <td style="text-align:center;">${itemQty.toLocaleString()}</td>
+                    <td style="text-align:center;">${item.cbm || '-'}</td>
+                    <td style="text-align:center;">${item.weight || '-'}</td>
+                    <td style="text-align:center;">${item.truckSize || '-'}</td>
+                    <td>${mkInput('trucker', item.trucker, 'text', 'Trucker name', item.trucker_TS, item.trucker_User)}</td>
+                    <td>${mkInput('plateNo', item.plateNo, 'text', 'Plate #', item.plateNo_TS, item.plateNo_User)}</td>
+                    <td>${mkInput('loadingTime', item.loadingTime, 'datetime', 'Loading time', item.loadingTime_TS, item.loadingTime_User)}</td>
+                    <td>${mkInput('linechecker', item.linechecker, 'text', 'Checker name', item.linechecker_TS, item.linechecker_User)}</td>
+                    <td>${mkInput('dispatcher', item.dispatcher, 'text', 'Checker name', item.dispatcher_TS, item.dispatcher_User)}</td>
+                    <td>${mkInput('timeArrival', item.timeArrival, 'datetime', 'Time arrival', item.timeArrival_TS, item.timeArrival_User)}</td>
+                    <td>${mkInput('startLoading', item.startLoading, 'datetime', 'Start loading', item.startLoading_TS, item.startLoading_User)}</td>
+                    <td>${mkInput('loadingEnd', item.loadingEnd, 'datetime', 'Loading end', item.loadingEnd_TS, item.loadingEnd_User)}</td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            document.getElementById(tabId).classList.add('active');
+            
+            // Find the button that was clicked
+            const btn = Array.from(document.querySelectorAll('.tab-button')).find(b => b.onclick.toString().includes(tabId));
+            if (btn) btn.classList.add('active');
+        }
+
+        // Initialize
+        (async () => {
+            const user = await AuthGuard.init();
+            if (!user) return;
+            currentUser = user;
+            
+            if (user.role === 'admin' || user.role === 'supervisor') {
+                const bulkBtn = document.getElementById('btn-bulk-toggle');
+                if (bulkBtn) bulkBtn.style.display = 'flex';
+                const dashBtn = document.getElementById('btn-sync-dashboard');
+                if (dashBtn) dashBtn.style.display = 'inline-flex';
+
+                // Check if relay is configured — switch button to auto-sync mode
+                fetch(`${API_BASE_URL}/relay-status`)
+                    .then(r => r.json())
+                    .then(({ configured }) => {
+                        relayAvailable = configured;
+                        if (configured && dashBtn) {
+                            dashBtn.textContent = '⚡ Sync WMS DB';
+                            dashBtn.title = 'Auto-sync from OSLAI Dashboard via relay';
+                        }
+                    })
+                    .catch(() => {});
+            }
+
+            loadData();
+            setInterval(() => {
+                        if (document.hidden) return; loadData(); }, 60000); // Refresh every minute
+        })();
+        async function processPastedOrders() {
+            const text = document.getElementById('paste-area').value.trim();
+            if (!text) return;
+            
+            const rows = text.split('\n').map(row => row.split('\t'));
+            const orders = rows.map(cols => ({
+                dispatch_date: cols[0] || new Date().toLocaleDateString('en-US'),
+                fo: cols[1] || '',
+                account_name: cols[2] || '',
+                type: cols[3] || '',
+                qty: parseInt(cols[4] ? cols[4].replace(/,/g, '') : '0') || 0,
+                invoiced_value: cols[5] ? cols[5].replace(/,/g, '').replace('P', '').trim() : '0',
+                order_received: new Date().toISOString(),
+                status: 'Pending Plan',
+                order_status: 'checking'
+            })).filter(o => o.fo);
+
+            if (orders.length === 0) {
+                alert('No valid orders found');
+                return;
+            }
+
+            try {
+                const btn = document.getElementById('btn-process-paste');
+                btn.disabled = true;
+                btn.textContent = 'Uploading...';
+
+                const res = await AuthGuard.authFetch('/api/dispatch/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orders })
+                });
+
+                if (res.ok) {
+                    document.getElementById('paste-area').value = '';
+                    document.getElementById('paste-modal').style.display = 'none';
+                    await loadDispatchPlan();
+                } else {
+                    alert('Failed to upload orders');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error uploading orders');
+            } finally {
+                const btn = document.getElementById('btn-process-paste');
+                btn.disabled = false;
+                btn.textContent = 'Upload Orders';
+            }
+        }
+    </script>
+</body>
+</html>

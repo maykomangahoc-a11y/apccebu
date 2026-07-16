@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onesource Management</title>
+    <link rel="icon" type="image/png" href="/onesource-icon.png">
+    <script src="/auth.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --onesource-red: #E63946;
+            --bg-dark: #1a1d23;
+            --bg-card: #25292f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --accent-green: #48bb78;
+            --accent-orange: #ed8936;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 16px;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo { height: 40px; width: auto; }
+
+        .header-title {
+            border-left: 3px solid var(--onesource-red);
+            padding-left: 14px;
+        }
+
+        .header-title h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .header-title p { font-size: 14px; color: var(--text-secondary); margin-top: 0; }
+
+        /* Tabs */
+        .tabs-header {
+            display: flex;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            gap: 8px;
+        }
+
+        .tab-button {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+            font-family: inherit;
+        }
+
+        .tab-button:hover { background: rgba(255, 255, 255, 0.03); color: white; }
+        .tab-button.active { background: var(--onesource-red); color: white; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Section Title */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Form Styles */
+        .form-card {
+            display: none;
+            background: rgba(255,255,255,0.03);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .form-card h4 {
+            margin-bottom: 16px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .required::after { content: ' *'; color: var(--onesource-red); }
+
+        input, select {
+            padding: 12px 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #1a1d23;
+            color: white;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        select option { background: #25292f; color: white; }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--onesource-red);
+            box-shadow: 0 0 0 3px rgba(230,57,70,0.15);
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+
+        .btn-primary { background: var(--onesource-red); color: white; }
+        .btn-primary:hover { background: #c8102e; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(230,57,70,0.3); }
+
+        .btn-success { background: var(--accent-green); color: white; }
+        .btn-success:hover { background: #3da167; }
+
+        .btn-secondary { background: rgba(255,255,255,0.08); color: white; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #dc2626; }
+
+        .btn-sm { padding: 6px 12px; font-size: 11px; }
+
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td {
+            padding: 12px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-picker { background: rgba(230,57,70,0.15); color: #f87171; }
+        .badge-operator { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+        .badge-shift-1 { background: rgba(59,130,246,0.15); color: #93c5fd; }
+        .badge-shift-2 { background: rgba(245,158,11,0.15); color: #fcd34d; }
+        .badge-outbound { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+        .badge-inbound { background: rgba(168,85,247,0.15); color: #d8b4fe; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .empty-state .empty-icon { font-size: 40px; opacity: 0.3; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+
+    <!-- Page Header -->
+    <header>
+        <div class="logo-section">
+            <img src="/onesource.png" alt="Onesource Logistics" class="logo">
+            <div class="header-title">
+                <h1>Management</h1>
+                <p>Manage pickers, operators, and warehouse staging areas</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Bar -->
+    <div class="tabs-header">
+        <button class="tab-button active" onclick="switchTab('pickers', this)">
+            👷 Pickers
+        </button>
+        <button class="tab-button" onclick="switchTab('checkers', this)">
+            📋 Checkers
+        </button>
+        <button class="tab-button" onclick="switchTab('staging', this)">
+            🏷️ Staging Areas
+        </button>
+        <button class="tab-button" onclick="switchTab('users', this)">
+            👤 Users
+        </button>
+        <button class="tab-button" onclick="switchTab('backups', this)">
+            💾 Backups &amp; Security
+        </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TAB: PICKERS
+    ═══════════════════════════════════════════ -->
+    <div id="tab-pickers" class="tab-content active">
+        <div class="card">
+            <div class="section-title">
+                <span>Pickers &amp; Operators</span>
+                <button class="btn btn-primary" onclick="showAddPickerForm()">➕ Add Picker/Operator</button>
+            </div>
+
+            <!-- Picker Form -->
+            <div id="picker-form-container" class="form-card">
+                <h4 id="picker-form-title">Add New Picker</h4>
+                <input type="hidden" id="picker-edit-code" value="">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="required">Picker Code</label>
+                        <input type="text" id="picker-code-input" placeholder="e.g. P001">
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Full Name</label>
+                        <input type="text" id="picker-name-input" placeholder="Enter full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Designation</label>
+                        <select id="picker-designation-input">
+                            <option value="Picker">Picker</option>
+                            <option value="Operator">Operator</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Shift</label>
+                        <select id="picker-shift-input">
+                            <option value="1st Shift">1st Shift</option>
+                            <option value="2nd Shift">2nd Shift</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="savePicker()">💾 Save</button>
+                    <button class="btn btn-secondary" onclick="cancelPickerForm()">✕ Cancel</button>
+                </div>
+            </div>
+
+            <!-- Pickers Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Designation</th>
+                            <th>Shift</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pickers-table-body">
+                        <tr><td colspan="5" class="empty-state">Loading pickers...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TAB: CHECKERS
+    ═══════════════════════════════════════════ -->
+    <div id="tab-checkers" class="tab-content">
+        <div class="card">
+            <div class="section-title">
+                <span>Checkers</span>
+                <button class="btn btn-primary" onclick="showAddCheckerForm()">➕ Add Checker</button>
+            </div>
+
+            <!-- Checker Form -->
+            <div id="checker-form-container" class="form-card">
+                <h4 id="checker-form-title">Add New Checker</h4>
+                <input type="hidden" id="checker-edit-code" value="">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="required">Checker Code</label>
+                        <input type="text" id="checker-code-input" placeholder="e.g. C001">
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Full Name</label>
+                        <input type="text" id="checker-name-input" placeholder="Enter full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Shift</label>
+                        <select id="checker-shift-input">
+                            <option value="1st Shift">1st Shift</option>
+                            <option value="2nd Shift">2nd Shift</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Designation</label>
+                        <select id="checker-type-input">
+                            <option value="Outbound">Outbound</option>
+                            <option value="Inbound">Inbound</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="saveChecker()">💾 Save</button>
+                    <button class="btn btn-secondary" onclick="cancelCheckerForm()">✕ Cancel</button>
+                </div>
+            </div>
+
+            <!-- Checkers Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Shift</th>
+                            <th>Designation</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="checkers-table-body">
+                        <tr><td colspan="5" class="empty-state">Loading checkers...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TAB: STAGING AREAS
+    ═══════════════════════════════════════════ -->
+    <div id="tab-staging" class="tab-content">
+        <div class="card">
+            <div class="section-title">
+                <span>Staging Areas</span>
+                <button class="btn btn-primary" onclick="showAddStagingForm()">➕ Add Staging Area</button>
+            </div>
+
+            <!-- Staging Area Form -->
+            <div id="staging-form-container" class="form-card">
+                <h4 id="staging-form-title">Add New Staging Area</h4>
+                <input type="hidden" id="staging-edit-old-name" value="">
+                <div class="form-grid" style="max-width: 400px;">
+                    <div class="form-group">
+                        <label class="required">Area Name</label>
+                        <input type="text" id="staging-name-input" placeholder="e.g. Zone A - Bay 1">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="saveStagingArea()">💾 Save</button>
+                    <button class="btn btn-secondary" onclick="cancelStagingForm()">✕ Cancel</button>
+                </div>
+            </div>
+
+            <!-- Staging Areas Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Area Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staging-table-body">
+                        <tr><td colspan="2" class="empty-state">Loading staging areas...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TAB: USERS
+    ═══════════════════════════════════════════ -->
+    <div id="tab-users" class="tab-content">
+        <div class="card">
+            <div class="section-title">
+                <span>System Users</span>
+                <button id="add-user-btn" class="btn btn-primary" onclick="showAddUserForm()">➕ Add User</button>
+            </div>
+
+            <!-- User Form -->
+            <div id="user-form-container" class="form-card">
+                <h4 id="user-form-title">Add New User</h4>
+                <input type="hidden" id="user-edit-username" value="">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="required">Username</label>
+                        <input type="text" id="user-username-input" placeholder="e.g. admin" autocapitalize="none">
+                    </div>
+                    <div class="form-group">
+                        <label class="required">PIN</label>
+                        <input type="text" id="user-pin-input" placeholder="Numeric PIN" inputmode="numeric">
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Role</label>
+                        <select id="user-role-input">
+                            <option value="viewer">Viewer — read-only access</option>
+                            <option value="client">Client — read-only access</option>
+                            <option value="processor">Processor — can start & end picks</option>
+                            <option value="supervisor">Supervisor — can start & end picks + management</option>
+                            <option value="admin">Admin — full access</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="user-active-group">
+                        <label>Status</label>
+                        <select id="user-active-input">
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="saveUser()">💾 Save</button>
+                    <button class="btn btn-secondary" onclick="cancelUserForm()">✕ Cancel</button>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr><td colspan="4" class="empty-state">Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TAB: BACKUPS & SECURITY
+    ═══════════════════════════════════════════ -->
+    <div id="tab-backups" class="tab-content">
+
+        <!-- Relay Config Card -->
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="section-title">
+                <span>OSLAI Relay — Sync WMS DB</span>
+                <span id="relay-status-badge" class="badge" style="background:rgba(160,174,192,0.15);color:#a0aec0;">Checking...</span>
+            </div>
+            <p style="font-size:13px;color:var(--text-secondary);margin:0 0 16px;">
+                The relay is a small proxy running on the VPN Windows PC that scrapes the OSLAI Dashboard (26.101.148.8:8085),
+                reached over a permanent Cloudflare tunnel (relay.oslaiportal.com).
+                <strong>Online</strong> = relay + dashboard reachable · <strong style="color:#f6ad55;">OSLAI Unreachable</strong> = relay up but dashboard down (start the OSLAI app) · <strong style="color:#ef4444;">Relay Offline</strong> = tunnel or relay PC down.
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;">
+                <div>
+                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Relay URL (Cloudflare tunnel)</label>
+                    <input id="relay-url-input" type="url" placeholder="https://relay.oslaiportal.com"
+                        style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);color:white;padding:8px 12px;border-radius:8px;font-size:13px;box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;">Relay Secret (leave blank to keep existing)</label>
+                    <input id="relay-secret-input" type="password" placeholder="••••••••"
+                        style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);color:white;padding:8px 12px;border-radius:8px;font-size:13px;box-sizing:border-box;">
+                </div>
+            </div>
+            <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
+                <button class="btn btn-primary btn-sm" onclick="saveRelayConfig()" id="btn-save-relay">Save Relay Config</button>
+                <button class="btn btn-secondary btn-sm" onclick="testRelayConnection()" id="btn-test-relay">Test Connection</button>
+                <button class="btn btn-secondary btn-sm" onclick="refreshRelayHealth()" id="btn-refresh-relay">↻ Refresh Status</button>
+                <span id="relay-save-msg" style="font-size:12px;color:#68d391;display:none;"></span>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="section-title">
+                <span>Backup Status &amp; Configuration</span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                <!-- GCS Card -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="font-size: 15px; font-weight: 600; color: white;">Google Cloud Storage (GCS)</h4>
+                        <span id="gcs-status-badge" class="badge" style="background: rgba(160,174,192,0.15); color: #a0aec0;">Checking...</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+                        <div>Status: <strong id="gcs-status-text">-</strong></div>
+                        <div>Bucket: <code id="gcs-bucket-name" style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #f87171;">-</code></div>
+                    </div>
+                </div>
+
+                <!-- Cloudflare R2 Card -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="font-size: 15px; font-weight: 600; color: white;">Cloudflare R2 (S3 API)</h4>
+                        <span id="r2-status-badge" class="badge" style="background: rgba(160,174,192,0.15); color: #a0aec0;">Checking...</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+                        <div>Status: <strong id="r2-status-text">-</strong></div>
+                        <div>Bucket: <code id="r2-bucket-name" style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #f87171;">-</code></div>
+                    </div>
+                </div>
+
+                <!-- Schedule Card -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="font-size: 15px; font-weight: 600; color: white;">Automated Schedule</h4>
+                        <span id="schedule-status-badge" class="badge" style="background: rgba(160,174,192,0.15); color: #a0aec0;">Checking...</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+                        <div>Interval: <strong id="schedule-interval-text">-</strong></div>
+                        <div>Last Run: <span id="schedule-last-run-text" style="font-weight: 600;">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                <span>Backup History &amp; Recovery</span>
+                <button class="btn btn-secondary btn-sm" onclick="refreshBackupHistory()">🔄 Refresh List</button>
+            </div>
+
+            <!-- Backup History Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Backup Date / Time</th>
+                            <th>Filename</th>
+                            <th>Storage Targets</th>
+                            <th>File Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backups-table-body">
+                        <tr><td colspan="5" class="empty-state">Loading backup records...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.origin + '/api';
+        let pickersDatabase = [];
+        let checkersDatabase = [];
+        let stagingAreas = [];
+        let usersDatabase = [];
+
+        // ── Tab Switching ──────────────────────────────────────────────
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            btn.classList.add('active');
+            localStorage.setItem('mgmt_tab', tabId);
+            if (tabId === 'backups') {
+                loadBackupsData();
+            }
+        }
+
+        function restoreTab() {
+            const saved = localStorage.getItem('mgmt_tab') || 'pickers';
+            const btn = document.querySelector(`.tab-button[onclick*="'${saved}'"]`);
+            if (btn) switchTab(saved, btn);
+        }
+
+        // ── Data Loading ───────────────────────────────────────────────
+        async function loadData() {
+            try {
+                const pickersRes = await AuthGuard.authFetch(`${API_BASE_URL}/pickers`);
+                pickersDatabase = await pickersRes.json();
+            } catch (e) { console.error('Error loading pickers:', e); }
+
+            try {
+                const checkersRes = await AuthGuard.authFetch(`${API_BASE_URL}/checkers`);
+                checkersDatabase = await checkersRes.json();
+            } catch (e) { console.error('Error loading checkers:', e); }
+
+            try {
+                const areasRes = await AuthGuard.authFetch(`${API_BASE_URL}/staging-areas`);
+                stagingAreas = await areasRes.json();
+            } catch (e) { console.error('Error loading staging areas:', e); }
+
+            try {
+                const usersRes = await AuthGuard.authFetch(`${API_BASE_URL}/users`);
+                const data = await usersRes.json();
+                usersDatabase = Array.isArray(data) ? data : [];
+            } catch (e) { 
+                console.error('Error loading users:', e);
+                usersDatabase = [];
+            }
+        }
+
+        async function renderManagement() {
+            await loadData();
+            renderPickersTable();
+            renderCheckersTable();
+            renderStagingAreasTable();
+            renderUsersTable();
+        }
+
+        // ── Pickers Table ──────────────────────────────────────────────
+        function renderPickersTable() {
+            const tbody = document.getElementById('pickers-table-body');
+            if (!tbody) return;
+
+            if (pickersDatabase.length === 0) {
+                tbody.innerHTML = `
+                    <tr><td colspan="5">
+                        <div class="empty-state">
+                            <div class="empty-icon">👷</div>
+                            <div>No pickers found. Click <strong>Add Picker</strong> to get started.</div>
+                        </div>
+                    </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = pickersDatabase.map(picker => {
+                const designationClass = picker.designation === 'Picker' ? 'badge-picker' : 'badge-operator';
+                const shiftClass = picker.shift === '1st Shift' ? 'badge-shift-1' : 'badge-shift-2';
+                return `
+                    <tr>
+                        <td style="font-weight:700;letter-spacing:0.3px;">${picker.code}</td>
+                        <td>${picker.name}</td>
+                        <td><span class="badge ${designationClass}">${picker.designation}</span></td>
+                        <td><span class="badge ${shiftClass}">${picker.shift}</span></td>
+                        <td>
+                            <div style="display:flex;gap:8px;">
+                                <button class="btn btn-secondary btn-sm" onclick="editPicker('${picker.code}')">✏️ Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deletePicker('${picker.code}')">🗑️ Delete</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        // ── Checkers Table ──────────────────────────────────────────────
+        function renderCheckersTable() {
+            const tbody = document.getElementById('checkers-table-body');
+            if (!tbody) return;
+
+            if (checkersDatabase.length === 0) {
+                tbody.innerHTML = `
+                    <tr><td colspan="5">
+                        <div class="empty-state">
+                            <div class="empty-icon">📋</div>
+                            <div>No checkers found. Click <strong>Add Checker</strong> to get started.</div>
+                        </div>
+                    </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = checkersDatabase.map(checker => {
+                const shiftClass = checker.shift === '1st Shift' ? 'badge-shift-1' : 'badge-shift-2';
+                const type = checker.type || 'Outbound';
+                const typeClass = type === 'Inbound' ? 'badge-inbound' : 'badge-outbound';
+                return `
+                    <tr>
+                        <td style="font-weight:700;letter-spacing:0.3px;">${checker.code}</td>
+                        <td>${checker.name}</td>
+                        <td><span class="badge ${shiftClass}">${checker.shift}</span></td>
+                        <td><span class="badge ${typeClass}">${type}</span></td>
+                        <td>
+                            <div style="display:flex;gap:8px;">
+                                <button class="btn btn-secondary btn-sm" onclick="editChecker('${checker.code}')">✏️ Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteChecker('${checker.code}')">🗑️ Delete</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        // ── Staging Areas Table ────────────────────────────────────────
+        function renderStagingAreasTable() {
+            const tbody = document.getElementById('staging-table-body');
+            if (!tbody) return;
+
+            if (stagingAreas.length === 0) {
+                tbody.innerHTML = `
+                    <tr><td colspan="2">
+                        <div class="empty-state">
+                            <div class="empty-icon">🏷️</div>
+                            <div>No staging areas found. Click <strong>Add Staging Area</strong> to get started.</div>
+                        </div>
+                    </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = stagingAreas.map(area => `
+                <tr>
+                    <td style="font-weight:500;">${area}</td>
+                    <td>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="editStagingArea('${encodeURIComponent(area)}')">✏️ Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteStagingArea('${encodeURIComponent(area)}')">🗑️ Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ── Picker Form ────────────────────────────────────────────────
+        function showAddPickerForm() {
+            document.getElementById('picker-form-title').textContent = 'Add New Picker';
+            document.getElementById('picker-edit-code').value = '';
+            document.getElementById('picker-code-input').value = '';
+            document.getElementById('picker-name-input').value = '';
+            document.getElementById('picker-designation-input').value = 'Picker';
+            document.getElementById('picker-shift-input').value = '1st Shift';
+            document.getElementById('picker-code-input').disabled = false;
+            document.getElementById('picker-form-container').style.display = 'block';
+            document.getElementById('picker-form-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function editPicker(code) {
+            const picker = pickersDatabase.find(p => p.code === code);
+            if (!picker) return;
+            document.getElementById('picker-form-title').textContent = 'Edit Picker';
+            document.getElementById('picker-edit-code').value = code;
+            document.getElementById('picker-code-input').value = picker.code;
+            document.getElementById('picker-name-input').value = picker.name;
+            document.getElementById('picker-designation-input').value = picker.designation;
+            document.getElementById('picker-shift-input').value = picker.shift;
+            document.getElementById('picker-code-input').disabled = true;
+            document.getElementById('picker-form-container').style.display = 'block';
+            document.getElementById('picker-form-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function cancelPickerForm() {
+            document.getElementById('picker-form-container').style.display = 'none';
+        }
+
+        async function savePicker() {
+            const editCode = document.getElementById('picker-edit-code').value;
+            const code = document.getElementById('picker-code-input').value.trim();
+            const name = document.getElementById('picker-name-input').value.trim();
+            const designation = document.getElementById('picker-designation-input').value;
+            const shift = document.getElementById('picker-shift-input').value;
+
+            if (!code || !name) { alert('⚠️ Please fill in all required fields'); return; }
+
+            try {
+                let response;
+                if (editCode) {
+                    response = await AuthGuard.authFetch(`${API_BASE_URL}/pickers/${encodeURIComponent(editCode)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code, name, designation, shift })
+                    });
+                } else {
+                    response = await AuthGuard.authFetch(`${API_BASE_URL}/pickers`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code, name, designation, shift })
+                    });
+                }
+
+                if (response.ok) {
+                    alert(`✅ Picker ${editCode ? 'updated' : 'added'} successfully!`);
+                    document.getElementById('picker-form-container').style.display = 'none';
+                    await renderManagement();
+                } else {
+                    const error = await response.json();
+                    alert(`❌ ${error.error || 'Failed to save picker'}`);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        async function deletePicker(code) {
+            if (!confirm(`Are you sure you want to delete picker "${code}"?`)) return;
+            try {
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/pickers/${encodeURIComponent(code)}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert('✅ Picker deleted successfully!');
+                    await renderManagement();
+                } else {
+                    const error = await response.json();
+                    alert(`❌ ${error.error || 'Failed to delete picker'}`);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // ── Checker Form ────────────────────────────────────────────────
+        function showAddCheckerForm() {
+            document.getElementById('checker-form-title').textContent = 'Add New Checker';
+            document.getElementById('checker-edit-code').value = '';
+            document.getElementById('checker-code-input').value = '';
+            document.getElementById('checker-name-input').value = '';
+            const lastChecker = checkersDatabase[checkersDatabase.length - 1];
+            document.getElementById('checker-shift-input').value = (lastChecker && lastChecker.shift) || '1st Shift';
+            document.getElementById('checker-type-input').value = 'Inbound';
+            document.getElementById('checker-code-input').disabled = false;
+            document.getElementById('checker-form-container').style.display = 'block';
+            document.getElementById('checker-form-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function editChecker(code) {
+            const checker = checkersDatabase.find(c => c.code === code);
+            if (!checker) return;
+            document.getElementById('checker-form-title').textContent = 'Edit Checker';
+            document.getElementById('checker-edit-code').value = code;
+            document.getElementById('checker-code-input').value = checker.code;
+            document.getElementById('checker-name-input').value = checker.name;
+            document.getElementById('checker-shift-input').value = checker.shift;
+            document.getElementById('checker-type-input').value = checker.type || 'Outbound';
+            document.getElementById('checker-code-input').disabled = true;
+            document.getElementById('checker-form-container').style.display = 'block';
+            document.getElementById('checker-form-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function cancelCheckerForm() {
+            document.getElementById('checker-form-container').style.display = 'none';
+        }
+
+        async function saveChecker() {
+            const editCode = document.getElementById('checker-edit-code').value;
+            const code = document.getElementById('checker-code-input').value.trim();
+            const name = document.getElementById('checker-name-input').value.trim();
+            const shift = document.getElementById('checker-shift-input').value;
+            const type = document.getElementById('checker-type-input').value;
+
+            if (!code || !name) { alert('⚠️ Please fill in all required fields'); return; }
+
+            try {
+                let response;
+                if (editCode) {
+                    response = await AuthGuard.authFetch(`${API_BASE_URL}/checkers/${encodeURIComponent(editCode)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, shift, type })
+                    });
+                } else {
+                    response = await AuthGuard.authFetch(`${API_BASE_URL}/checkers`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code, name, shift, type })
+                    });
+                }
+
+                if (response.ok) {
+                    alert(`✅ Checker ${editCode ? 'updated' : 'added'} successfully!`);
+                    document.getElementById('checker-form-container').style.display = 'none';
+                    await renderManagement();
+                } else {
+                    const error = await response.json();
+                    alert(`❌ ${error.error || 'Failed to save checker'}`);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        async function deleteChecker(code) {
+            if (!confirm(`Are you sure you want to delete checker "${code}"?`)) return;
+            try {
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/checkers/${encodeURIComponent(code)}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert('✅ Checker deleted successfully!');
+                    await renderManagement();
+                } else {
+                    const error = await response.json();
+                    alert(`❌ ${error.error || 'Failed to delete checker'}`);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // ── Staging Area Form ──────────────────────────────────────────
+        function showAddStagingForm() {
+            document.getElementById('staging-form-title').textContent = 'Add New Staging Area';
+            document.getElementById('staging-edit-old-name').value = '';
+            document.getElementById('staging-name-input').value = '';
+            document.getElementById('staging-form-container').style.display = 'block';
+            document.getElementById('staging-form-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function editStagingArea(encodedName) {
+            const name = decodeURIComponent(encodedName);
+            document.getElementById('staging-form-title').textContent = 'Edit Staging Area';
+            document.getElementById('staging-edit-old-name').value = name;
+            document.getElementById('staging-name-input').value = name;
+            document.getElementById('staging-form-container').style.display = 'block';
+            document.getElementById('staging-form-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function cancelStagingForm() {
+            document.getElementById('staging-form-container').style.display = 'none';
+        }
+
+        async function saveStagingArea() {
+            const oldName = document.getElementById('staging-edit-old-name').value;
+            const name = document.getElementById('staging-name-input').value.trim();
+
+            if (!name) { alert('⚠️ Please enter a staging area name'); return; }
+
+            try {
+                let response;
+                if (oldName) {
+                    response = await AuthGuard.authFetch(`${API_BASE_URL}/staging-areas/${encodeURIComponent(oldName)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                } else {
+                    response = await AuthGuard.authFetch(`${API_BASE_URL}/staging-areas`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                }
+
+                if (response.ok) {
+                    alert(`✅ Staging area ${oldName ? 'updated' : 'added'} successfully!`);
+                    document.getElementById('staging-form-container').style.display = 'none';
+                    await renderManagement();
+                } else {
+                    const error = await response.json();
+                    alert(`❌ ${error.error || 'Failed to save staging area'}`);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        async function deleteStagingArea(encodedName) {
+            const name = decodeURIComponent(encodedName);
+            if (!confirm(`Are you sure you want to delete staging area "${name}"?`)) return;
+            try {
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/staging-areas/${encodeURIComponent(name)}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert('✅ Staging area deleted successfully!');
+                    await renderManagement();
+                } else {
+                    const error = await response.json();
+                    alert(`❌ ${error.error || 'Failed to delete staging area'}`);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // ── Users Management ────────────────────────────────────────────
+        function renderUsersTable() {
+            const tbody = document.getElementById('users-table-body');
+            if (!tbody) return;
+            if (usersDatabase.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">👤</div><div>No users found. Add your first user above.</div></div></td></tr>`;
+                return;
+            }
+            const roleColors = { visitor: '#718096', viewer: '#a0aec0', client: '#9f7aea', processor: '#48bb78', supervisor: '#f6ad55', admin: '#fc8181' };
+            const user = AuthGuard.getUser();
+            const isSupervisor = user?.role === 'supervisor';
+            const currentUsername = user?.username;
+
+            tbody.innerHTML = usersDatabase.map(u => {
+                const color = roleColors[u.role] || '#a0aec0';
+                const isMe = u.username === currentUsername;
+                const isOtherAdmin = u.role === 'admin' && !isMe;
+                
+                // Supervisor restrictions
+                const isHigherRole = u.role === 'admin' || u.role === 'supervisor';
+                const supervisorRestricted = isSupervisor && (isHigherRole || isMe);
+
+                let actions = '';
+                if (isOtherAdmin || supervisorRestricted) {
+                    actions = '<span style="font-size:11px;color:var(--text-secondary);font-style:italic;">Protected</span>';
+                } else {
+                    const editBtn = `<button class="btn btn-secondary btn-sm" onclick="editUser('${u.username}')">✏️ Edit</button>`;
+                    const deleteBtn = isMe || isSupervisor ? '' : `<button class="btn btn-sm" style="background:transparent; color:var(--text-secondary); padding: 5px 8px; font-size: 14px;" onclick="deleteUser('${u.username}')" title="Delete User">🗑️</button>`;
+                    
+                    actions = `${editBtn} ${deleteBtn}`;
+                }
+
+                return `
+                    <tr>
+                        <td style="font-weight:700;">${u.username}${isMe ? ' <span style="font-size:10px;color:#a0aec0;">(you)</span>' : ''}</td>
+                        <td><span style="background:rgba(255,255,255,0.06);color:${color};padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;">${u.role}</span></td>
+                        <td><span style="color:${u.active ? '#48bb78' : '#a0aec0'};font-size:12px;font-weight:600;">${u.active ? '• Active' : '◦ Inactive'}</span></td>
+                        <td>
+                            <div style="display:flex;gap:8px;">
+                                ${actions}
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+
+        function populateRoleDropdown() {
+            const user = AuthGuard.getUser();
+            const isSupervisor = user?.role === 'supervisor';
+            const roleSelect = document.getElementById('user-role-input');
+            roleSelect.innerHTML = `
+                <option value="viewer">Viewer — read-only access</option>
+                <option value="client">Client — read-only access</option>
+                <option value="processor">Processor — can start & end picks</option>
+            `;
+            if (!isSupervisor) {
+                roleSelect.innerHTML += `
+                <option value="supervisor">Supervisor — can start & end picks + management</option>
+                <option value="admin">Admin — full access</option>
+                `;
+            }
+        }
+
+        function showAddUserForm() {
+            populateRoleDropdown();
+            document.getElementById('user-form-title').textContent = 'Add New User';
+            document.getElementById('user-edit-username').value = '';
+            document.getElementById('user-username-input').value = '';
+            document.getElementById('user-username-input').disabled = false;
+            document.getElementById('user-pin-input').value = '';
+            document.getElementById('user-role-input').value = 'viewer';
+            document.getElementById('user-active-input').value = 'true';
+            document.getElementById('user-active-group').style.display = 'none';
+            document.getElementById('user-form-container').style.display = 'block';
+            document.getElementById('user-form-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function editUser(username) {
+            const user = usersDatabase.find(u => u.username === username);
+            if (!user) return;
+            populateRoleDropdown();
+            document.getElementById('user-form-title').textContent = 'Edit User';
+            document.getElementById('user-edit-username').value = username;
+            document.getElementById('user-username-input').value = username;
+            document.getElementById('user-username-input').disabled = true;
+            document.getElementById('user-pin-input').value = '';
+            document.getElementById('user-pin-input').placeholder = 'Leave blank to keep current PIN';
+            document.getElementById('user-role-input').value = user.role;
+            document.getElementById('user-active-input').value = user.active ? 'true' : 'false';
+            document.getElementById('user-active-group').style.display = '';
+            document.getElementById('user-form-container').style.display = 'block';
+            document.getElementById('user-form-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function cancelUserForm() {
+            document.getElementById('user-form-container').style.display = 'none';
+        }
+
+        async function saveUser() {
+            const editUsername = document.getElementById('user-edit-username').value;
+            const username = document.getElementById('user-username-input').value.trim();
+            const pin = document.getElementById('user-pin-input').value.trim();
+            const role = document.getElementById('user-role-input').value;
+            const active = document.getElementById('user-active-input').value === 'true';
+
+            if (!username) { alert('⚠️ Username is required'); return; }
+            if (!editUsername && !pin) { alert('⚠️ PIN is required for new users'); return; }
+
+            try {
+                let response;
+                if (editUsername) {
+                    const body = { role, active };
+                    if (pin) body.pin = pin;
+                    response = await AuthGuard.authFetch(`${API_BASE_URL}/users/${encodeURIComponent(editUsername)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                } else {
+                    response = await AuthGuard.authFetch(`${API_BASE_URL}/users`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, pin, role })
+                    });
+                }
+
+                if (response.ok) {
+                    alert(`✅ User ${editUsername ? 'updated' : 'added'} successfully!`);
+                    document.getElementById('user-form-container').style.display = 'none';
+                    await renderManagement();
+                } else {
+                    const err = await response.json();
+                    alert(`❌ ${err.error || 'Failed to save user'}`);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+            try {
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert('✅ User deleted successfully!');
+                    await renderManagement();
+                } else {
+                    const err = await response.json();
+                    alert(`❌ ${err.error || 'Failed to delete user'}`);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // ── Backups Management (Supervisor & Admin) ─────────────────────────
+        async function loadBackupsData() {
+            try {
+                const statusRes = await AuthGuard.authFetch(`${API_BASE_URL}/backup/status`);
+                if (statusRes.ok) {
+                    const status = await statusRes.json();
+                    renderBackupStatus(status);
+                }
+            } catch (e) {
+                console.error('Error loading backup status:', e);
+            }
+            await refreshBackupHistory();
+            await loadRelayConfig();
+        }
+
+        function setRelayBadge(text, color) {
+            const badge = document.getElementById('relay-status-badge');
+            const tint = { green: '#48bb78', red: '#ef4444', amber: '#f6ad55', grey: '#a0aec0' }[color] || '#a0aec0';
+            const bg = { green: 'rgba(72,187,120,0.15)', red: 'rgba(239,68,68,0.15)', amber: 'rgba(246,173,85,0.15)', grey: 'rgba(160,174,192,0.15)' }[color] || 'rgba(160,174,192,0.15)';
+            badge.style.background = bg;
+            badge.style.color = tint;
+            badge.textContent = text;
+        }
+
+        async function loadRelayConfig() {
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/relay-config`);
+                if (!res.ok) return;
+                const { url, secretSet } = await res.json();
+                document.getElementById('relay-url-input').value = url || '';
+                if (!(url && secretSet)) {
+                    setRelayBadge('Not Configured', 'red');
+                    return;
+                }
+                await refreshRelayHealth();
+            } catch (e) {
+                setRelayBadge('Error', 'red');
+            }
+        }
+
+        // Probe the full chain: relay reachable + OSLAI dashboard reachable
+        async function refreshRelayHealth() {
+            setRelayBadge('Checking…', 'grey');
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/relay-health`);
+                const h = await res.json();
+                if (h.relay === 'unconfigured') {
+                    setRelayBadge('Not Configured', 'red');
+                } else if (h.relay === 'down') {
+                    setRelayBadge('● Relay Offline', 'red');
+                } else if (h.dashboard === 'up') {
+                    setRelayBadge('● Online', 'green');
+                } else {
+                    setRelayBadge('● OSLAI Unreachable', 'amber');
+                }
+            } catch (e) {
+                setRelayBadge('● Relay Offline', 'red');
+            }
+        }
+
+        async function saveRelayConfig() {
+            const btn = document.getElementById('btn-save-relay');
+            const msg = document.getElementById('relay-save-msg');
+            const url = document.getElementById('relay-url-input').value.trim();
+            const secret = document.getElementById('relay-secret-input').value.trim();
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            msg.style.display = 'none';
+            try {
+                const body = { url };
+                if (secret) body.secret = secret;
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/relay-config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    msg.textContent = result.configured ? '✓ Saved — relay is now active' : '✓ Saved (relay URL or secret still missing)';
+                    msg.style.color = result.configured ? '#68d391' : '#f6ad55';
+                    msg.style.display = 'inline';
+                    document.getElementById('relay-secret-input').value = '';
+                    await loadRelayConfig();
+                } else {
+                    msg.textContent = '✗ ' + (result.error || 'Save failed');
+                    msg.style.color = '#fc8181';
+                    msg.style.display = 'inline';
+                }
+            } catch (e) {
+                msg.textContent = '✗ ' + e.message;
+                msg.style.color = '#fc8181';
+                msg.style.display = 'inline';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Relay Config';
+            }
+        }
+
+        async function testRelayConnection() {
+            const btn = document.getElementById('btn-test-relay');
+            const msg = document.getElementById('relay-save-msg');
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            msg.style.display = 'none';
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/relay-status`);
+                const { configured } = await res.json();
+                if (!configured) {
+                    msg.textContent = '✗ Relay not configured — save URL and secret first';
+                    msg.style.color = '#fc8181';
+                    msg.style.display = 'inline';
+                    return;
+                }
+                const testRes = await AuthGuard.authFetch(`${API_BASE_URL}/auto-sync-dashboard`, { method: 'POST' });
+                const result = await testRes.json();
+                if (testRes.ok) {
+                    msg.textContent = `✓ Connected — ${result.synced} rows synced`;
+                    msg.style.color = '#68d391';
+                } else {
+                    msg.textContent = '✗ ' + result.error;
+                    msg.style.color = '#fc8181';
+                }
+                msg.style.display = 'inline';
+            } catch (e) {
+                msg.textContent = '✗ ' + e.message;
+                msg.style.color = '#fc8181';
+                msg.style.display = 'inline';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test Connection';
+            }
+        }
+
+        function renderBackupStatus(status) {
+            const gcsBadge = document.getElementById('gcs-status-badge');
+            const gcsText = document.getElementById('gcs-status-text');
+            const gcsBucket = document.getElementById('gcs-bucket-name');
+            if (status.gcs.configured) {
+                gcsBucket.textContent = status.gcs.bucket;
+                if (status.gcs.connected) {
+                    gcsBadge.style.background = 'rgba(72,187,120,0.15)';
+                    gcsBadge.style.color = '#48bb78';
+                    gcsBadge.textContent = 'Active & Connected';
+                    gcsText.textContent = 'Active & Connected';
+                } else {
+                    gcsBadge.style.background = 'rgba(239,68,68,0.15)';
+                    gcsBadge.style.color = '#ef4444';
+                    gcsBadge.textContent = 'Connection Failed';
+                    gcsText.textContent = 'Configured but connection failed';
+                }
+            } else {
+                gcsBadge.style.background = 'rgba(160,174,192,0.15)';
+                gcsBadge.style.color = '#a0aec0';
+                gcsBadge.textContent = 'Disabled';
+                gcsText.textContent = 'Not configured';
+                gcsBucket.textContent = 'N/A';
+            }
+
+            const r2Badge = document.getElementById('r2-status-badge');
+            const r2Text = document.getElementById('r2-status-text');
+            const r2Bucket = document.getElementById('r2-bucket-name');
+            if (status.r2.configured) {
+                r2Bucket.textContent = status.r2.bucket;
+                if (status.r2.connected) {
+                    r2Badge.style.background = 'rgba(72,187,120,0.15)';
+                    r2Badge.style.color = '#48bb78';
+                    r2Badge.textContent = 'Active & Connected';
+                    r2Text.textContent = 'Active & Connected';
+                } else {
+                    r2Badge.style.background = 'rgba(239,68,68,0.15)';
+                    r2Badge.style.color = '#ef4444';
+                    r2Badge.textContent = 'Connection Failed';
+                    r2Text.textContent = 'Configured but connection failed';
+                }
+            } else {
+                r2Badge.style.background = 'rgba(160,174,192,0.15)';
+                r2Badge.style.color = '#a0aec0';
+                r2Badge.textContent = 'Disabled';
+                r2Text.textContent = 'Not configured';
+                r2Bucket.textContent = 'N/A';
+            }
+
+            const schedBadge = document.getElementById('schedule-status-badge');
+            const schedInterval = document.getElementById('schedule-interval-text');
+            const schedLast = document.getElementById('schedule-last-run-text');
+            if (status.schedule.enabled) {
+                schedBadge.style.background = 'rgba(72,187,120,0.15)';
+                schedBadge.style.color = '#48bb78';
+                schedBadge.textContent = 'Running';
+                schedInterval.textContent = `Every ${status.schedule.intervalHours} hours`;
+            } else {
+                schedBadge.style.background = 'rgba(160,174,192,0.15)';
+                schedBadge.style.color = '#a0aec0';
+                schedBadge.textContent = 'Disabled';
+                schedInterval.textContent = 'Disabled';
+            }
+            schedLast.textContent = status.schedule.lastBackup 
+                ? new Date(status.schedule.lastBackup).toLocaleString() 
+                : 'Never';
+        }
+
+        async function refreshBackupHistory() {
+            const tbody = document.getElementById('backups-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Loading backup list...</td></tr>`;
+
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/backup/history`);
+                if (!res.ok) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="empty-state" style="color:var(--danger);">Failed to fetch history</td></tr>`;
+                    return;
+                }
+                const backups = await res.json();
+                if (backups.length === 0) {
+                    tbody.innerHTML = `
+                        <tr><td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-icon">💾</div>
+                                <div>No backup files found. Click <strong>Trigger Manual Backup</strong> to create one.</div>
+                            </div>
+                        </td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = backups.map(b => {
+                    const dateStr = parseBackupNameDate(b.name) || new Date(b.created).toLocaleString();
+                    const sizeStr = formatBytes(b.size);
+                    
+                    let targets = '';
+                    if (b.inGCS) targets += `<span class="badge" style="background:rgba(66,153,225,0.15); color:#90cdf4; margin-right:5px;">Google Storage</span>`;
+                    if (b.inR2) targets += `<span class="badge" style="background:rgba(237,137,54,0.15); color:#fbd38d;">Cloudflare R2</span>`;
+
+                    return `
+                        <tr>
+                            <td style="font-weight:600;">${dateStr}</td>
+                            <td style="font-family:monospace; font-size:12px; color:var(--text-secondary);">${b.name}</td>
+                            <td>${targets}</td>
+                            <td>${sizeStr}</td>
+                            <td>
+                                <div style="display:flex; gap:8px;">
+                                    <button class="btn btn-success btn-sm" onclick="downloadBackup('${b.name}')">📥 Download</button>
+                                </div>
+                            </td>
+                        </tr>`;
+                }).join('');
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="5" class="empty-state" style="color:var(--danger);">Error: ${e.message}</td></tr>`;
+            }
+        }
+
+        function parseBackupNameDate(filename) {
+            const match = filename.match(/warehouse_backup_(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})(\d{2})\.json/);
+            if (!match) return null;
+            const [, y, m, d, hh, mm, ss] = match;
+            return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+
+
+        function downloadBackup(filename) {
+            const token = AuthGuard.getToken();
+            window.open(`${API_BASE_URL}/backup/download/${encodeURIComponent(filename)}?token=${encodeURIComponent(token)}`, '_blank');
+        }
+
+        // Initialize
+        window.onload = async () => {
+            // Admin or Supervisor page
+            const user = await AuthGuard.init({ requiredRole: 'supervisor' });
+            if (!user) return;
+
+            // Set view-only restrictions for supervisors
+            if (user.role === 'supervisor') {
+                const addBtn = document.getElementById('add-user-btn');
+                if (addBtn) addBtn.style.display = 'none';
+            }
+
+            restoreTab();
+            await renderManagement();
+        };
+    </script>
+</body>
+</html>
