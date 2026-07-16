@@ -24,7 +24,7 @@ router.post('/login', async (req, res) => {
     const user = result.rows[0];
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'apc-cebu-default-secret-123',
       { expiresIn: '24h' }
     );
 
@@ -59,7 +59,7 @@ router.post('/register', async (req, res) => {
     const user = result.rows[0];
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'apc-cebu-default-secret-123',
       { expiresIn: '24h' }
     );
 
