@@ -638,7 +638,7 @@
                         <select id="dispatch-date-filter" onchange="filterDispatchTable()" title="Filter by Order Date" style="flex: 0 0 auto; min-width: 150px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                             <option value="">📅 All Order Dates</option>
                         </select>
-                        <input type="text" id="dispatch-search" placeholder="🔍 Search Order No or Account..." oninput="filterDispatchTable()" style="flex: 1; min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                        <input type="text" id="dispatch-search" placeholder="🔍 Search Order No or Customer Name..." oninput="filterDispatchTable()" style="flex: 1; min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                     </div>
                 </div>
                 <div class="table-container">
@@ -652,7 +652,7 @@
                                 <th>Plan Status</th>
                                 <th>Order Date</th>
                                 <th>Order No</th>
-                                <th>Account Name</th>
+                                <th>Customer Name</th>
                                 <th>Type</th>
                                 <th style="text-align: center;">Order Qty</th>
                                 <th style="text-align: center;">Invoiced Value</th>
@@ -677,7 +677,7 @@
                         <h2 class="card-title">Truck Assignment</h2>
                     </div>
                     <div style="min-width: 300px; flex-grow: 1; max-width: 400px;">
-                        <input type="text" id="truck-search" placeholder="🔍 Search Order No or Account..." oninput="filterTruckTable()" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                        <input type="text" id="truck-search" placeholder="🔍 Search Order No or Customer Name..." oninput="filterTruckTable()" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                     </div>
                 </div>
                 <div class="table-container">
@@ -689,7 +689,7 @@
                         <thead>
                             <tr>
                                 <th>Order No</th>
-                                <th>Account Name</th>
+                                <th>Customer Name</th>
                                 <th style="text-align: center;">Order Qty</th>
                                 <th style="text-align: center;">CBM</th>
                                 <th style="text-align: center;">Weight</th>
@@ -726,7 +726,7 @@
                             <input type="date" id="archived-date-to" onchange="filterArchivedTable()" style="padding: 8px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 12px; outline: none; color-scheme: dark;">
                             <button onclick="clearArchivedDateRange()" title="Clear date filter" style="padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">All</button>
                         </div>
-                        <input type="text" id="archived-search" placeholder="🔍 Search Order No or Account..." oninput="filterArchivedTable()" style="min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                        <input type="text" id="archived-search" placeholder="🔍 Search Order No or Customer Name..." oninput="filterArchivedTable()" style="min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                     </div>
                 </div>
                 <div class="table-container">
@@ -735,7 +735,7 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Order No</th>
-                                <th>Account Name</th>
+                                <th>Customer Name</th>
                                 <th>Type</th>
                                 <th style="text-align: center;">Order Qty</th>
                                 <th style="text-align: center;">Invoiced Value</th>
@@ -1808,7 +1808,7 @@
                             <thead style="position:sticky;top:0;background:#1a202c;">
                                 <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
                                     <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">BL#</th>
-                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Account</th>
+                                    <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Customer Name</th>
                                     <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Order No</th>
                                     <th style="padding:8px 10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;">PO#</th>
                                     <th style="padding:8px 10px;text-align:center;font-size:11px;color:#63b3ed;text-transform:uppercase;">Operator Qty</th>
