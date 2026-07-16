@@ -2142,13 +2142,19 @@
 
             for (let i = headerRowIndex + 1; i < rows.length; i++) {
                 const cols = rows[i];
-                if (!cols || !cols[idxSto]) continue;
+                if (!cols) continue;
                 
-                const sto = String(cols[idxSto]).trim();
-                if (!sto || sto.toLowerCase() === 'sto #' || sto.toLowerCase() === 'orders') continue;
+                let sto = (cols[idxSto] !== undefined) ? String(cols[idxSto]).trim() : '';
+                if (sto.toLowerCase() === 'sto #' || sto.toLowerCase() === 'orders') continue;
+                
+                if (!sto) {
+                    sto = 'TEMP-' + Date.now() + '-' + i;
+                }
 
                 const qty = idxQty >= 0 ? parseInt(String(cols[idxQty]).replace(/,/g, '') || '0') || 0 : 0;
                 const accountName = idxDestination >= 0 ? String(cols[idxDestination]).trim() : '';
+                
+                if (!accountName && qty === 0) continue;
                 const type = accountName.toLowerCase().includes('station') ? 'STN' : 'DD';
                 const dispatchDateStr = idxDispatchDate >= 0 ? String(cols[idxDispatchDate]).trim() : '';
                 const deliveryDateStr = idxDeliveryDate >= 0 ? String(cols[idxDeliveryDate]).trim() : '';

@@ -509,17 +509,46 @@ router.post('/upload', authenticateToken, async (req, res) => {
       }
 
       // Check if it exists in active orders
-      const activeCheck = await client.query('SELECT id FROM dispatch_orders WHERE fo = $1', [order.fo]);
-      
-      if (activeCheck.rows.length > 0) {
+      let matchedOrder = null;
+      const isTempIncoming = !order.fo || order.fo.startsWith('TEMP-');
+
+      // 1. Try to match by FO (if it's a real FO)
+      if (!isTempIncoming) {
+          const activeCheck = await client.query('SELECT * FROM dispatch_orders WHERE fo = $1', [order.fo]);
+          if (activeCheck.rows.length > 0) {
+              matchedOrder = activeCheck.rows[0];
+          }
+      }
+
+      // 2. If no exact match by FO, try to match by Customer Name + Qty (heuristics)
+      // This allows updating orders that were previously uploaded without an STO#
+      if (!matchedOrder && order.account_name && order.qty !== undefined) {
+          const similarCheck = await client.query(
+              'SELECT * FROM dispatch_orders WHERE account_name = $1 AND qty = $2', 
+              [order.account_name, order.qty]
+          );
+          if (similarCheck.rows.length === 1) {
+              matchedOrder = similarCheck.rows[0];
+          } else if (similarCheck.rows.length > 1) {
+              // Try to narrow down by dispatch_date
+              const dateMatches = similarCheck.rows.filter(r => r.dispatch_date === order.dispatch_date);
+              if (dateMatches.length === 1) {
+                  matchedOrder = dateMatches[0];
+              }
+          }
+      }
+
+      if (matchedOrder) {
           // UPDATE existing order
           const updateFields = [];
           const updateValues = [];
           let updateIdx = 1;
           
           for (const field of fields) {
-            // Do not update the FO itself, and preserve the current order_status (e.g. picking/loading)
-            if (field === 'fo' || field === 'order_status') continue;
+            // Do not update the FO if the incoming is a TEMP FO, otherwise update it (e.g. they provided the real FO)
+            if (field === 'fo' && isTempIncoming) continue;
+            // Always preserve the current active order_status (e.g. picking/loading)
+            if (field === 'order_status') continue;
             
             if (order[field] !== undefined) {
               updateFields.push(`${field} = $${updateIdx++}`);
@@ -528,8 +557,8 @@ router.post('/upload', authenticateToken, async (req, res) => {
           }
 
           if (updateFields.length > 0) {
-            updateValues.push(order.fo);
-            await client.query(`UPDATE dispatch_orders SET ${updateFields.join(', ')} WHERE fo = $${updateIdx}`, updateValues);
+            updateValues.push(matchedOrder.id);
+            await client.query(`UPDATE dispatch_orders SET ${updateFields.join(', ')} WHERE id = $${updateIdx}`, updateValues);
             insertedCount++; // Treat as successfully processed
           }
           continue;
