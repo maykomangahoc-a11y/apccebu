@@ -605,7 +605,7 @@
                     onmouseout="this.style.boxShadow='0 2px 10px rgba(220,38,38,0.4)'; this.style.transform=''"
                     onmousedown="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 6px rgba(220,38,38,0.3)'"
                     onmouseup="this.style.boxShadow='0 2px 10px rgba(220,38,38,0.4)'; this.style.transform='translateY(-1px)'">
-                    📋 Paste Orders
+                    📋 Upload Orders
                 </button>
                 <button id="btn-sync-dashboard" class="btn-auto-sync" onclick="syncOutboundDashboard()" style="display: none;" title="Sync OSLAI Dashboard data">
                     📂 Upload Dashboard
@@ -767,7 +767,7 @@
         <div id="paste-modal" class="modal" onclick="document.getElementById('paste-modal').style.display='none'" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
             <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: white;">Paste Orders from Excel</h3>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: white;">Upload Orders from Excel</h3>
                     <span onclick="document.getElementById('paste-modal').style.display='none'" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
                 </div>
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Select an Excel file or paste rows directly. Expected columns:<br><strong style="color:white">STO # | Customer Code | Customer Name | P.O No | P.O No Date | Other Ref | Delivery Addr | Remarks | Mat | Desc | UOM | Qty</strong><br><em>Line items will be grouped by STO #. Type is auto-determined.</em></p>
