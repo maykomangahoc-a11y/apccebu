@@ -2122,12 +2122,13 @@
                 return;
             }
 
+
             const headers = rows[headerRowIndex].map(h => String(h || '').trim().toLowerCase());
-            const idxDispatchDate = headers.findIndex(h => h.includes('loading') || h.includes('dispatch date'));
-            const idxDeliveryDate = headers.findIndex(h => h === 'delivery date' || h.includes('delivery date'));
-            const idxDestination = headers.findIndex(h => h.includes('destination') || h.includes('account'));
-            const idxSto = headers.findIndex(h => h === 'sto #' || h === 'order no');
-            const idxQty = headers.findIndex(h => h.includes('qty approved') || h.includes('qty'));
+            const idxDispatchDate = headers.findIndex(h => h.includes('loading') || h.includes('dispatch date') || h === 'date' || h === 'plan date');
+            const idxDeliveryDate = headers.findIndex(h => h.includes('delivery') || h.includes('rdd') || h.includes('target'));
+            const idxDestination = headers.findIndex(h => h.includes('destination') || h.includes('account') || h.includes('customer') || h.includes('ship to') || h.includes('branch'));
+            const idxSto = headers.findIndex(h => h.includes('sto') || h.includes('order no') || h.includes('fo'));
+            const idxQty = headers.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('volume') || h.includes('pcs'));
 
             if (idxSto === -1) {
                 alert('Missing STO # / Order No column.');
@@ -2139,6 +2140,8 @@
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             const tomorrowStr = tomorrow.toLocaleDateString('en-US');
+
+            let lastDispatchDate = '';
 
             for (let i = headerRowIndex + 1; i < rows.length; i++) {
                 const cols = rows[i];
@@ -2156,8 +2159,18 @@
                 
                 if (!accountName && qty === 0) continue;
                 const type = accountName.toLowerCase().includes('station') ? 'STN' : 'DD';
-                const dispatchDateStr = idxDispatchDate >= 0 ? String(cols[idxDispatchDate]).trim() : '';
-                const deliveryDateStr = idxDeliveryDate >= 0 ? String(cols[idxDeliveryDate]).trim() : '';
+                
+                let rawDispatchDate = idxDispatchDate >= 0 ? String(cols[idxDispatchDate] || '').trim() : '';
+                // Handle Excel merged cells by filling down
+                if (rawDispatchDate) {
+                    lastDispatchDate = rawDispatchDate;
+                } else {
+                    rawDispatchDate = lastDispatchDate;
+                }
+                const dispatchDateStr = rawDispatchDate;
+
+                const deliveryDateStr = idxDeliveryDate >= 0 ? String(cols[idxDeliveryDate] || '').trim() : '';
+
 
                 // Automated Status Logic
                 let determinedStatus = 'Pending Plan';

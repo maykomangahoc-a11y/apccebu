@@ -502,10 +502,31 @@ router.post('/upload', authenticateToken, async (req, res) => {
 
     for (const order of orders) {
       // Check if FO already exists in archived orders to avoid bringing back deleted/shipped orders
-      const archiveCheck = await client.query('SELECT id FROM dispatch_archive WHERE fo = $1', [order.fo]);
+      const archiveCheck = await client.query('SELECT * FROM dispatch_archive WHERE fo = $1', [order.fo]);
       if (archiveCheck.rows.length > 0) {
-          skippedCount++;
-          continue; // Skip archived FOs
+          // It's in the archive. The user wants to update it (e.g., they provided the real STO# or delivery date)
+          const matchedArchived = archiveCheck.rows[0];
+          const updateFields = [];
+          const updateValues = [];
+          let updateIdx = 1;
+          
+          for (const field of fields) {
+            // Preserve the current status/order_status
+            if (field === 'fo' || field === 'status' || field === 'order_status') continue;
+            
+            if (order[field] !== undefined) {
+              updateFields.push(`${field} = $${updateIdx++}`);
+              updateValues.push(order[field]);
+            }
+          }
+
+          if (updateFields.length > 0) {
+            updateValues.push(matchedArchived.id);
+            await client.query(`UPDATE dispatch_archive SET ${updateFields.join(', ')} WHERE id = $${updateIdx}`, updateValues);
+          }
+          
+          skippedCount++; // Technically skipped from the active board
+          continue; // Skip active insertion
       }
 
       // Check if it exists in active orders
