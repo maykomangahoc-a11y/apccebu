@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="APC Cebu Warehouse Management System — Dispatch, Picking, Processing, Inbound Operations">
-  <title>APC Cebu Warehouse</title>
+  <meta name="description" content="APC Cebu Warehouse Management System">
+  <title>Onesource Logistics</title>
   <link rel="stylesheet" href="/css/index.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>">
+  <link rel="icon" type="image/png" href="/onesource-icon.png">
 </head>
 <body>
 
@@ -19,31 +19,30 @@
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-brand">
-        <div class="brand-icon">🏭</div>
+        <img src="/onesource.png" alt="Onesource Logistics" style="width: 38px; height: 38px; border-radius: 10px; object-fit: contain; flex-shrink: 0;">
         <div>
-          <div class="brand-text">APC Cebu</div>
-          <div class="brand-sub">Warehouse System</div>
+          <div class="brand-text">Onesource Logistics</div>
+          <div class="brand-sub">Asia Inc. Portal</div>
         </div>
       </div>
 
       <nav class="sidebar-nav">
         <div class="nav-section">
-          <div class="nav-section-title">Overview</div>
+          <div class="nav-section-title">Outbound</div>
           <a class="nav-item" data-path="/dashboard" href="#/dashboard">
             <span class="nav-icon">📊</span> Dashboard
           </a>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-section-title">Outbound</div>
           <a class="nav-item" data-path="/dispatch" href="#/dispatch">
-            <span class="nav-icon">🚚</span> Dispatch
+            <span class="nav-icon">📋</span> Dispatch Plan
+          </a>
+          <a class="nav-item" data-path="/checking" href="#/checking">
+            <span class="nav-icon">✅</span> Outbound Checking
           </a>
           <a class="nav-item" data-path="/picking" href="#/picking">
-            <span class="nav-icon">📦</span> Picking
+            <span class="nav-icon">📦</span> Outbound Picking
           </a>
-          <a class="nav-item" data-path="/processing" href="#/processing">
-            <span class="nav-icon">⚙️</span> Processing
+          <a class="nav-item" data-path="/reporting" href="#/reporting">
+            <span class="nav-icon">📈</span> Reporting
           </a>
         </div>
 
@@ -58,12 +57,12 @@
         </div>
 
         <div class="nav-section">
-          <div class="nav-section-title">Admin</div>
+          <div class="nav-section-title">Configuration</div>
           <a class="nav-item" data-path="/resources" href="#/resources">
             <span class="nav-icon">👥</span> Resources
           </a>
           <a class="nav-item" data-path="/settings" href="#/settings">
-            <span class="nav-icon">⚙️</span> Settings
+            <span class="nav-icon">⚙️</span> Management
           </a>
         </div>
       </nav>

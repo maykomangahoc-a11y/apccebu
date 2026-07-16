@@ -9,15 +9,16 @@ const App = {
   sidebarEl: null,
 
   routes: {
-    '/login':      { title: 'Login',         module: 'login',      icon: '🔐', public: true },
-    '/dashboard':  { title: 'Dashboard',     module: 'dashboard',  icon: '📊' },
-    '/dispatch':   { title: 'Dispatch',      module: 'dispatch',   icon: '🚚' },
-    '/picking':    { title: 'Picking',       module: 'picking',    icon: '📦' },
-    '/processing': { title: 'Processing',    module: 'processing', icon: '⚙️' },
-    '/inbound':    { title: 'Inbound',       module: 'inbound',    icon: '📥' },
-    '/putaway':    { title: 'Putaway',       module: 'putaway',    icon: '🏗️' },
-    '/resources':  { title: 'Resources',     module: 'resources',  icon: '👥' },
-    '/settings':   { title: 'Settings',      module: 'settings',   icon: '⚙️' },
+    '/login':      { title: 'Login',             module: 'login',      icon: '🔐', public: true },
+    '/dashboard':  { title: 'Dashboard',         module: 'dashboard',  icon: '📊' },
+    '/dispatch':   { title: 'Dispatch Plan',     module: 'dispatch',   icon: '📋' },
+    '/checking':   { title: 'Outbound Checking', module: 'checking',   icon: '✅' },
+    '/picking':    { title: 'Outbound Picking',  module: 'picking',    icon: '📦' },
+    '/reporting':  { title: 'Reporting',         module: 'reporting',  icon: '📈' },
+    '/inbound':    { title: 'Inbound',           module: 'inbound',    icon: '📥' },
+    '/putaway':    { title: 'Putaway',           module: 'putaway',    icon: '🏗️' },
+    '/resources':  { title: 'Resources',         module: 'resources',  icon: '👥' },
+    '/settings':   { title: 'Management',        module: 'settings',   icon: '⚙️' },
   },
 
   init() {
