@@ -832,10 +832,10 @@
         async function loadData() {
             try {
                 const [dispatchRes, pickingRes, archivedRes, pickersRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/dispatch-plan`),
-                    fetch(`${API_BASE_URL}/picking-orders`),
-                    fetch(`${API_BASE_URL}/dispatch-plan/archived`),
-                    fetch(`${API_BASE_URL}/pickers`)
+                    AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan`),
+                    AuthGuard.authFetch(`${API_BASE_URL}/picking-orders`),
+                    AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/archived`),
+                    AuthGuard.authFetch(`${API_BASE_URL}/pickers`)
                 ]);
                 const data = await dispatchRes.json();
                 dispatchPlanData = data;
@@ -2027,7 +2027,7 @@
                 if (dashBtn) dashBtn.style.display = 'inline-flex';
 
                 // Check if relay is configured — switch button to auto-sync mode
-                fetch(`${API_BASE_URL}/relay-status`)
+                AuthGuard.authFetch(`${API_BASE_URL}/relay-status`)
                     .then(r => r.json())
                     .then(({ configured }) => {
                         relayAvailable = configured;

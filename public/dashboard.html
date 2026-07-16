@@ -753,10 +753,10 @@
         async function loadDashboardData() {
             try {
                 const [ordersRes, pickersRes, dispatchRes, configRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/picking-orders`),
-                    fetch(`${API_BASE_URL}/pickers`),
-                    fetch(`${API_BASE_URL}/dispatch-plan`),
-                    fetch(`${API_BASE_URL}/config?t=${Date.now()}`)
+                    AuthGuard.authFetch(`${API_BASE_URL}/picking-orders`),
+                    AuthGuard.authFetch(`${API_BASE_URL}/pickers`),
+                    AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan`),
+                    AuthGuard.authFetch(`${API_BASE_URL}/config?t=${Date.now()}`)
                 ]);
 
                 allOrders = await ordersRes.json().catch(() => []);
