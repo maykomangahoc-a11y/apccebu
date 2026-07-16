@@ -1,0 +1,12 @@
+const fs = require('fs');
+let content = fs.readFileSync('C:/Users/M/APCCeb/public/dispatch-plan.html', 'utf8');
+content = content.replace(/Order No/g, 'STO #');
+content = content.replace(/<th>Qty<\/th>/g, '<th>Final Picking Qty</th>');
+content = content.replace(/<option value=\Grand Advanced Plan\>.*?<\/option>/g, '');
+content = content.replace(/<option value=\Additional Plan\>.*?<\/option>/g, '');
+content = content.replace(/<button class=\ulk-status-btn\ onclick=\ulkApplyStatus\('Grand Advanced Plan'\)\>.*?<\/button>/gs, '');
+content = content.replace(/<button class=\ulk-status-btn\ onclick=\ulkApplyStatus\('Additional Plan'\)\>.*?<\/button>/gs, '');
+content = content.replace(/<span class=\legend-item\>.*?Grand Advanced Plan.*?<\/span>/g, '');
+content = content.replace(/<span class=\legend-item\>.*?Additional Plan.*?<\/span>/g, '');
+fs.writeFileSync('C:/Users/M/APCCeb/public/dispatch-plan.html', content);
+console.log('Done');

@@ -322,8 +322,8 @@ router.post('/:id/archive', authenticateToken, async (req, res) => {
         invoiced_value, order_status, fo, truck_size, trucker, loading_time, linechecker,
         dispatcher, checked_qty, plate_no, time_arrival, start_loading, loading_end,
         preparation, est_amount, start_line_check, end_line_check,
-        invoiced_value_user, dispatch_date, done_pick_date
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)`,
+        invoiced_value_user, dispatch_date, done_pick_date, delivery_date
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)`,
       [
         order.id, order.status, order.order_received, order.party_code, order.account_name,
         order.type, order.qty, order.cbm, order.weight, order.invoiced_value, order.order_status,
@@ -331,7 +331,7 @@ router.post('/:id/archive', authenticateToken, async (req, res) => {
         order.dispatcher, order.checked_qty, order.plate_no, order.time_arrival,
         order.start_loading, order.loading_end, order.preparation, order.est_amount,
         order.start_line_check, order.end_line_check, order.invoiced_value_user,
-        order.dispatch_date, order.done_pick_date
+        order.dispatch_date, order.done_pick_date, order.delivery_date
       ]
     );
 
@@ -494,7 +494,7 @@ router.post('/upload', authenticateToken, async (req, res) => {
 
     const fields = [
       'dispatch_date', 'fo', 'account_name', 'type', 'qty', 
-      'invoiced_value', 'order_received', 'status', 'order_status'
+      'invoiced_value', 'order_received', 'status', 'order_status', 'delivery_date'
     ];
 
     let insertedCount = 0;

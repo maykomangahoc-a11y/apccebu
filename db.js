@@ -398,6 +398,10 @@ async function initDatabase() {
       INSERT INTO config (key, value) VALUES ('app', '{"dayStartHour": 3, "dailyGoalQty": 10000, "dailyGoalValue": 0}'::jsonb)
       ON CONFLICT (key) DO NOTHING;
 
+      -- Schema Migrations
+      ALTER TABLE dispatch_orders ADD COLUMN IF NOT EXISTS delivery_date VARCHAR(255) DEFAULT '';
+      ALTER TABLE dispatch_archive ADD COLUMN IF NOT EXISTS delivery_date VARCHAR(255) DEFAULT '';
+
       -- Seed default users
       INSERT INTO users (username, pin, role, active) VALUES
         ('Myko', '1111', 'admin', TRUE),

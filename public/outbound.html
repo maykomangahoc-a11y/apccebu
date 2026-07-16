@@ -1317,7 +1317,7 @@
                 // Load FO data
                 const foResponse = await fetch(`${API_BASE_URL}/dispatch-plan`);
                 const allFos = await foResponse.json().catch(() => []);
-                foDatabase = allFos.filter(item => item.archiveStatus !== 'Archived');
+                foDatabase = allFos.filter(item => item.archiveStatus !== 'Archived' && item.status !== 'Unconfirmed Plan');
 
                 // Setup Searchable FO Select
                 const foOptions = foDatabase.map((fo, index) => ({
