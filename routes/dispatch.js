@@ -501,16 +501,41 @@ router.post('/upload', authenticateToken, async (req, res) => {
     let skippedCount = 0;
 
     for (const order of orders) {
-      // Check if FO already exists in active or archived orders to avoid duplicates
-      const checkRes = await client.query(
-          'SELECT id FROM dispatch_orders WHERE fo = $1 UNION SELECT id FROM dispatch_archive WHERE fo = $1', 
-          [order.fo]
-      );
-      if (checkRes.rows.length > 0) {
+      // Check if FO already exists in archived orders to avoid bringing back deleted/shipped orders
+      const archiveCheck = await client.query('SELECT id FROM dispatch_archive WHERE fo = $1', [order.fo]);
+      if (archiveCheck.rows.length > 0) {
           skippedCount++;
-          continue; // Skip existing FOs
+          continue; // Skip archived FOs
       }
 
+      // Check if it exists in active orders
+      const activeCheck = await client.query('SELECT id FROM dispatch_orders WHERE fo = $1', [order.fo]);
+      
+      if (activeCheck.rows.length > 0) {
+          // UPDATE existing order
+          const updateFields = [];
+          const updateValues = [];
+          let updateIdx = 1;
+          
+          for (const field of fields) {
+            // Do not update the FO itself, and preserve the current order_status (e.g. picking/loading)
+            if (field === 'fo' || field === 'order_status') continue;
+            
+            if (order[field] !== undefined) {
+              updateFields.push(`${field} = $${updateIdx++}`);
+              updateValues.push(order[field]);
+            }
+          }
+
+          if (updateFields.length > 0) {
+            updateValues.push(order.fo);
+            await client.query(`UPDATE dispatch_orders SET ${updateFields.join(', ')} WHERE fo = $${updateIdx}`, updateValues);
+            insertedCount++; // Treat as successfully processed
+          }
+          continue;
+      }
+
+      // INSERT new order
       const provided = [];
       const placeholders = [];
       const values = [];
