@@ -809,6 +809,16 @@
 
     <script>
         const API_BASE_URL = '/api';
+        
+        const ALL_PLAN_STATUSES = ["Pending Plan", "Today's Plan", "Tomorrow's Plan", "Unconfirmed Plan", "Archive Order"];
+        const STATUS_COLORS = {
+            "Today's Plan":      "#48bb78",
+            "Pending Plan":      "#ed8936",
+            "Tomorrow's Plan":   "#10b981",
+            "Unconfirmed Plan":  "#3b82f6",
+            "Grand Advance":     "#e53e3e",
+            "Archive Order":     "#6b7280"
+        };
 
         let pickingOrders = [];
         let pickersList = [];
@@ -1422,14 +1432,7 @@
         }
 
         /* ── Plan Status Modal Helpers ─────────────────────────── */
-        const ALL_PLAN_STATUSES = ["Pending Plan", "Today's Plan", "Tomorrow's Plan", "Unconfirmed Plan", "Archive Order"];
 
-        const STATUS_COLORS = {
-            "Today's Plan":      "#48bb78",
-            "Pending Plan":      "#ed8936",
-            "Grand Advance":     "#e53e3e",
-            "Archive Order":     "#6b7280"
-        };
 
         let activePlanOrderId = null;
 
@@ -1442,7 +1445,7 @@
             
             grid.innerHTML = statusList.map(s => {
                 const isCurrent = s.toLowerCase().trim() === currentStatus.toLowerCase().trim();
-                const color = PLAN_STATUS_COLORS[s];
+                const color = STATUS_COLORS[s] || '#9ca3af';
                 const activeStyle = isCurrent ? `background: ${color}20; border-color: ${color}; font-weight: bold;` : '';
                 return `
                     <div data-plan-status="${s.replace(/"/g, '&quot;')}" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; cursor: pointer; transition: all 0.2s; ${activeStyle}" onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.borderColor='${color}'" onmouseout="this.style.background='${isCurrent ? color + '20' : 'rgba(255,255,255,0.03)'}'; this.style.borderColor='${isCurrent ? color : 'rgba(255,255,255,0.08)'}'"> 
