@@ -17,9 +17,9 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/users/:id
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:username', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { username: targetUsername } = req.params;
     const { username, pin, role, active } = req.body;
 
     const fields = [];
@@ -35,9 +35,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
-    values.push(id);
+    values.push(targetUsername);
     const result = await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, username, role, active, created_at`,
+      `UPDATE users SET ${fields.join(', ')} WHERE username = $${idx} RETURNING id, username, role, active, created_at`,
       values
     );
 
@@ -52,11 +52,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE /api/users/:id
-router.delete('/:id', authenticateToken, async (req, res) => {
+// DELETE /api/users/:username
+router.delete('/:username', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+    const { username } = req.params;
+    const result = await pool.query('DELETE FROM users WHERE username = $1 RETURNING id', [username]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
