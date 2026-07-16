@@ -3,47 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>APC Cebu Warehouse Server</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .container {
-      text-align: center;
-      padding: 2rem;
-    }
-    h1 {
-      font-size: 2rem;
-      color: #38bdf8;
-      margin-bottom: 0.5rem;
-    }
-    p {
-      color: #94a3b8;
-      margin-bottom: 2rem;
-    }
-    .status {
-      display: inline-block;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 1rem 2rem;
-      font-family: monospace;
-      color: #4ade80;
-    }
-  </style>
+  <meta name="description" content="APC Cebu Warehouse Management System — Dispatch, Picking, Processing, Inbound Operations">
+  <title>APC Cebu Warehouse</title>
+  <link rel="stylesheet" href="/css/index.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>">
 </head>
 <body>
-  <div class="container">
-    <h1>🚀 APC Cebu Warehouse Server</h1>
-    <p>API is running</p>
-    <div class="status">GET /api/health</div>
+
+  <!-- ═══ Login Page ═══ -->
+  <div id="login-page" class="login-page" style="display:none"></div>
+
+  <!-- ═══ App Layout ═══ -->
+  <div id="app-layout" class="app-layout" style="display:none">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🏭</div>
+        <div>
+          <div class="brand-text">APC Cebu</div>
+          <div class="brand-sub">Warehouse System</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Overview</div>
+          <a class="nav-item" data-path="/dashboard" href="#/dashboard">
+            <span class="nav-icon">📊</span> Dashboard
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Outbound</div>
+          <a class="nav-item" data-path="/dispatch" href="#/dispatch">
+            <span class="nav-icon">🚚</span> Dispatch
+          </a>
+          <a class="nav-item" data-path="/picking" href="#/picking">
+            <span class="nav-icon">📦</span> Picking
+          </a>
+          <a class="nav-item" data-path="/processing" href="#/processing">
+            <span class="nav-icon">⚙️</span> Processing
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Inbound</div>
+          <a class="nav-item" data-path="/inbound" href="#/inbound">
+            <span class="nav-icon">📥</span> Inbound
+          </a>
+          <a class="nav-item" data-path="/putaway" href="#/putaway">
+            <span class="nav-icon">🏗️</span> Putaway
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Admin</div>
+          <a class="nav-item" data-path="/resources" href="#/resources">
+            <span class="nav-icon">👥</span> Resources
+          </a>
+          <a class="nav-item" data-path="/settings" href="#/settings">
+            <span class="nav-icon">⚙️</span> Settings
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
+      <header class="header">
+        <div class="header-left">
+          <button class="menu-toggle" id="menu-toggle">☰</button>
+          <h1 id="header-title" class="header-title">Dashboard</h1>
+        </div>
+        <div class="header-right">
+          <div class="user-badge">
+            <div class="user-avatar" id="user-avatar">?</div>
+            <div>
+              <div class="user-name" id="user-name">User</div>
+              <div class="user-role" id="user-role">viewer</div>
+            </div>
+          </div>
+          <button class="btn-logout" id="btn-logout">Sign Out</button>
+        </div>
+      </header>
+
+      <main class="page-content" id="page-content">
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <span>Loading...</span>
+        </div>
+      </main>
+    </div>
   </div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/pages/login.js"></script>
+  <script src="/js/pages/dashboard.js"></script>
+  <script src="/js/pages/dispatch.js"></script>
+  <script src="/js/pages/picking.js"></script>
+  <script src="/js/pages/processing.js"></script>
+  <script src="/js/pages/inbound.js"></script>
+  <script src="/js/pages/putaway.js"></script>
+  <script src="/js/pages/resources.js"></script>
+  <script src="/js/pages/settings.js"></script>
+  <script src="/js/app.js"></script>
 </body>
 </html>
