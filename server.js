@@ -77,6 +77,7 @@ app.use('/api/items', itemRoutes);
 
 // ─── API Routes (Aliases for Old Frontend Compatibility) ────────────────────
 app.use('/api/dispatch-plan', dispatchRoutes);
+app.use('/api/dispatch', dispatchRoutes); // Supports /api/dispatch/upload
 app.use('/api/picking-orders', pickingRoutes);
 
 // The old UI fetches /api/pickers directly instead of /api/resources/pickers

@@ -497,10 +497,16 @@ router.post('/upload', authenticateToken, async (req, res) => {
       'invoiced_value', 'order_received', 'status', 'order_status'
     ];
 
+    let insertedCount = 0;
+    let skippedCount = 0;
+
     for (const order of orders) {
       // Check if FO already exists to avoid duplicates
       const checkRes = await client.query('SELECT id FROM dispatch_orders WHERE fo = $1', [order.fo]);
-      if (checkRes.rows.length > 0) continue; // Skip existing FOs
+      if (checkRes.rows.length > 0) {
+          skippedCount++;
+          continue; // Skip existing FOs
+      }
 
       const provided = [];
       const placeholders = [];
@@ -517,11 +523,12 @@ router.post('/upload', authenticateToken, async (req, res) => {
 
       if (provided.length > 0) {
         await client.query(`INSERT INTO dispatch_orders (${provided.join(', ')}) VALUES (${placeholders.join(', ')})`, values);
+        insertedCount++;
       }
     }
 
     await client.query('COMMIT');
-    res.json({ success: true, uploaded: orders.length });
+    res.json({ success: true, uploaded: insertedCount, skipped: skippedCount, total: orders.length });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Upload orders error:', error.message);

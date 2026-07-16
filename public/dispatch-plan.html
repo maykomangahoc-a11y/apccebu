@@ -773,7 +773,8 @@
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Select an Excel file or paste rows directly. Expected columns:<br><strong style="color:white">Order No | Customer Code | Customer Name | P.O No | P.O No Date | Other Ref | Delivery Addr | Remarks | Mat | Desc | UOM | Qty</strong><br><em>Line items will be grouped by Order No. Type is auto-determined.</em></p>
                 <input type="file" id="excel-file-upload" accept=".xlsx, .xls" style="margin-bottom: 12px; color: white; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); width: 100%; cursor: pointer;" onchange="handleExcelUpload(event)">
                 <div style="text-align: center; color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">OR</div>
-                <textarea id="paste-area" placeholder="Paste data here..." style="width: 100%; height: 200px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 12px; font-family: monospace; font-size: 12px; outline: none; margin-bottom: 16px; resize: vertical;"></textarea>
+                <textarea id="paste-area" placeholder="Paste data here..." style="width: 100%; height: 200px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 12px; font-family: monospace; font-size: 12px; outline: none; margin-bottom: 12px; resize: vertical;"></textarea>
+                <div id="upload-status-msg" style="margin-bottom: 16px; font-size: 14px; font-weight: 500;"></div>
                 <div style="display: flex; justify-content: flex-end; gap: 12px;">
                     <button onclick="document.getElementById('paste-modal').style.display='none'" style="padding: 8px 16px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer;">Cancel</button>
                     <button onclick="processPastedOrders()" id="btn-process-paste" style="padding: 8px 16px; background: var(--onesource-red); border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;">Upload Orders</button>
@@ -2115,8 +2116,10 @@
 
             try {
                 const btn = document.getElementById('btn-process-paste');
+                const statusMsg = document.getElementById('upload-status-msg');
                 btn.disabled = true;
                 btn.textContent = 'Uploading...';
+                statusMsg.textContent = '';
 
                 const res = await AuthGuard.authFetch('/api/dispatch/upload', {
                     method: 'POST',
@@ -2125,17 +2128,29 @@
                 });
 
                 if (res.ok) {
+                    const data = await res.json();
                     document.getElementById('paste-area').value = '';
                     const fileInput = document.getElementById('excel-file-upload');
                     if (fileInput) fileInput.value = '';
-                    document.getElementById('paste-modal').style.display = 'none';
+                    
+                    statusMsg.style.color = 'var(--accent-green)';
+                    if (data.skipped > 0) {
+                        statusMsg.innerHTML = `✅ Successfully uploaded <strong>${data.uploaded}</strong> orders. <em>(Skipped ${data.skipped} duplicates)</em>. Check the dashboard.`;
+                    } else {
+                        statusMsg.innerHTML = `✅ Successfully uploaded <strong>${data.uploaded}</strong> orders! Check the dashboard.`;
+                    }
+                    
                     await loadData();
                 } else {
-                    alert('Failed to upload orders');
+                    const err = await res.json();
+                    statusMsg.style.color = 'var(--onesource-red)';
+                    statusMsg.textContent = `❌ Failed: ${err.error || 'Unknown error'}`;
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error uploading orders');
+                const statusMsg = document.getElementById('upload-status-msg');
+                statusMsg.style.color = 'var(--onesource-red)';
+                statusMsg.textContent = `❌ Error: Could not connect to server.`;
             } finally {
                 const btn = document.getElementById('btn-process-paste');
                 btn.disabled = false;

@@ -1,0 +1,1 @@
+const fs = require('fs'); let content = fs.readFileSync('C:/Users/M/APCCeb/public/dispatch-plan.html', 'utf8'); content = content.replace(/FO#/g, 'Order No').replace(/Order NO/g, 'Order No'); fs.writeFileSync('C:/Users/M/APCCeb/public/dispatch-plan.html', content); console.log('Fixed');
