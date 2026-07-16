@@ -395,6 +395,38 @@ async function initDatabase() {
       -- Seed default config if empty
       INSERT INTO config (key, value) VALUES ('app', '{"dayStartHour": 3, "dailyGoalQty": 10000, "dailyGoalValue": 0}'::jsonb)
       ON CONFLICT (key) DO NOTHING;
+
+      -- Seed default users
+      INSERT INTO users (username, pin, role, active) VALUES
+        ('Myko', '1111', 'admin', TRUE),
+        ('test', '0921', 'processor', TRUE),
+        ('Ed_win', '283055', 'supervisor', TRUE),
+        ('Richard_30', '4477', 'processor', TRUE),
+        ('Jazz', '020802', 'admin', TRUE),
+        ('test2', '0921', 'viewer', TRUE),
+        ('Ram', '0814', 'admin', TRUE),
+        ('Kentoy1654', '0210', 'supervisor', TRUE),
+        ('ALJANE1970', '1970', 'processor', TRUE),
+        ('ReyMart15', '041500', 'processor', TRUE),
+        ('Justin', '2021', 'supervisor', TRUE),
+        ('Eve', '1818', 'admin', TRUE),
+        ('Pat', '0000', 'supervisor', TRUE),
+        ('Marju', '0000', 'processor', TRUE),
+        ('zhyrajoy', '12345', 'processor', TRUE),
+        ('jaca', '1111', 'processor', TRUE),
+        ('Ann Paulino', '082396', 'processor', TRUE),
+        ('MommyROY', '0310', 'processor', TRUE),
+        ('baihens', '1234', 'supervisor', TRUE),
+        ('Maevil', '123456', 'processor', TRUE),
+        ('chardiebie123', '1988', 'processor', TRUE),
+        ('EDM', '123456', 'processor', TRUE),
+        ('XiangMo', '102494', 'processor', TRUE),
+        ('dashboard', '1111', 'dashboard', TRUE),
+        ('Rhea', '1210', 'supervisor', TRUE),
+        ('isabellaauman', '1995', 'processor', TRUE),
+        ('James', '1996', 'viewer', TRUE),
+        ('BREMAR_PILLAR', '2019', 'processor', TRUE)
+      ON CONFLICT (username) DO NOTHING;
     `);
     console.log('Database tables initialized successfully');
   } catch (error) {
