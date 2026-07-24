@@ -967,23 +967,21 @@
 
                 // Auto-advance order status when outbound is On-going.
                 // Grand orders: blank/early/"In progress picking" → "picked for sort"
-                // Regular orders: blank/early → "In progress picking"
-                const GRAND_PLAN_STATUSES = new Set(['grand advance', 'grand advanced']);
+                // Auto-sync status based on picking activity:
+                // - When picking is in progress -> "In progress picking"
+                // - When picking is completed -> "Picking Completed"
+                const ALLOWED_AUTO_STATUSES = new Set(['', '-', 'for loading/dispatch', 'for truck booking', 'in progress picking', 'picking completed', 'picked for sort']);
                 dispatchPlanData.forEach(item => {
                     if (item.archiveStatus === 'Archived') return;
 
-                    const planStatusKey = (item.status || '').toLowerCase().trim();
-                    const isGrand = GRAND_PLAN_STATUSES.has(planStatusKey);
                     const currentStatusKey = (item.orderStatus || '').toLowerCase().trim();
-
-                    const EARLY_STATUSES = new Set(['', '-', 'for loading/dispatch', 'for truck booking']);
-                    const GRAND_EARLY_STATUSES = new Set(['', '-']);
-                    const eligibleSet = isGrand ? GRAND_EARLY_STATUSES : EARLY_STATUSES;
-                    if (!eligibleSet.has(currentStatusKey)) return;
+                    if (!ALLOWED_AUTO_STATUSES.has(currentStatusKey)) return;
 
                     const itemFoStr = String(item.fo || '');
                     const foList = itemFoStr.split(',').map(f => f.trim()).filter(f => f);
+                    const itemQty = parseInt(item.qty) || 0;
                     let completedQty = 0, ongoingPickers = 0;
+
                     (pickingOrders || []).forEach(order => {
                         const foMatch = foList.includes(String(order.foNumber).trim()) || String(order.foNumber) === itemFoStr;
                         const partyMatch = String(order.partyCode) === String(item.partyCode);
@@ -994,8 +992,14 @@
                         }
                     });
 
-                    if (ongoingPickers > 0 || completedQty > 0) {
-                        const targetStatus = isGrand ? 'picked for sort' : 'In progress picking';
+                    let targetStatus = null;
+                    if (completedQty >= itemQty && itemQty > 0) {
+                        targetStatus = 'Picking Completed';
+                    } else if (ongoingPickers > 0 || completedQty > 0) {
+                        targetStatus = 'In progress picking';
+                    }
+
+                    if (targetStatus && targetStatus.toLowerCase() !== currentStatusKey) {
                         item.orderStatus = targetStatus;
                         AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/order-status/${item.id}`, {
                             method: 'POST',
@@ -1184,11 +1188,16 @@
 
                 const checkboxTd = bulkMode ? `<td class="bulk-td"><input type="checkbox" class="bulk-checkbox" data-id="${item.id}" ${bulkSelectedIds.has(item.id) ? 'checked' : ''} onchange="toggleBulkItem(this)"></td>` : '';
 
-                const escapedId = item.id;
-                const isBlankStatus = !item.orderStatus || item.orderStatus === '-';
-                const isGrand = String(item.accountName || '').toLowerCase().includes('gaisano grand');
-                const autoStatus = isGrand ? 'picked for sort' : 'In progress picking';
-                const effectiveOrderStatus = (isBlankStatus && (ongoingPickers > 0 || completedQty > 0)) ? autoStatus : (item.orderStatus || '');
+                let targetAutoStatus = '';
+                if (completedQty >= itemQty && itemQty > 0) {
+                    targetAutoStatus = 'Picking Completed';
+                } else if (ongoingPickers > 0 || completedQty > 0) {
+                    targetAutoStatus = 'In progress picking';
+                }
+
+                const currentStatusKey = (item.orderStatus || '').toLowerCase().trim();
+                const isEarlyOrAuto = !currentStatusKey || currentStatusKey === '-' || currentStatusKey === 'in progress picking' || currentStatusKey === 'picking completed' || currentStatusKey === 'picked for sort';
+                const effectiveOrderStatus = (isEarlyOrAuto && targetAutoStatus) ? targetAutoStatus : (item.orderStatus || '');
 
                 tr.innerHTML = `
                     ${checkboxTd}
@@ -1398,11 +1407,11 @@
         }
 
         const ORDER_STATUS_COLORS = {
+            'In progress picking': '#a8c4d4',
+            'Picking Completed':   '#00b4d8',
             'Ready to Dispatch':   '#f4a261',
             'Sorting in progress': '#e9c46a',
             'Sorted':              '#c77dff',
-            'In progress picking': '#a8c4d4',
-            'picked for sort':     '#90e0ef',
             'Loading in progress': '#f9e03a',
             'Loaded':              '#57cc99',
             'dispatched':          '#48bb78',
