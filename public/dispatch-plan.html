@@ -944,6 +944,31 @@
         let bulkSelectedIds = new Set();
         let currentUser = null; // set on init
 
+        function parseNum(val) {
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            return parseInt(String(val || '').replace(/[^0-9]/g, ''), 10) || 0;
+        }
+
+        function matchPickingOrder(order, item) {
+            if (!order || !item) return false;
+            const directId = order.dispatchOrderId || order.dispatch_order_id;
+            if (directId && String(directId) === String(item.id)) return true;
+
+            const itemFoStr = String(item.fo || '').trim();
+            const foList = itemFoStr.split(',').map(f => f.trim()).filter(Boolean);
+            const orderFo = String(order.foNumber || order.fo_number || '').trim();
+
+            const foMatch = foList.includes(orderFo) || orderFo === itemFoStr || itemFoStr.includes(orderFo);
+            if (!foMatch) return false;
+
+            const partyMatch = !order.partyCode || !item.partyCode || String(order.partyCode).trim() === String(item.partyCode).trim();
+            const itemQty = parseNum(item.qty);
+            const orderQty = parseNum(order.totalOrderQty || order.total_order_qty);
+            const qtyMatch = !orderQty || !itemQty || orderQty === itemQty;
+
+            return partyMatch && qtyMatch;
+        }
+
         async function loadData() {
             try {
                 const [dispatchRes, pickingRes, archivedRes, pickersRes] = await Promise.all([
@@ -976,17 +1001,12 @@
                     const currentStatusKey = (item.orderStatus || '').toLowerCase().trim();
                     if (!ALLOWED_AUTO_STATUSES.has(currentStatusKey)) return;
 
-                    const itemFoStr = String(item.fo || '');
-                    const foList = itemFoStr.split(',').map(f => f.trim()).filter(f => f);
-                    const itemQty = parseInt(item.qty) || 0;
+                    const itemQty = parseNum(item.qty);
                     let completedQty = 0, ongoingPickers = 0;
 
                     (pickingOrders || []).forEach(order => {
-                        const foMatch = foList.includes(String(order.foNumber).trim()) || String(order.foNumber) === itemFoStr;
-                        const partyMatch = String(order.partyCode) === String(item.partyCode);
-                        const qtyMatch = Number(order.totalOrderQty) === Number(item.qty);
-                        if (foMatch && partyMatch && qtyMatch) {
-                            if (order.status === 'completed') completedQty += parseInt(order.pickerQty) || 0;
+                        if (matchPickingOrder(order, item)) {
+                            if (order.status === 'completed') completedQty += parseNum(order.pickerQty);
                             else if (order.status === 'in-progress') ongoingPickers++;
                         }
                     });
@@ -1135,20 +1155,14 @@
                 let ongoingQty = 0;
                 let ongoingPickers = 0;
                 const itemFoStr = String(item.fo || '');
-                const itemQty = parseInt(item.qty) || 0;
-                
+                const itemQty = parseNum(item.qty);
 
                 (pickingOrders || []).forEach(order => {
-                    if (String(order.foNumber) === itemFoStr && 
-                        String(order.partyCode) === String(item.partyCode) && 
-                        Number(order.totalOrderQty) === Number(item.qty)) {
-                        
-                        
-
+                    if (matchPickingOrder(order, item)) {
                         if (order.status === 'completed') {
-                            completedQty += parseInt(order.pickerQty) || 0;
+                            completedQty += parseNum(order.pickerQty);
                         } else if (order.status === 'in-progress') {
-                            ongoingQty += parseInt(order.pickerQty) || 0;
+                            ongoingQty += parseNum(order.pickerQty);
                             ongoingPickers++;
                         }
                     }
