@@ -810,6 +810,9 @@
                 <div id="status-modal-grid" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
                     <!-- Status options loaded dynamically -->
                 </div>
+                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); text-align: right;">
+                    <span onclick="deleteOrderFromPlanStatusModal()" title="Delete this order" style="cursor: pointer; color: var(--text-secondary); font-size: 11px; opacity: 0.5;" onmouseover="this.style.opacity=1; this.style.color='#ef4444'" onmouseout="this.style.opacity=0.5; this.style.color='var(--text-secondary)'">Delete order</span>
+                </div>
             </div>
         </div>
 
@@ -1162,10 +1165,7 @@
                     <td style="text-align:center;">${buildPlanStatusBadge(item.status, item.id, effectiveOrderStatus)}</td>
                     <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary); cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'order_received', 'date', event)" title="Click to edit Order Date">${formatOrderDate(item.orderReceived)}</td>
                     <td style="width: 140px; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'fo', 'text', event)" title="Click to edit STO #">
-                        <div style="display: flex; align-items: flex-start; gap: 6px;">
-                            ${foDisplay}
-                            <span onclick="event.stopPropagation(); deleteOrderById('${escapedId}')" title="Delete order" style="cursor: pointer; opacity: 0.35; font-size: 11px; flex-shrink: 0;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.35">🗑️</span>
-                        </div>
+                        ${foDisplay}
                     </td>
                     <td style="font-weight: 600; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'account_name', 'text', event)" title="Click to edit Customer Name">${item.accountName || 'Unknown'}</td>
                     <td style="text-align: center; font-weight: 500; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'type', 'select-type', event)" title="Click to edit Type">${item.type || '-'}</td>
@@ -1582,6 +1582,13 @@
                 }
             }
             closePlanStatusModal();
+        }
+
+        function deleteOrderFromPlanStatusModal() {
+            const orderId = activePlanOrderId;
+            if (!orderId) return;
+            closePlanStatusModal();
+            deleteOrderById(orderId);
         }
 
         /* ── New Order Inline Functions ──────────────────────── */
