@@ -933,7 +933,7 @@
                         <h2 class="card-title">Picking Status Overview</h2>
                     </div>
                     <div style="min-width: 300px; flex-grow: 1; max-width: 400px;">
-                        <input type="text" id="status-search" placeholder="🔍 Search FO# or Account..."
+                        <input type="text" id="status-search" placeholder="🔍 Search STO# or Account..."
                             oninput="renderOrdersStatus()" style="width: 100%;">
                     </div>
                 </div>
@@ -941,7 +941,7 @@
                     <table style="width: 100%;">
                         <thead>
                             <tr>
-                                <th class="sortable-header" onclick="handleHeaderClick('fo')" style="width: 140px;">FO# <span id="sort-icon-fo" class="sort-icon">↕</span></th>
+                                <th class="sortable-header" onclick="handleHeaderClick('fo')" style="width: 140px;">STO# <span id="sort-icon-fo" class="sort-icon">↕</span></th>
                                 <th class="sortable-header" onclick="handleHeaderClick('accountName')" style="width: 200px;">Account Name <span id="sort-icon-accountName" class="sort-icon">↕</span></th>
                                 <th class="sortable-header" onclick="handleHeaderClick('qty')" style="width: 100px; text-align: center;">Order Qty <span id="sort-icon-qty" class="sort-icon">↕</span></th>
                                 <th class="sortable-header" onclick="handleHeaderClick('picked')" style="width: 100px; text-align: center;">Picked <span id="sort-icon-picked" class="sort-icon">↕</span></th>
@@ -973,10 +973,10 @@
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="required">Select FO#</label>
+                        <label class="required">Select STO#</label>
                         <div id="fo-select-container" class="searchable-select-container">
                             <div class="search-input-wrapper">
-                                <input type="text" id="fo-search" placeholder="🔍 Search FO# or Account..."
+                                <input type="text" id="fo-search" placeholder="🔍 Search STO# or Account..."
                                     autocomplete="off">
                                 <i>▼</i>
                             </div>
@@ -1043,7 +1043,7 @@
                         <h2 class="card-title">Live Picking Activity</h2>
                     </div>
                     <div style="min-width: 300px; flex-grow: 1; max-width: 400px;">
-                        <input type="text" id="in-progress-search" placeholder="🔍 Search Picker or FO#..."
+                        <input type="text" id="in-progress-search" placeholder="🔍 Search Picker or STO#..."
                             oninput="renderInProgress()" style="width: 100%;">
                     </div>
                 </div>
@@ -1053,7 +1053,7 @@
                         <select id="in-progress-sort" onchange="renderInProgress()" style="width: 100%;">
                             <option value="oldest" selected>Oldest First</option>
                             <option value="newest">Newest First</option>
-                            <option value="fo">Sort by FO#</option>
+                            <option value="fo">Sort by STO#</option>
                             <option value="account">Sort by Account</option>
                         </select>
                     </div>
@@ -1074,9 +1074,9 @@
                     <div class="filter-bar"
                         style="display: flex; gap: 16px; flex-wrap: wrap; background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
                         <div style="flex-grow: 2; min-width: 250px;">
-                            <label style="display: block; margin-bottom: 8px; font-size: 11px;">Search FO# or
+                            <label style="display: block; margin-bottom: 8px; font-size: 11px;">Search STO# or
                                 Picker</label>
-                            <input type="text" id="completed-search" placeholder="🔍 Enter FO# or name..."
+                            <input type="text" id="completed-search" placeholder="🔍 Enter STO# or name..."
                                 oninput="renderCompleted()" style="width: 100%;">
                         </div>
                         <div style="flex-grow: 1; min-width: 150px;">
@@ -3401,7 +3401,7 @@
                         <thead>
                             <tr>
                                 <th class="sortable-header" onclick="handleReportHeaderClick('date')" style="cursor:pointer;">Date ${renderReportSortIcon('date')}</th>
-                                <th class="sortable-header" onclick="handleReportHeaderClick('fo')" style="cursor:pointer;">FO# ${renderReportSortIcon('fo')}</th>
+                                <th class="sortable-header" onclick="handleReportHeaderClick('fo')" style="cursor:pointer;">STO# ${renderReportSortIcon('fo')}</th>
                                 <th class="sortable-header" onclick="handleReportHeaderClick('accountName')" style="cursor:pointer;">Account ${renderReportSortIcon('accountName')}</th>
                                 <th class="sortable-header" onclick="handleReportHeaderClick('pickerCode')" style="cursor:pointer;">Picker ${renderReportSortIcon('pickerCode')}</th>
                                 <th class="sortable-header" onclick="handleReportHeaderClick('qty')" style="cursor:pointer;">Qty ${renderReportSortIcon('qty')}</th>
