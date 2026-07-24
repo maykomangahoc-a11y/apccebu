@@ -15,7 +15,7 @@ router.get('/', authenticateToken, async (req, res) => {
       query += ' WHERE archive_status = $1';
       params.push(archive_status);
     } else {
-      query += " WHERE archive_status = 'Active'";
+      query += " WHERE (archive_status IS NULL OR LOWER(archive_status) != 'archived')";
     }
 
     query += ' ORDER BY created_at DESC';
@@ -657,7 +657,7 @@ router.post('/cleanup-bad-fo', authenticateToken, async (req, res) => {
 // POST /api/dispatch/delete-all
 router.post('/delete-all', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query("DELETE FROM dispatch_orders WHERE archive_status = 'Active'");
+    const result = await pool.query("DELETE FROM dispatch_orders WHERE archive_status IS NULL OR LOWER(archive_status) != 'archived'");
     res.json({ success: true, deleted: result.rowCount, message: `Deleted ${result.rowCount} active orders` });
   } catch (error) {
     console.error('Delete all orders error:', error.message);
