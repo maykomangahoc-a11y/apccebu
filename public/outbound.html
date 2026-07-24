@@ -1867,6 +1867,37 @@
             pickerCounter++;
             const container = document.getElementById('picker-assignments');
 
+            let defaultQtyStr = '';
+            const foSelect = document.getElementById('fo-select');
+            if (foSelect && foSelect.value !== '') {
+                let totalOrderQty = 0;
+                let pickedQty = 0;
+                
+                if (foSelect.value === 'BTC') {
+                    totalOrderQty = parseNum(document.getElementById('total-qty').value);
+                    pickingOrders.forEach(order => {
+                        if (matchPickingOrder(order, { fo: foSelect.dataset.generatedFo, partyCode: 'BTC' })) {
+                            pickedQty += parseNum(order.pickerQty);
+                        }
+                    });
+                } else {
+                    const selectedFo = foDatabase[foSelect.value];
+                    if (selectedFo) {
+                        totalOrderQty = parseNum(selectedFo.qty);
+                        pickingOrders.forEach(order => {
+                            if (matchPickingOrder(order, selectedFo)) {
+                                pickedQty += parseNum(order.pickerQty);
+                            }
+                        });
+                    }
+                }
+                
+                const balance = Math.max(0, totalOrderQty - pickedQty);
+                if (balance > 0) {
+                    defaultQtyStr = `value="${balance}"`;
+                }
+            }
+
             const assignmentDiv = document.createElement('div');
             assignmentDiv.className = 'picker-card';
             assignmentDiv.id = `picker-${pickerCounter}`;
@@ -1894,7 +1925,7 @@
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label class="required" style="font-size: 11px;">Quantity</label>
-                        <input type="number" id="picker-qty-${pickerCounter}" placeholder="Qty" min="1" style="padding: 8px 12px; font-size: 14px;">
+                        <input type="number" id="picker-qty-${pickerCounter}" ${defaultQtyStr} placeholder="Qty" min="1" style="padding: 8px 12px; font-size: 14px;">
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label class="required" style="font-size: 11px;">BL# (Batch Load)</label>
