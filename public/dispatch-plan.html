@@ -2127,10 +2127,14 @@
 
 
             const headers = rows[headerRowIndex].map(h => String(h || '').trim().toLowerCase());
-            const idxDispatchDate = headers.findIndex(h => h.includes('loading') || h.includes('dispatch date') || h === 'date' || h === 'plan date');
+            const idxDispatchDate = headers.findIndex(h => h.includes('loading') || h.includes('dispatch date') || h === 'plan date');
+            const idxOrderDate = headers.findIndex(h => h.includes('order date') || h.includes('order received') || h.includes('po date') || h.includes('so date') || h === 'date' || h.includes('date received'));
             const idxDeliveryDate = headers.findIndex(h => h.includes('delivery') || h.includes('rdd') || h.includes('target'));
             const idxDestination = headers.findIndex(h => h.includes('destination') || h.includes('account') || h.includes('customer') || h.includes('ship to') || h.includes('branch'));
-            const idxSto = headers.findIndex(h => h.includes('sto') || h.includes('order no') || h.includes('fo'));
+            const idxSto = headers.findIndex(h => {
+                if (h.includes('order date') || h.includes('info') || h.includes('received')) return false;
+                return h.includes('sto') || h.includes('order no') || h.includes('order #') || h.includes('so #') || h.includes('po #') || h === 'fo' || h.includes('fo #') || h.includes('fo number');
+            });
             const idxQty = headers.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('volume') || h.includes('pcs'));
 
             if (idxSto === -1) {
@@ -2173,7 +2177,7 @@
                 const dispatchDateStr = rawDispatchDate;
 
                 const deliveryDateStr = idxDeliveryDate >= 0 ? String(cols[idxDeliveryDate] || '').trim() : '';
-
+                const orderDateStr = idxOrderDate >= 0 ? String(cols[idxOrderDate] || '').trim() : '';
 
                 // Automated Status Logic
                 let determinedStatus = 'Pending Plan';
@@ -2205,7 +2209,7 @@
                         type: type,
                         qty: qty,
                         invoiced_value: '0',
-                        order_received: new Date().toISOString(),
+                        order_received: orderDateStr || new Date().toISOString(),
                         status: determinedStatus,
                         order_status: '',
                         delivery_date: deliveryDateStr
