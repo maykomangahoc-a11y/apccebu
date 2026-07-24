@@ -952,21 +952,20 @@
                     AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/archived`),
                     AuthGuard.authFetch(`${API_BASE_URL}/pickers`)
                 ]);
-                const data = await dispatchRes.json();
+                const rawData = await dispatchRes.json().catch(() => []);
+                const data = Array.isArray(rawData) ? rawData : [];
                 dispatchPlanData = data;
                 populateDispatchDateFilter();
-                pickingOrders = await pickingRes.json();
-                const archivedResult = await archivedRes.json();
-                pickersList = await pickersRes.json().catch(() => []);
-                if (!Array.isArray(pickersList)) pickersList = [];
 
-                if (!Array.isArray(data)) {
-                    console.error('Data is not an array:', data);
-                    return;
-                }
+                const rawPicking = await pickingRes.json().catch(() => []);
+                pickingOrders = Array.isArray(rawPicking) ? rawPicking : [];
 
-                // Auto-advance order status when outbound is On-going.
-                // Grand orders: blank/early/"In progress picking" → "picked for sort"
+                const archivedResult = await archivedRes.json().catch(() => []);
+                archivedData = Array.isArray(archivedResult) ? archivedResult : [];
+
+                const rawPickers = await pickersRes.json().catch(() => []);
+                pickersList = Array.isArray(rawPickers) ? rawPickers : [];
+
                 // Auto-sync status based on picking activity:
                 // - When picking is in progress -> "In progress picking"
                 // - When picking is completed -> "Picking Completed"
@@ -1010,13 +1009,13 @@
                 });
 
                 filterDispatchTable();
-                const truckData = data.filter(item => {
+                const truckData = dispatchPlanData.filter(item => {
                     if (item.archiveStatus === 'Archived') return false;
                     const status = (item.status || '').toLowerCase().trim();
                     return status === "today's plan" || status === "pending plan";
                 });
                 renderTruckAssignment(truckData);
-                archivedData = Array.isArray(archivedResult) ? archivedResult : [];
+
                 if (!archivedDefaultsSet) {
                     const today = new Date();
                     const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -1028,17 +1027,22 @@
                 }
                 filterArchivedTable();
 
-                document.getElementById('dispatch-loading').style.display = 'none';
-                document.getElementById('truck-loading').style.display = 'none';
-                document.getElementById('dispatch-table').style.display = 'table';
-                document.getElementById('truck-table').style.display = 'table';
-                document.getElementById('archived-table').style.display = 'table';
-
                 const now = new Date();
-                document.getElementById('last-update').textContent = `Live Sync ${now.toLocaleTimeString()}`;
+                const lastUpdate = document.getElementById('last-update');
+                if (lastUpdate) lastUpdate.textContent = `Live Sync ${now.toLocaleTimeString()}`;
 
             } catch (error) {
                 console.error('Error loading data:', error);
+            } finally {
+                const loadEl = document.getElementById('dispatch-loading');
+                const truckLoadEl = document.getElementById('truck-loading');
+                const tableEl = document.getElementById('dispatch-table');
+                const truckTableEl = document.getElementById('truck-table');
+                const archiveTableEl = document.getElementById('archived-table');
+                if (loadEl) loadEl.style.display = 'none';
+                if (truckLoadEl) truckLoadEl.style.display = 'none';
+                if (tableEl) tableEl.style.display = 'table';
+                if (truckTableEl) truckTableEl.style.display = 'table';
             }
         }
 
