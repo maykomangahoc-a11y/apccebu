@@ -2386,7 +2386,7 @@
             }
 
             try {
-                const order = pickingOrders.find(o => o.id === orderId);
+                const order = pickingOrders.find(o => String(o.id) === String(orderId));
                 const duration = order ? getActiveMinutes(order.startTime) : 0;
 
                 const response = await AuthGuard.authFetch(`${API_BASE_URL}/picking-orders/${orderId}`, {
@@ -2401,11 +2401,13 @@
                 });
 
                 if (response.ok) {
-                    const order = pickingOrders.find(o => o.id === orderId);
-                    if (order) order.status = 'completed'; 
-                    
-                    const duration = getActiveMinutes(order.startTime);
-                    alert(`✅ Picking completed!\n\nPicker: ${order.pickerCode}\nDuration: ${duration} minutes`);
+                    if (order) order.status = 'completed';
+
+                    if (order) {
+                        alert(`✅ Picking completed!\n\nPicker: ${order.pickerCode}\nDuration: ${duration} minutes`);
+                    } else {
+                        alert('✅ Picking completed!');
+                    }
 
                     await loadPickingOrders();
                     renderInProgress();
@@ -3092,7 +3094,7 @@
         }
 
         async function editPickQty(orderId) {
-            const order = pickingOrders.find(o => o.id === orderId);
+            const order = pickingOrders.find(o => String(o.id) === String(orderId));
             if (!order) return;
 
             const newQty = prompt(`Edit Quantity for ${order.pickerCode} (FO# ${order.foNumber}):`, order.pickerQty);
@@ -3107,8 +3109,8 @@
             // Calculate balance EXCLUDING this specific order's current quantity
             let otherPickedQty = 0;
             pickingOrders.forEach(o => {
-                if (o.id !== orderId && 
-                    String(o.foNumber) === String(order.foNumber) && 
+                if (String(o.id) !== String(orderId) &&
+                    String(o.foNumber) === String(order.foNumber) &&
                     String(o.partyCode) === String(order.partyCode)) {
                     otherPickedQty += parseInt(o.pickerQty) || 0;
                 }
@@ -3145,7 +3147,7 @@
         }
 
         async function changePicker(orderId) {
-            const order = pickingOrders.find(o => o.id === orderId);
+            const order = pickingOrders.find(o => String(o.id) === String(orderId));
             if (!order) return;
 
             const busyPickers = new Set();
