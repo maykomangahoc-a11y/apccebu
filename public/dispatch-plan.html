@@ -2137,9 +2137,28 @@
             });
             const idxQty = headers.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('volume') || h.includes('pcs'));
 
+            // DEBUG: Show detected column mapping (temporary)
+            console.log('Excel headers:', headers);
+            console.log('Column mapping:', { idxDispatchDate, idxOrderDate, idxDeliveryDate, idxDestination, idxSto, idxQty });
+            console.log('First data row:', rows[headerRowIndex + 1]);
+            alert(`Column Mapping Debug:\nHeaders: ${headers.join(' | ')}\n\nDispatch Date col: ${idxDispatchDate >= 0 ? headers[idxDispatchDate] : 'NOT FOUND'} (idx ${idxDispatchDate})\nOrder Date col: ${idxOrderDate >= 0 ? headers[idxOrderDate] : 'NOT FOUND'} (idx ${idxOrderDate})\nSTO # col: ${idxSto >= 0 ? headers[idxSto] : 'NOT FOUND'} (idx ${idxSto})\nDestination col: ${idxDestination >= 0 ? headers[idxDestination] : 'NOT FOUND'} (idx ${idxDestination})\nQty col: ${idxQty >= 0 ? headers[idxQty] : 'NOT FOUND'} (idx ${idxQty})\nDelivery Date col: ${idxDeliveryDate >= 0 ? headers[idxDeliveryDate] : 'NOT FOUND'} (idx ${idxDeliveryDate})`);
+
             if (idxSto === -1) {
                 alert('Missing STO # / Order No column.');
                 return;
+            }
+
+            // Helper: detect if a value looks like a date (not a real STO number)
+            function looksLikeDate(val) {
+                if (!val) return false;
+                // Matches patterns like: 25-Jun-26, 2-Jul-26, 2026-07-24, 7/24/2026, Jun 25, etc.
+                if (/^\d{1,2}[-\/]\w{3}[-\/]\d{2,4}$/i.test(val)) return true;  // 25-Jun-26
+                if (/^\w{3}[-\/]\d{1,2}[-\/]\d{2,4}$/i.test(val)) return true;  // Jun-25-26
+                if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/.test(val)) return true;   // 2026-07-24
+                if (/^\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}$/.test(val)) return true; // 7/24/2026
+                // Excel serial date number (5-digit number like 46227)
+                if (/^\d{5}$/.test(val)) return true;
+                return false;
             }
 
             const aggregated = {};
@@ -2157,7 +2176,8 @@
                 let sto = (cols[idxSto] !== undefined) ? String(cols[idxSto]).trim() : '';
                 if (sto.toLowerCase() === 'sto #' || sto.toLowerCase() === 'orders') continue;
                 
-                if (!sto) {
+                // If the STO value looks like a date, it's the wrong column - treat as empty
+                if (!sto || looksLikeDate(sto)) {
                     sto = 'TEMP-' + Date.now() + '-' + i;
                 }
 
