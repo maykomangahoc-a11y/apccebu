@@ -2603,28 +2603,25 @@
                     return idx === -1 ? 999 : idx;
                 };
 
-                filteredFOs.sort((a, b) => {
-                    // 1. Move completed orders to the bottom
-                    const aComp = (a.completedQty >= a.qty && a.qty > 0) ? 1 : 0;
-                    const bComp = (b.completedQty >= b.qty && b.qty > 0) ? 1 : 0;
-                    if (aComp !== bComp) return aComp - bComp;
+                filteredFOs = filteredFOs
+                    .map((item, idx) => ({ item, idx }))
+                    .sort((a, b) => {
+                        // 1. Move completed orders to the bottom
+                        const aComp = (a.item.completedQty >= a.item.qty && a.item.qty > 0) ? 1 : 0;
+                        const bComp = (b.item.completedQty >= b.item.qty && b.item.qty > 0) ? 1 : 0;
+                        if (aComp !== bComp) return aComp - bComp;
 
-                    // 2. Sort by Dispatch Plan Status Rank
-                    const rankA = getStatusRank(a.status);
-                    const rankB = getStatusRank(b.status);
-                    if (rankA !== rankB) {
-                        return rankA - rankB;
-                    }
-                    
-                    // 3. Keep TEMP- orders at top
-                    const isNewA = String(a.fo || '').includes('TEMP-');
-                    const isNewB = String(b.fo || '').includes('TEMP-');
-                    if (isNewA && !isNewB) return -1;
-                    if (!isNewA && isNewB) return 1;
+                        // 2. Sort by Dispatch Plan Status Rank
+                        const rankA = getStatusRank(a.item.status);
+                        const rankB = getStatusRank(b.item.status);
+                        if (rankA !== rankB) {
+                            return rankA - rankB;
+                        }
 
-                    // 4. Sort by orderReceived desc
-                    return new Date(b.orderReceived || 0) - new Date(a.orderReceived || 0);
-                });
+                        // 3. Keep original Dispatch Plan order
+                        return a.idx - b.idx;
+                    })
+                    .map(w => w.item);
             }
 
             if (filteredFOs.length === 0) {
