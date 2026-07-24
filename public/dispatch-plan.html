@@ -1216,6 +1216,7 @@
                 const currentStatusKey = (item.orderStatus || '').toLowerCase().trim();
                 const isEarlyOrAuto = !currentStatusKey || currentStatusKey === '-' || currentStatusKey === 'in progress picking' || currentStatusKey === 'picking completed' || currentStatusKey === 'picked for sort';
                 const effectiveOrderStatus = (isEarlyOrAuto && targetAutoStatus) ? targetAutoStatus : (item.orderStatus || '');
+                const escapedId = String(item.id || '').replace(/'/g, "\\'");
 
                 tr.innerHTML = `
                     ${checkboxTd}

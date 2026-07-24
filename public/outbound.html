@@ -1134,6 +1134,22 @@
         };
 
         // State
+        function parseNum(val) {
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            return parseInt(String(val || '').replace(/[^0-9.-]/g, ''), 10) || 0;
+        }
+
+        function matchPickingOrder(order, item) {
+            if (!order || !item) return false;
+            const itemFoStr = String(item.fo || item.foNumber || '').trim();
+            const foList = itemFoStr.split(',').map(f => f.trim()).filter(Boolean);
+            const orderFo = String(order.foNumber || '').trim();
+            const foMatch = foList.includes(orderFo) || orderFo === itemFoStr || itemFoStr.includes(orderFo);
+            if (!foMatch) return false;
+            const partyMatch = !order.partyCode || !item.partyCode || String(order.partyCode).trim() === String(item.partyCode).trim();
+            return partyMatch;
+        }
+
         let foDatabase = [];
         let pickersDatabase = [];
         let stagingAreas = [];
@@ -1366,9 +1382,9 @@
                 foDatabase.forEach((fo, index) => {
                     let pickedQty = 0;
                     pickingOrders.forEach(order => {
-                        if (String(order.foNumber) === String(fo.fo) && 
-                            String(order.partyCode) === String(fo.partyCode)) {
-                            pickedQty += parseInt(order.pickerQty) || 0;
+                        if (matchPickingOrder(order, fo)) {
+                            // Deduct already drafted/started pickers for this FO
+                            pickedQty += parseNum(order.pickerQty);
                         }
                     });
                     if (pickedQty < fo.qty) {
@@ -1503,9 +1519,9 @@
             // Calculate balance quantity
             let pickedQty = 0;
             pickingOrders.forEach(order => {
-                if (String(order.foNumber) === String(fo.fo) && 
-                    String(order.partyCode) === String(fo.partyCode)) {
-                    pickedQty += parseInt(order.pickerQty) || 0;
+                if (matchPickingOrder(order, fo)) {
+                    // deduct already drafted/started
+                    pickedQty += parseNum(order.pickerQty);
                 }
             });
 
@@ -1685,8 +1701,8 @@
 
             const titleEl = document.createElement('h3');
             titleEl.textContent = title;
-            titleEl.style.marginTop = '0';
-            titleEl.style.marginBottom = '8px';
+            titleEl.marginTop = '0';
+            titleEl.marginBottom = '8px';
             titleEl.style.color = 'var(--text-primary)';
             titleEl.style.fontSize = '20px';
             titleEl.style.fontWeight = '700';
@@ -1927,12 +1943,10 @@
             const selectedFoIndex = document.getElementById('fo-select').value;
             if (selectedFoIndex !== '') {
                 const selectedFo = foDatabase[selectedFoIndex];
-                const foNumber = selectedFo.fo;
                 let pickedQty = 0;
                 pickingOrders.forEach(order => {
-                    if (String(order.foNumber) === String(foNumber) && 
-                        String(order.partyCode) === String(selectedFo.partyCode)) {
-                        pickedQty += parseInt(order.pickerQty) || 0;
+                    if (matchPickingOrder(order, selectedFo)) {
+                        pickedQty += parseNum(order.pickerQty);
                     }
                 });
                 const userRole = window._authUser ? window._authUser.role : '';
@@ -1975,9 +1989,8 @@
                     const selectedFo = foDatabase[selectedFoIndex];
                     let pickedQty = 0;
                     pickingOrders.forEach(order => {
-                        if (String(order.foNumber) === String(selectedFo.fo) && 
-                            String(order.partyCode) === String(selectedFo.partyCode)) {
-                            pickedQty += parseInt(order.pickerQty) || 0;
+                        if (matchPickingOrder(order, selectedFo)) {
+                            pickedQty += parseNum(order.pickerQty);
                         }
                     });
                     const remaining = Math.max(0, selectedFo.qty - pickedQty);
@@ -2040,7 +2053,7 @@
                 foNumber = foSelect.dataset.generatedFo;
                 accountName = 'Back To Location';
                 partyCode = 'BTC';
-                totalOrderQty = parseInt(document.getElementById('total-qty').value) || 0;
+                totalOrderQty = parseNum(document.getElementById('total-qty').value);
             } else {
                 const fo = foDatabase[foIndex];
                 foNumber = fo.fo;
@@ -2065,9 +2078,9 @@
                 // Check Balance for Draft
                 let currentlyPicked = 0;
                 pickingOrders.forEach(order => {
-                    if (String(order.foNumber) === String(foNumber) && 
-                        String(order.partyCode) === String(partyCode)) {
-                        currentlyPicked += parseInt(order.pickerQty) || 0;
+                    if (matchPickingOrder(order, { fo: foNumber, partyCode: partyCode })) {
+                        // deduct already drafted/started
+                        currentlyPicked += parseNum(order.pickerQty);
                     }
                 });
                 const draftBalance = Math.max(0, totalOrderQty - currentlyPicked);
@@ -2164,7 +2177,7 @@
                 foNumber = foSelect.dataset.generatedFo;
                 accountName = 'Back To Location';
                 partyCode = 'BTC';
-                totalOrderQty = parseInt(document.getElementById('total-qty').value) || 0;
+                totalOrderQty = parseNum(document.getElementById('total-qty').value);
                 orderId = '';
             } else {
                 const fo = foDatabase[foIndex];
@@ -2196,9 +2209,8 @@
                 
                 let pickedQty = 0;
                 pickingOrders.forEach(order => {
-                    if (String(order.foNumber) === String(foNumber) && 
-                        String(order.partyCode) === String(partyCode)) {
-                        pickedQty += parseInt(order.pickerQty) || 0;
+                    if (matchPickingOrder(order, { fo: foNumber, partyCode: partyCode })) {
+                        pickedQty += parseNum(order.pickerQty);
                     }
                 });
                 
@@ -2212,9 +2224,8 @@
                 // Validate pickerQty does not exceed remaining balance
                 let pickedQty = 0;
                 pickingOrders.forEach(order => {
-                    if (String(order.foNumber) === String(foNumber) && 
-                        String(order.partyCode) === String(partyCode)) {
-                        pickedQty += parseInt(order.pickerQty) || 0;
+                    if (matchPickingOrder(order, { fo: foNumber, partyCode: partyCode })) {
+                        pickedQty += parseNum(order.pickerQty);
                     }
                 });
                 const balanceQty = Math.max(0, totalOrderQty - pickedQty);
@@ -2467,21 +2478,20 @@
                 let ongoingPickers = 0;
 
                 const itemFoStr = String(item.fo || '');
-                const itemQty = parseInt(item.qty) || 0;
+                const itemQty = parseNum(item.qty);
 
                 let stagingArea = '-';
 
                 pickingOrders.forEach(order => {
-                    if (String(order.foNumber) === itemFoStr && 
-                        String(order.partyCode) === String(item.partyCode)) {
+                    if (matchPickingOrder(order, item)) {
                         
                         // Get staging area (all pickers for same FO/PartyCode use same staging area)
                         if (order.stagingArea) stagingArea = order.stagingArea;
 
                         if (order.status === 'completed') {
-                            completedQty += parseInt(order.pickerQty) || 0;
+                            completedQty += parseNum(order.pickerQty);
                         } else if (order.status === 'in-progress') {
-                            ongoingQty += parseInt(order.pickerQty) || 0;
+                            ongoingQty += parseNum(order.pickerQty);
                             ongoingPickers++;
                         }
                     }
