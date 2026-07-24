@@ -925,7 +925,7 @@
     <script>
         const API_BASE_URL = '/api';
         
-        const ALL_PLAN_STATUSES = ["Pending Plan", "Today's Plan", "Tomorrow's Plan", "Upcoming Plan", "Unconfirmed Plan", "Archive Order"];
+        const ALL_PLAN_STATUSES = ["Today's Plan", "Tomorrow's Plan", "Upcoming Plan", "Unconfirmed Plan", "Pending Plan", "Archive Order"];
         const STATUS_COLORS = {
             "Today's Plan":      "#48bb78",
             "Pending Plan":      "#ed8936",
@@ -957,8 +957,9 @@
             const itemFoStr = String(item.fo || '').trim();
             const foList = itemFoStr.split(',').map(f => f.trim()).filter(Boolean);
             const orderFo = String(order.foNumber || order.fo_number || '').trim();
+            if (!orderFo) return false;
 
-            const foMatch = foList.includes(orderFo) || orderFo === itemFoStr || itemFoStr.includes(orderFo);
+            const foMatch = foList.includes(orderFo) || orderFo === itemFoStr;
             if (!foMatch) return false;
 
             const partyMatch = !order.partyCode || !item.partyCode || String(order.partyCode).trim() === String(item.partyCode).trim();

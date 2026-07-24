@@ -1144,7 +1144,8 @@
             const itemFoStr = String(item.fo || item.foNumber || '').trim();
             const foList = itemFoStr.split(',').map(f => f.trim()).filter(Boolean);
             const orderFo = String(order.foNumber || '').trim();
-            const foMatch = foList.includes(orderFo) || orderFo === itemFoStr || itemFoStr.includes(orderFo);
+            if (!orderFo) return false;
+            const foMatch = foList.includes(orderFo) || orderFo === itemFoStr;
             if (!foMatch) return false;
             const partyMatch = !order.partyCode || !item.partyCode || String(order.partyCode).trim() === String(item.partyCode).trim();
             return partyMatch;
@@ -2628,7 +2629,7 @@
                 });
             } else {
                 // Default sort: same as Dispatch Plan (by status rank, then by newest)
-                const ALL_PLAN_STATUSES = ["Pending Plan", "Today's Plan", "Tomorrow's Plan", "Upcoming Plan", "Unconfirmed Plan", "Archive Order"];
+                const ALL_PLAN_STATUSES = ["Today's Plan", "Tomorrow's Plan", "Upcoming Plan", "Unconfirmed Plan", "Pending Plan", "Archive Order"];
                 const getStatusRank = (status) => {
                     if (!status) return 999;
                     const normalized = status.toLowerCase().trim();
