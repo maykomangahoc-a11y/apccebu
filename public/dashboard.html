@@ -416,7 +416,7 @@
                 </div>
             </div>
             <div style="display: flex; gap: 16px; align-items: center;">
-                <div style="display: flex; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; gap: 4px;">
+                <div style="display: none !important; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; gap: 4px;">
                     <button class="shift-btn active" onclick="setShiftFilter('All')">Overall</button>
                     <button class="shift-btn" onclick="setShiftFilter('1st Shift')">1st Shift</button>
                     <button class="shift-btn" onclick="setShiftFilter('2nd Shift')">2nd Shift</button>
@@ -782,7 +782,7 @@
 
                 allOrders = await ordersRes.json().catch(() => []);
                 pickersDatabase = await pickersRes.json().catch(() => []);
-                dispatchPlanData = (await dispatchRes.json().catch(() => [])).filter(item => item.archiveStatus !== 'Archived');
+                dispatchPlanData = (await dispatchRes.json().catch(() => [])).filter(item => item.archiveStatus !== 'Archived' && item.type !== 'STN' && item.type !== 'DD');
 
                 const config = await configRes.json().catch(() => ({ dayStartHour: 3, dailyGoalQty: 10000, dailyGoalValue: 5000000 }));
                 dashboardConfig = config;
