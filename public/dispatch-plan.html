@@ -976,17 +976,19 @@
                     const isGrand = GRAND_PLAN_STATUSES.has(planStatusKey);
                     const currentStatusKey = (item.orderStatus || '').toLowerCase().trim();
 
-                    const EARLY_STATUSES = new Set(['']);
-                    const GRAND_EARLY_STATUSES = new Set(['']);
+                    const EARLY_STATUSES = new Set(['', '-', 'for loading/dispatch', 'for truck booking']);
+                    const GRAND_EARLY_STATUSES = new Set(['', '-']);
                     const eligibleSet = isGrand ? GRAND_EARLY_STATUSES : EARLY_STATUSES;
                     if (!eligibleSet.has(currentStatusKey)) return;
 
                     const itemFoStr = String(item.fo || '');
+                    const foList = itemFoStr.split(',').map(f => f.trim()).filter(f => f);
                     let completedQty = 0, ongoingPickers = 0;
                     (pickingOrders || []).forEach(order => {
-                        if (String(order.foNumber) === itemFoStr &&
-                            String(order.partyCode) === String(item.partyCode) &&
-                            Number(order.totalOrderQty) === Number(item.qty)) {
+                        const foMatch = foList.includes(String(order.foNumber).trim()) || String(order.foNumber) === itemFoStr;
+                        const partyMatch = String(order.partyCode) === String(item.partyCode);
+                        const qtyMatch = Number(order.totalOrderQty) === Number(item.qty);
+                        if (foMatch && partyMatch && qtyMatch) {
                             if (order.status === 'completed') completedQty += parseInt(order.pickerQty) || 0;
                             else if (order.status === 'in-progress') ongoingPickers++;
                         }
@@ -1183,9 +1185,14 @@
                 const checkboxTd = bulkMode ? `<td class="bulk-td"><input type="checkbox" class="bulk-checkbox" data-id="${item.id}" ${bulkSelectedIds.has(item.id) ? 'checked' : ''} onchange="toggleBulkItem(this)"></td>` : '';
 
                 const escapedId = item.id;
+                const isBlankStatus = !item.orderStatus || item.orderStatus === '-';
+                const isGrand = String(item.accountName || '').toLowerCase().includes('gaisano grand');
+                const autoStatus = isGrand ? 'picked for sort' : 'In progress picking';
+                const effectiveOrderStatus = (isBlankStatus && (ongoingPickers > 0 || completedQty > 0)) ? autoStatus : (item.orderStatus || '');
+
                 tr.innerHTML = `
                     ${checkboxTd}
-                    <td style="text-align:center;">${buildPlanStatusBadge(item.status, item.id, item.orderStatus)}</td>
+                    <td style="text-align:center;">${buildPlanStatusBadge(item.status, item.id, effectiveOrderStatus)}</td>
                     <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary); cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-date')" title="Click to edit Order Date">${formatOrderDate(item.orderReceived)}</td>
                     <td style="width: 140px; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-sto')" title="Click to edit STO #">${foDisplay}</td>
                     <td style="font-weight: 600; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-customer')" title="Click to edit Customer Name">${item.accountName || 'Unknown'}</td>
@@ -1193,7 +1200,7 @@
                     <td style="text-align: center; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-qty')" title="Click to edit Order Qty">${itemQty.toLocaleString()}</td>
                     <td style="text-align: center;">${valueDisplay}</td>
                     <td style="text-align: center;">
-                        ${buildOrderStatusCombo(item.id, item.orderStatus)}
+                        ${buildOrderStatusCombo(item.id, effectiveOrderStatus)}
                     </td>
                     <td style="text-align: center;">
                         <span class="status-badge ${statusClass}" style="cursor: pointer;" onclick="navigateToOutbound('${(foList[0] || '').replace(/'/g, "\\'")}')"> ${statusLabel}</span>
