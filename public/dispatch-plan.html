@@ -2132,16 +2132,10 @@
             const idxDeliveryDate = headers.findIndex(h => h.includes('delivery') || h.includes('rdd') || h.includes('target'));
             const idxDestination = headers.findIndex(h => h.includes('destination') || h.includes('account') || h.includes('customer') || h.includes('ship to') || h.includes('branch'));
             const idxSto = headers.findIndex(h => {
-                if (h.includes('order date') || h.includes('info') || h.includes('received')) return false;
-                return h.includes('sto') || h.includes('order no') || h.includes('order #') || h.includes('so #') || h.includes('po #') || h === 'fo' || h.includes('fo #') || h.includes('fo number');
+                if (h.includes('order date') || h.includes('info') || h.includes('received') || h.includes('stock') || h.includes('confirmation')) return false;
+                return /\bsto\b/.test(h) || h.includes('order no') || h.includes('order #') || h.includes('so #') || h.includes('po #') || h === 'fo' || h.includes('fo #') || h.includes('fo number');
             });
             const idxQty = headers.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('volume') || h.includes('pcs'));
-
-            // DEBUG: Show detected column mapping (temporary)
-            console.log('Excel headers:', headers);
-            console.log('Column mapping:', { idxDispatchDate, idxOrderDate, idxDeliveryDate, idxDestination, idxSto, idxQty });
-            console.log('First data row:', rows[headerRowIndex + 1]);
-            alert(`Column Mapping Debug:\nHeaders: ${headers.join(' | ')}\n\nDispatch Date col: ${idxDispatchDate >= 0 ? headers[idxDispatchDate] : 'NOT FOUND'} (idx ${idxDispatchDate})\nOrder Date col: ${idxOrderDate >= 0 ? headers[idxOrderDate] : 'NOT FOUND'} (idx ${idxOrderDate})\nSTO # col: ${idxSto >= 0 ? headers[idxSto] : 'NOT FOUND'} (idx ${idxSto})\nDestination col: ${idxDestination >= 0 ? headers[idxDestination] : 'NOT FOUND'} (idx ${idxDestination})\nQty col: ${idxQty >= 0 ? headers[idxQty] : 'NOT FOUND'} (idx ${idxQty})\nDelivery Date col: ${idxDeliveryDate >= 0 ? headers[idxDeliveryDate] : 'NOT FOUND'} (idx ${idxDeliveryDate})`);
 
             if (idxSto === -1) {
                 alert('Missing STO # / Order No column.');
