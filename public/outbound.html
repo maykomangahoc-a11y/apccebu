@@ -1182,17 +1182,9 @@
                 const response = await fetch(`${API_BASE_URL}/health`);
                 const data = await response.json();
 
-                if (data.status === 'OK') {
+                if (response.ok || (data && String(data.status).toLowerCase() === 'ok')) {
                     isConnected = true;
-                    if (data.sheetsConnected) {
-                        updateConnectionStatus(true);
-                    } else {
-                        // Server is up but sheets may be reconnecting — show warning but stay functional
-                        const dot = document.getElementById('status-dot');
-                        const text = document.getElementById('status-text');
-                        if (dot) dot.className = 'status-dot status-disconnected';
-                        if (text) text.textContent = 'Sheets Reconnecting...';
-                    }
+                    updateConnectionStatus(true);
                 } else {
                     isConnected = false;
                     updateConnectionStatus(false);
