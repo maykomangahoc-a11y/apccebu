@@ -145,18 +145,42 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // ─── DELETE DISPATCH ORDER ──────────────────────────────────────────────────
 // DELETE /api/dispatch/:id
 router.delete('/:id', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM dispatch_orders WHERE id = $1 RETURNING id', [id]);
+
+    await client.query('BEGIN');
+
+    const result = await client.query('DELETE FROM dispatch_orders WHERE id = $1 RETURNING id, fo, party_code', [id]);
 
     if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Order not found' });
     }
 
+    const { fo, party_code } = result.rows[0];
+
+    // Deleting the dispatch entry should also stop any picking session still
+    // running against it, otherwise it keeps showing as ON-GOING in the picking list.
+    if (fo) {
+      await client.query(
+        `DELETE FROM picking_data WHERE fo = $1 AND party_code = $2 AND status = 'in-progress'`,
+        [fo, party_code || '']
+      );
+      await client.query(
+        'DELETE FROM pending_picks WHERE fo = $1 AND party_code = $2',
+        [fo, party_code || '']
+      );
+    }
+
+    await client.query('COMMIT');
     res.json({ success: true });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Delete dispatch order error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 
@@ -656,12 +680,35 @@ router.post('/cleanup-bad-fo', authenticateToken, async (req, res) => {
 // ─── DELETE ALL ACTIVE ORDERS ───────────────────────────────────────────────
 // POST /api/dispatch/delete-all
 router.post('/delete-all', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
   try {
-    const result = await pool.query("DELETE FROM dispatch_orders WHERE archive_status IS NULL OR LOWER(archive_status) != 'archived'");
+    await client.query('BEGIN');
+
+    const activeFilter = "archive_status IS NULL OR LOWER(archive_status) != 'archived'";
+
+    // Stop any picking sessions still running against the orders about to be wiped out,
+    // otherwise they keep showing as ON-GOING in the picking list.
+    await client.query(
+      `DELETE FROM picking_data WHERE status = 'in-progress' AND (fo, party_code) IN (
+         SELECT fo, party_code FROM dispatch_orders WHERE ${activeFilter}
+       )`
+    );
+    await client.query(
+      `DELETE FROM pending_picks WHERE (fo, party_code) IN (
+         SELECT fo, party_code FROM dispatch_orders WHERE ${activeFilter}
+       )`
+    );
+
+    const result = await client.query(`DELETE FROM dispatch_orders WHERE ${activeFilter}`);
+
+    await client.query('COMMIT');
     res.json({ success: true, deleted: result.rowCount, message: `Deleted ${result.rowCount} active orders` });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Delete all orders error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 

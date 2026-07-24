@@ -1180,6 +1180,7 @@
                 setInterval(async () => {
                         if (document.hidden) return;
                     try {
+                        await refreshFoDatabase();
                         await loadPickingOrders();
                         const currentTab = localStorage.getItem('outbound_tab') || 'orders-status';
                         renderActiveTab(currentTab);
@@ -1315,6 +1316,18 @@
             return `${year}-${month}-${day}`;
         };
 
+        // Re-fetch just the dispatch plan so deletions/edits made elsewhere show up
+        // without requiring a full page reload.
+        async function refreshFoDatabase() {
+            try {
+                const foResponse = await fetch(`${API_BASE_URL}/dispatch-plan`);
+                const allFos = await foResponse.json().catch(() => []);
+                foDatabase = allFos.filter(item => item.archiveStatus !== 'Archived');
+            } catch (error) {
+                console.error('Error refreshing FO database:', error);
+            }
+        }
+
         // Load initial data from Google Sheets
         async function loadInitialData() {
             try {
@@ -1324,9 +1337,7 @@
                 dayStartHour = config.dayStartHour !== undefined ? config.dayStartHour : 3;
 
                 // Load FO data
-                const foResponse = await fetch(`${API_BASE_URL}/dispatch-plan`);
-                const allFos = await foResponse.json().catch(() => []);
-                foDatabase = allFos.filter(item => item.archiveStatus !== 'Archived');
+                await refreshFoDatabase();
 
                 // Setup Searchable FO Select
                 const foOptions = foDatabase.map((fo, index) => ({
