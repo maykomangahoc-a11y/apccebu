@@ -1341,7 +1341,8 @@
 
                 // Load staging areas
                 const areasResponse = await fetch(`${API_BASE_URL}/staging-areas`);
-                stagingAreas = await areasResponse.json();
+                const rawAreas = await areasResponse.json();
+                stagingAreas = Array.isArray(rawAreas) ? rawAreas.map(a => typeof a === 'string' ? a : (a.name || a.staging_area || a.id || '')).filter(Boolean) : [];
 
                 // Setup Searchable Staging Select
                 setupSearchableSelect({
