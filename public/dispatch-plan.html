@@ -815,68 +815,6 @@
 
 
 
-        <!-- Edit Order Modal -->
-        <div id="edit-order-modal" class="modal" onclick="closeEditOrderModal()" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 520px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: white;">✏️ Edit Order</h3>
-                    <span onclick="closeEditOrderModal()" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
-                </div>
-                <form id="form-edit-order" onsubmit="submitEditOrder(event)">
-                    <input type="hidden" id="edit-order-id">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">STO # / Order No</label>
-                            <input type="text" id="edit-order-sto" required style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Plan Status</label>
-                            <select id="edit-order-status" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                                <option value="Today's Plan">Today's Plan</option>
-                                <option value="Tomorrow's Plan">Tomorrow's Plan</option>
-                                <option value="Upcoming Plan">Upcoming Plan</option>
-                                <option value="Pending Plan">Pending Plan</option>
-                                <option value="Unconfirmed Plan">Unconfirmed Plan</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Customer Name / Destination</label>
-                        <input type="text" id="edit-order-customer" required style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Type</label>
-                            <select id="edit-order-type" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                                <option value="STN">STN</option>
-                                <option value="DD">DD</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Order Qty</label>
-                            <input type="number" id="edit-order-qty" min="0" required style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Order Date</label>
-                            <input type="text" id="edit-order-date" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Delivery Date</label>
-                            <input type="text" id="edit-order-delivery" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                        </div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <button type="button" onclick="deleteSingleOrder()" style="padding: 8px 14px; background: #dc2626; border: none; border-radius: 6px; color: white; font-size: 12px; cursor: pointer;">🗑️ Delete Order</button>
-                        <div style="display: flex; gap: 8px;">
-                            <button type="button" onclick="closeEditOrderModal()" style="padding: 8px 16px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer;">Cancel</button>
-                            <button type="submit" id="btn-save-edit-order" style="padding: 8px 16px; background: #0284c7; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;">Save Changes</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
 
         <!-- Paste Orders Modal -->
         <div id="paste-modal" class="modal" onclick="document.getElementById('paste-modal').style.display='none'" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
@@ -1222,11 +1160,16 @@
                 tr.innerHTML = `
                     ${checkboxTd}
                     <td style="text-align:center;">${buildPlanStatusBadge(item.status, item.id, effectiveOrderStatus)}</td>
-                    <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary); cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-date')" title="Click to edit Order Date">${formatOrderDate(item.orderReceived)}</td>
-                    <td style="width: 140px; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-sto')" title="Click to edit STO #">${foDisplay}</td>
-                    <td style="font-weight: 600; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-customer')" title="Click to edit Customer Name">${item.accountName || 'Unknown'}</td>
-                    <td style="text-align: center; font-weight: 500; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-type')" title="Click to edit Type">${item.type || '-'}</td>
-                    <td style="text-align: center; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-qty')" title="Click to edit Order Qty">${itemQty.toLocaleString()}</td>
+                    <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary); cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'order_received', 'date', event)" title="Click to edit Order Date">${formatOrderDate(item.orderReceived)}</td>
+                    <td style="width: 140px; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'fo', 'text', event)" title="Click to edit STO #">
+                        <div style="display: flex; align-items: flex-start; gap: 6px;">
+                            ${foDisplay}
+                            <span onclick="event.stopPropagation(); deleteOrderById('${escapedId}')" title="Delete order" style="cursor: pointer; opacity: 0.35; font-size: 11px; flex-shrink: 0;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.35">🗑️</span>
+                        </div>
+                    </td>
+                    <td style="font-weight: 600; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'account_name', 'text', event)" title="Click to edit Customer Name">${item.accountName || 'Unknown'}</td>
+                    <td style="text-align: center; font-weight: 500; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'type', 'select-type', event)" title="Click to edit Type">${item.type || '-'}</td>
+                    <td style="text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'qty', 'number', event)" title="Click to edit Order Qty">${itemQty.toLocaleString()}</td>
                     <td style="text-align: center;">${valueDisplay}</td>
                     <td style="text-align: center;">
                         ${buildOrderStatusCombo(item.id, effectiveOrderStatus)}
@@ -1234,7 +1177,7 @@
                     <td style="text-align: center;">
                         <span class="status-badge ${statusClass}" style="cursor: pointer;" onclick="navigateToOutbound('${(foList[0] || '').replace(/'/g, "\\'")}')"> ${statusLabel}</span>
                     </td>
-                    <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-delivery')" title="Click to edit Delivery Date">
+                    <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'delivery_date', 'date', event)" title="Click to edit Delivery Date">
                         ${item.delivery_date || '-'}
                     </td>
                     <td style="text-align: center;">
@@ -1699,94 +1642,143 @@
             }
         }
 
-        /* ── Edit Order Modal Functions ──────────────────────── */
-        let activeEditingOrderId = null;
+        /* ── Inline Cell Editing ──────────────────────── */
+        let activeInlineEdit = null; // { cellEl, restoreHTML }
+        let inlineEditSuppressBlur = false;
 
-        function openEditOrderModal(orderId, focusFieldId = null) {
-            const item = (dispatchPlanData || []).find(o => String(o.id) === String(orderId));
-            if (!item) return;
+        function isoToDisplayDate(iso) {
+            if (!iso) return '';
+            const [y, m, d] = String(iso).split('-').map(Number);
+            if (!y || !m || !d) return iso;
+            const dt = new Date(y, m - 1, d);
+            return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-');
+        }
 
-            activeEditingOrderId = orderId;
-            document.getElementById('edit-order-id').value = orderId;
-            document.getElementById('edit-order-sto').value = item.fo || '';
-            document.getElementById('edit-order-status').value = item.status || "Pending Plan";
-            document.getElementById('edit-order-customer').value = item.accountName || '';
-            document.getElementById('edit-order-type').value = item.type || 'DD';
-            document.getElementById('edit-order-qty').value = item.qty || 0;
-            document.getElementById('edit-order-date').value = formatOrderDate(item.orderReceived);
-            document.getElementById('edit-order-delivery').value = item.delivery_date || '';
-
-            document.getElementById('edit-order-modal').style.display = 'flex';
-
-            if (focusFieldId) {
-                setTimeout(() => {
-                    const el = document.getElementById(focusFieldId);
-                    if (el) {
-                        el.focus();
-                        if (el.select) el.select();
-                    }
-                }, 100);
+        function cancelInlineEdit() {
+            if (activeInlineEdit) {
+                activeInlineEdit.cellEl.innerHTML = activeInlineEdit.restoreHTML;
+                activeInlineEdit = null;
             }
         }
 
-        function closeEditOrderModal() {
-            document.getElementById('edit-order-modal').style.display = 'none';
-            activeEditingOrderId = null;
+        function startInlineEdit(cellEl, orderId, field, type, event) {
+            if (event) event.stopPropagation();
+            if (activeInlineEdit && activeInlineEdit.cellEl === cellEl) return;
+            cancelInlineEdit();
+
+            const item = (dispatchPlanData || []).find(o => String(o.id) === String(orderId));
+            if (!item) return;
+
+            const fieldValues = {
+                order_received: item.orderReceived || '',
+                fo: item.fo || '',
+                account_name: item.accountName || '',
+                type: item.type || 'DD',
+                qty: item.qty || 0,
+                delivery_date: item.delivery_date || ''
+            };
+            const rawValue = fieldValues[field];
+            activeInlineEdit = { cellEl, restoreHTML: cellEl.innerHTML };
+
+            const inputStyle = 'width: 100%; padding: 4px 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; font-size: 12px;';
+            let inputHTML;
+            if (type === 'date') {
+                inputHTML = `<input type="date" class="inline-edit-input" value="${toISODate(rawValue)}" style="${inputStyle}">`;
+            } else if (type === 'select-type') {
+                inputHTML = `<select class="inline-edit-input" style="${inputStyle}">
+                    <option value="STN" ${rawValue === 'STN' ? 'selected' : ''}>STN</option>
+                    <option value="DD" ${rawValue === 'DD' ? 'selected' : ''}>DD</option>
+                </select>`;
+            } else if (type === 'number') {
+                inputHTML = `<input type="number" min="0" class="inline-edit-input" value="${rawValue}" style="${inputStyle} text-align: center;">`;
+            } else {
+                inputHTML = `<input type="text" class="inline-edit-input" value="${String(rawValue).replace(/"/g, '&quot;')}" style="${inputStyle}">`;
+            }
+
+            cellEl.innerHTML = inputHTML;
+            const inputEl = cellEl.querySelector('.inline-edit-input');
+            inputEl.addEventListener('click', e => e.stopPropagation());
+            inputEl.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    inputEl.blur();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    inlineEditSuppressBlur = true;
+                    cancelInlineEdit();
+                }
+            });
+            if (type === 'date' || type === 'select-type') {
+                inputEl.addEventListener('change', () => inputEl.blur());
+            }
+            inputEl.addEventListener('blur', () => {
+                if (inlineEditSuppressBlur) {
+                    inlineEditSuppressBlur = false;
+                    return;
+                }
+                commitInlineEdit(orderId, field, type, cellEl);
+            });
+
+            inputEl.focus();
+            if (inputEl.select) inputEl.select();
+            if (type === 'date' && inputEl.showPicker) {
+                try { inputEl.showPicker(); } catch (e) {}
+            }
         }
 
-        async function submitEditOrder(event) {
-            event.preventDefault();
-            const orderId = document.getElementById('edit-order-id').value;
-            if (!orderId) return;
+        async function commitInlineEdit(orderId, field, type, cellEl) {
+            if (!activeInlineEdit || activeInlineEdit.cellEl !== cellEl) return;
+            const inputEl = cellEl.querySelector('.inline-edit-input');
+            if (!inputEl) return;
 
-            const btn = document.getElementById('btn-save-edit-order');
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
+            let value = inputEl.value;
+            if (type === 'date') {
+                value = value ? isoToDisplayDate(value) : '';
+            } else if (type === 'number') {
+                value = parseInt(value) || 0;
+            } else {
+                value = value.trim();
+            }
 
-            const payload = {
-                fo: document.getElementById('edit-order-sto').value.trim(),
-                status: document.getElementById('edit-order-status').value,
-                account_name: document.getElementById('edit-order-customer').value.trim(),
-                type: document.getElementById('edit-order-type').value,
-                qty: parseInt(document.getElementById('edit-order-qty').value) || 0,
-                order_received: document.getElementById('edit-order-date').value.trim(),
-                delivery_date: document.getElementById('edit-order-delivery').value.trim()
-            };
+            if ((field === 'fo' || field === 'account_name') && !value) {
+                cancelInlineEdit();
+                return;
+            }
+
+            const restoreHTML = activeInlineEdit.restoreHTML;
+            activeInlineEdit = null;
+            cellEl.style.opacity = '0.5';
 
             try {
                 const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch/${orderId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ [field]: value })
                 });
                 if (res.ok) {
-                    closeEditOrderModal();
                     await loadData();
                 } else {
-                    const err = await res.json();
+                    const err = await res.json().catch(() => ({}));
                     alert(`❌ Error updating order: ${err.error || 'Failed'}`);
+                    cellEl.innerHTML = restoreHTML;
                 }
             } catch (err) {
                 alert('❌ Network error: ' + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Save Changes';
+                cellEl.innerHTML = restoreHTML;
             }
         }
 
-        async function deleteSingleOrder() {
-            if (!activeEditingOrderId) return;
-            const item = (dispatchPlanData || []).find(o => String(o.id) === String(activeEditingOrderId));
+        async function deleteOrderById(orderId) {
+            const item = (dispatchPlanData || []).find(o => String(o.id) === String(orderId));
             const stoName = item ? (item.fo || item.accountName) : 'this order';
-            
+
             if (!confirm(`⚠️ Are you sure you want to delete order "${stoName}"?\n\nThis cannot be undone.`)) return;
 
             try {
-                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch/${activeEditingOrderId}`, {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch/${orderId}`, {
                     method: 'DELETE'
                 });
                 if (res.ok) {
-                    closeEditOrderModal();
                     await loadData();
                 } else {
                     const err = await res.json();
