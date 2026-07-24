@@ -2127,9 +2127,17 @@
             }
 
 
-            const headers = rows[headerRowIndex].map(h => String(h || '').trim().toLowerCase());
+
+            const headers = rows[headerRowIndex].map(h => String(h || '').replace(/[\r\n]+/g, ' ').trim().toLowerCase());
+            console.log('DEBUG headers:', headers);
+
             const idxDispatchDate = headers.findIndex(h => h.includes('loading') || h.includes('dispatch date') || h === 'plan date');
-            const idxOrderDate = headers.findIndex(h => h.includes('order date') || h.includes('order received') || h.includes('po date') || h.includes('so date') || h === 'date' || h.includes('date received'));
+            // "Date Received Re-order via Email" - match by 'received' broadly
+            const idxOrderDate = headers.findIndex(h =>
+                h.includes('order date') || h.includes('order received') ||
+                h.includes('po date') || h.includes('so date') || h === 'date' ||
+                h.includes('date received') || (h.includes('received') && !h.includes('dispatch') && !h.includes('stock'))
+            );
             const idxDeliveryDate = headers.findIndex(h => h.includes('delivery') || h.includes('rdd') || h.includes('target'));
             const idxDestination = headers.findIndex(h => h.includes('destination') || h.includes('account') || h.includes('customer') || h.includes('ship to') || h.includes('branch'));
             const idxSto = headers.findIndex(h => {
@@ -2137,6 +2145,8 @@
                 return /\bsto\b/.test(h) || h.includes('order no') || h.includes('order #') || h.includes('so #') || h.includes('po #') || h === 'fo' || h.includes('fo #') || h.includes('fo number');
             });
             const idxQty = headers.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('volume') || h.includes('pcs'));
+
+            console.log('DEBUG column idx:', { idxDispatchDate, idxOrderDate, idxDeliveryDate, idxDestination, idxSto, idxQty });
 
             if (idxSto === -1) {
                 alert('Missing STO # / Order No column.');
