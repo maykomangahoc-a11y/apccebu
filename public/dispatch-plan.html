@@ -607,9 +607,6 @@
                     onmouseup="this.style.boxShadow='0 2px 10px rgba(220,38,38,0.4)'; this.style.transform='translateY(-1px)'">
                     📋 Upload Orders
                 </button>
-                <button class="btn btn-primary" onclick="openNewOrderModal()" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 13px; font-weight: 700; background: #0284c7; color: white; border: none; border-radius: 8px; cursor: pointer; letter-spacing: 0.2px; box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;">
-                    ➕ New Order
-                </button>
 
                 <div class="refresh-badge">
                     <div class="pulse-dot-blue"></div>
@@ -632,8 +629,10 @@
                         <div class="card-icon">📋</div>
                         <h2 class="card-title">Dispatch Plan</h2>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1; max-width: 520px;">
-
+                    <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1; max-width: 580px;">
+                        <button class="btn-bulk" id="btn-new-order-toggle" onclick="toggleNewOrderInline()" style="background: rgba(37,99,235,0.2); border: 1px solid rgba(37,99,235,0.4); color: #60a5fa;">
+                            ➕ New Order
+                        </button>
                         <button class="btn-bulk" id="btn-bulk-toggle" onclick="toggleBulkMode()" style="display: none;">
                             ☑ Bulk Action
                         </button>
@@ -642,6 +641,55 @@
                         </select>
                         <input type="text" id="dispatch-search" placeholder="🔍 Search STO # or Customer Name..." oninput="filterDispatchTable()" style="flex: 1; min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                     </div>
+                </div>
+
+                <!-- Inline New Order Form Section -->
+                <div id="new-order-inline-section" style="display: none; padding: 16px; background: rgba(15, 23, 42, 0.6); border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+                    <form id="form-new-order-inline" onsubmit="submitNewOrderInline(event)">
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+                            <div style="flex: 1; min-width: 120px;">
+                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">STO # / Order No</label>
+                                <input type="text" id="inline-new-sto" placeholder="e.g. 4500097830" required style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
+                            </div>
+                            <div style="flex: 1; min-width: 130px;">
+                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Plan Status</label>
+                                <select id="inline-new-status" style="width: 100%; padding: 7px 10px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
+                                    <option value="Today's Plan">Today's Plan</option>
+                                    <option value="Tomorrow's Plan">Tomorrow's Plan</option>
+                                    <option value="Upcoming Plan">Upcoming Plan</option>
+                                    <option value="Pending Plan" selected>Pending Plan</option>
+                                    <option value="Unconfirmed Plan">Unconfirmed Plan</option>
+                                </select>
+                            </div>
+                            <div style="flex: 2; min-width: 160px;">
+                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Customer Name / Destination</label>
+                                <input type="text" id="inline-new-customer" placeholder="e.g. Cebu Station" required style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
+                            </div>
+                            <div style="flex: 0 0 80px;">
+                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Type</label>
+                                <select id="inline-new-type" style="width: 100%; padding: 7px 10px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
+                                    <option value="STN">STN</option>
+                                    <option value="DD" selected>DD</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1; min-width: 90px;">
+                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Order Qty</label>
+                                <input type="number" id="inline-new-qty" min="0" placeholder="e.g. 1000" required style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
+                            </div>
+                            <div style="flex: 1; min-width: 110px;">
+                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Order Date</label>
+                                <input type="text" id="inline-new-date" placeholder="e.g. 24-Jul-26" style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
+                            </div>
+                            <div style="flex: 1; min-width: 110px;">
+                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Delivery Date</label>
+                                <input type="text" id="inline-new-delivery" placeholder="e.g. 27-Jul-26" style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="submit" id="btn-save-inline-order" style="padding: 7px 14px; background: #2563eb; border: none; border-radius: 6px; color: white; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap;">Save Order</button>
+                                <button type="button" onclick="toggleNewOrderInline()" style="padding: 7px 12px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; font-size: 12px; cursor: pointer;">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
                 <div class="table-container">
                     <div id="dispatch-loading" class="loading">
@@ -765,64 +813,7 @@
             </div>
         </div>
 
-        <!-- New Order Modal -->
-        <div id="new-order-modal" class="modal" onclick="closeNewOrderModal()" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 520px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: white;">➕ Create New Order</h3>
-                    <span onclick="closeNewOrderModal()" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
-                </div>
-                <form id="form-new-order" onsubmit="submitNewOrder(event)">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">STO # / Order No</label>
-                            <input type="text" id="new-order-sto" placeholder="e.g. 4500097830" required style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Plan Status</label>
-                            <select id="new-order-status" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                                <option value="Today's Plan">Today's Plan</option>
-                                <option value="Tomorrow's Plan">Tomorrow's Plan</option>
-                                <option value="Upcoming Plan">Upcoming Plan</option>
-                                <option value="Pending Plan" selected>Pending Plan</option>
-                                <option value="Unconfirmed Plan">Unconfirmed Plan</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Customer Name / Destination</label>
-                        <input type="text" id="new-order-customer" placeholder="e.g. Cebu Station" required style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Type</label>
-                            <select id="new-order-type" style="width: 100%; padding: 8px 12px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                                <option value="STN">STN</option>
-                                <option value="DD" selected>DD</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Order Qty</label>
-                            <input type="number" id="new-order-qty" min="0" placeholder="e.g. 1000" required style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Order Date</label>
-                            <input type="text" id="new-order-date" placeholder="e.g. 24-Jul-26" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Delivery Date</label>
-                            <input type="text" id="new-order-delivery" placeholder="e.g. 27-Jul-26" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 13px;">
-                        </div>
-                    </div>
-                    <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                        <button type="button" onclick="closeNewOrderModal()" style="padding: 8px 16px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer;">Cancel</button>
-                        <button type="submit" id="btn-save-new-order" style="padding: 8px 16px; background: #0284c7; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;">Save Order</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+
 
         <!-- Edit Order Modal -->
         <div id="edit-order-modal" class="modal" onclick="closeEditOrderModal()" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
@@ -1616,37 +1607,37 @@
             closePlanStatusModal();
         }
 
-        /* ── New Order Modal Functions ───────────────────────── */
-        function openNewOrderModal() {
-            document.getElementById('new-order-sto').value = '';
-            document.getElementById('new-order-customer').value = '';
-            document.getElementById('new-order-qty').value = '';
-            document.getElementById('new-order-type').value = 'DD';
-            document.getElementById('new-order-status').value = "Pending Plan";
-            const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-');
-            document.getElementById('new-order-date').value = todayStr;
-            document.getElementById('new-order-delivery').value = '';
-            document.getElementById('new-order-modal').style.display = 'flex';
+        /* ── New Order Inline Functions ──────────────────────── */
+        function toggleNewOrderInline() {
+            const section = document.getElementById('new-order-inline-section');
+            const btn = document.getElementById('btn-new-order-toggle');
+            if (!section || !btn) return;
+            if (section.style.display === 'none' || !section.style.display) {
+                section.style.display = 'block';
+                btn.style.background = 'rgba(37,99,235,0.4)';
+                const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-');
+                document.getElementById('inline-new-date').value = todayStr;
+                document.getElementById('inline-new-sto').focus();
+            } else {
+                section.style.display = 'none';
+                btn.style.background = 'rgba(37,99,235,0.2)';
+            }
         }
 
-        function closeNewOrderModal() {
-            document.getElementById('new-order-modal').style.display = 'none';
-        }
-
-        async function submitNewOrder(event) {
+        async function submitNewOrderInline(event) {
             event.preventDefault();
-            const btn = document.getElementById('btn-save-new-order');
+            const btn = document.getElementById('btn-save-inline-order');
             btn.disabled = true;
             btn.textContent = 'Saving...';
 
             const payload = {
-                fo: document.getElementById('new-order-sto').value.trim(),
-                status: document.getElementById('new-order-status').value,
-                account_name: document.getElementById('new-order-customer').value.trim(),
-                type: document.getElementById('new-order-type').value,
-                qty: parseInt(document.getElementById('new-order-qty').value) || 0,
-                order_received: document.getElementById('new-order-date').value.trim() || new Date().toISOString(),
-                delivery_date: document.getElementById('new-order-delivery').value.trim()
+                fo: document.getElementById('inline-new-sto').value.trim(),
+                status: document.getElementById('inline-new-status').value,
+                account_name: document.getElementById('inline-new-customer').value.trim(),
+                type: document.getElementById('inline-new-type').value,
+                qty: parseInt(document.getElementById('inline-new-qty').value) || 0,
+                order_received: document.getElementById('inline-new-date').value.trim() || new Date().toISOString(),
+                delivery_date: document.getElementById('inline-new-delivery').value.trim()
             };
 
             try {
@@ -1656,14 +1647,18 @@
                     body: JSON.stringify(payload)
                 });
                 if (res.ok) {
-                    closeNewOrderModal();
+                    toggleNewOrderInline();
+                    document.getElementById('inline-new-sto').value = '';
+                    document.getElementById('inline-new-customer').value = '';
+                    document.getElementById('inline-new-qty').value = '';
+                    document.getElementById('inline-new-delivery').value = '';
                     await loadData();
                 } else {
                     const err = await res.json();
-                    alert(`❌ Error creating order: ${err.error || 'Failed'}`);
+                    alert(`Error creating order: ${err.error || 'Failed'}`);
                 }
             } catch (err) {
-                alert('❌ Network error: ' + err.message);
+                alert('Network error: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Save Order';
