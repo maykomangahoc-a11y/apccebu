@@ -58,6 +58,10 @@ router.post('/', authenticateToken, async (req, res) => {
       partyCode, totalOrderQty, orderId, status
     } = req.body;
 
+    if (!foNumber || !accountName || !blNumber || !pickerCode || !stagingArea || !pickerQty || Number(pickerQty) <= 0) {
+      return res.status(400).json({ error: 'foNumber, accountName, blNumber, pickerCode, stagingArea, and a positive pickerQty are required' });
+    }
+
     const resolvedStatus = status || 'in-progress';
     const startUser = req.user.username;
     const endUser = resolvedStatus === 'completed' ? req.user.username : null;
