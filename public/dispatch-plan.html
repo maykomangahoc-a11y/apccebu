@@ -630,6 +630,9 @@
                         <h2 class="card-title">Dispatch Plan</h2>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1; max-width: 520px;">
+                        <button class="btn-bulk" style="background: #dc2626; border-color: #dc2626;" onclick="deleteAllOrders()" title="Delete all active orders">
+                            🗑️ Delete All
+                        </button>
                         <button class="btn-bulk" id="btn-bulk-toggle" onclick="toggleBulkMode()" style="display: none;">
                             ☑ Bulk Action
                         </button>
@@ -1487,6 +1490,25 @@
                 }
             }
             closePlanStatusModal();
+        }
+
+        /* ── Delete All Orders ─────────────────────────────── */
+        async function deleteAllOrders() {
+            const count = dispatchPlanData ? dispatchPlanData.length : 0;
+            if (!confirm(`⚠️ Delete ALL ${count} active orders from the Dispatch Plan?\n\nThis cannot be undone. Archived orders will NOT be affected.\n\nClick OK to delete, Cancel to abort.`)) return;
+
+            try {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch/delete-all`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`✅ ${data.message}\n\nYou can now re-upload your Excel file.`);
+                    await loadData();
+                } else {
+                    alert(`❌ Error: ${data.error}`);
+                }
+            } catch (err) {
+                alert('❌ Network error: ' + err.message);
+            }
         }
 
         /* ── Bulk Action Functions ─────────────────────────── */

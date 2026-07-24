@@ -653,4 +653,16 @@ router.post('/cleanup-bad-fo', authenticateToken, async (req, res) => {
   }
 });
 
+// ─── DELETE ALL ACTIVE ORDERS ───────────────────────────────────────────────
+// POST /api/dispatch/delete-all
+router.post('/delete-all', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query("DELETE FROM dispatch_orders WHERE archive_status = 'Active'");
+    res.json({ success: true, deleted: result.rowCount, message: `Deleted ${result.rowCount} active orders` });
+  } catch (error) {
+    console.error('Delete all orders error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
