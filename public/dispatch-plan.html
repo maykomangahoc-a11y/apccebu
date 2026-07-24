@@ -662,7 +662,6 @@
                                 <th style="text-align: center;">Picking Status</th>
                                 <th>Delivery Date</th>
                                 <th style="text-align: center;">Truck Status</th>
-                                <th style="text-align: center;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="dispatch-body"></tbody>
@@ -1196,11 +1195,11 @@
                 tr.innerHTML = `
                     ${checkboxTd}
                     <td style="text-align:center;">${buildPlanStatusBadge(item.status, item.id, item.orderStatus)}</td>
-                    <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary); cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-date')" title="Click to edit Order Date">${formatOrderDate(item.orderReceived)} ✏️</td>
+                    <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary); cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-date')" title="Click to edit Order Date">${formatOrderDate(item.orderReceived)}</td>
                     <td style="width: 140px; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-sto')" title="Click to edit STO #">${foDisplay}</td>
-                    <td style="font-weight: 600; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-customer')" title="Click to edit Customer Name">${item.accountName || 'Unknown'} ✏️</td>
-                    <td style="text-align: center; font-weight: 500; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-type')" title="Click to edit Type">${item.type || '-'} ✏️</td>
-                    <td style="text-align: center; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-qty')" title="Click to edit Order Qty">${itemQty.toLocaleString()} ✏️</td>
+                    <td style="font-weight: 600; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-customer')" title="Click to edit Customer Name">${item.accountName || 'Unknown'}</td>
+                    <td style="text-align: center; font-weight: 500; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-type')" title="Click to edit Type">${item.type || '-'}</td>
+                    <td style="text-align: center; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-qty')" title="Click to edit Order Qty">${itemQty.toLocaleString()}</td>
                     <td style="text-align: center;">${valueDisplay}</td>
                     <td style="text-align: center;">
                         ${buildOrderStatusCombo(item.id, item.orderStatus)}
@@ -1209,15 +1208,10 @@
                         <span class="status-badge ${statusClass}" style="cursor: pointer;" onclick="navigateToOutbound('${(foList[0] || '').replace(/'/g, "\\'")}')"> ${statusLabel}</span>
                     </td>
                     <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-delivery')" title="Click to edit Delivery Date">
-                        ${item.delivery_date || '-'} ✏️
+                        ${item.delivery_date || '-'}
                     </td>
                     <td style="text-align: center;">
                         ${item.truckStatus === 'Dispatched' ? '<span class="status-badge status-dispatched">Dispatched</span>' : item.truckStatus === 'On Site' ? '<span class="status-badge status-on-site">On Site</span>' : '<span style="color: rgba(255,255,255,0.2); font-size: 11px;">—</span>'}
-                    </td>
-                    <td style="text-align: center;">
-                        <button onclick="openEditOrderModal('${escapedId}')" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'" title="Edit entire order">
-                            ✏️ Edit
-                        </button>
                     </td>
                 `;
                 body.appendChild(tr);
