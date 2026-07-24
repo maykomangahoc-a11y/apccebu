@@ -2727,10 +2727,7 @@
 
                 searchInput.value = `${item.fo} - ${item.accountName}`;
                 select.value = index;
-                selectFO(); // This triggers the field auto-fill and staging lock logic
-
-                // Add a picker assignment card and refresh picker options
-                addPickerAssignment();
+                selectFO(); // This triggers field auto-fill, draft checks, and adds 1 picker assignment card
                 refreshAllPickerOptions();
             }
         }
