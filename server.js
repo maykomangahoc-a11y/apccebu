@@ -12,6 +12,7 @@ const userRoutes = require('./routes/users');
 const configRoutes = require('./routes/config');
 const dispatchRoutes = require('./routes/dispatch');
 const pickingRoutes = require('./routes/picking');
+const pickingDraftsRoutes = require('./routes/picking-drafts');
 const processingRoutes = require('./routes/processing');
 const resourceRoutes = require('./routes/resources');
 const checkingRoutes = require('./routes/checking');
@@ -79,6 +80,7 @@ app.use('/api/items', itemRoutes);
 app.use('/api/dispatch-plan', dispatchRoutes);
 app.use('/api/dispatch', dispatchRoutes); // Supports /api/dispatch/upload
 app.use('/api/picking-orders', pickingRoutes);
+app.use('/api/picking-drafts', pickingDraftsRoutes);
 
 // The old UI fetches /api/pickers directly instead of /api/resources/pickers
 app.use('/api/pickers', (req, res, next) => {

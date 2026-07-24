@@ -951,7 +951,7 @@
 
         function matchPickingOrder(order, item) {
             if (!order || !item) return false;
-            const directId = order.dispatchOrderId || order.dispatch_order_id;
+            const directId = order.orderId || order.dispatchOrderId || order.dispatch_order_id;
             if (directId && String(directId) === String(item.id)) return true;
 
             const itemFoStr = String(item.fo || '').trim();

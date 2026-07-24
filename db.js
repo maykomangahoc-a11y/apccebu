@@ -179,13 +179,29 @@ async function initDatabase() {
         qty INTEGER DEFAULT 0,
         staging_area VARCHAR(255) DEFAULT '',
         start_time VARCHAR(255) DEFAULT '',
+        start_time_formatted VARCHAR(255) DEFAULT '',
         end_time VARCHAR(255) DEFAULT '',
+        end_time_formatted VARCHAR(255) DEFAULT '',
         duration VARCHAR(100) DEFAULT '',
         start_user VARCHAR(255) DEFAULT '',
         end_user VARCHAR(255) DEFAULT '',
         party_code VARCHAR(255) DEFAULT '',
         total_order_qty INTEGER DEFAULT 0,
-        order_id VARCHAR(255) DEFAULT ''
+        order_id VARCHAR(255) DEFAULT '',
+        status VARCHAR(50) DEFAULT 'in-progress'
+      );
+
+      CREATE TABLE IF NOT EXISTS picking_drafts (
+        id VARCHAR(255) PRIMARY KEY,
+        fo_number VARCHAR(500) DEFAULT '',
+        account_name VARCHAR(255) DEFAULT '',
+        party_code VARCHAR(255) DEFAULT '',
+        total_order_qty INTEGER DEFAULT 0,
+        bl_number VARCHAR(255) DEFAULT '',
+        picker_code VARCHAR(100) DEFAULT '',
+        picker_qty INTEGER DEFAULT 0,
+        staging_area VARCHAR(255) DEFAULT '',
+        created_at TIMESTAMPTZ DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS pending_picks (
@@ -401,6 +417,10 @@ async function initDatabase() {
       -- Schema Migrations
       ALTER TABLE dispatch_orders ADD COLUMN IF NOT EXISTS delivery_date VARCHAR(255) DEFAULT '';
       ALTER TABLE dispatch_archive ADD COLUMN IF NOT EXISTS delivery_date VARCHAR(255) DEFAULT '';
+      ALTER TABLE picking_data ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'in-progress';
+      ALTER TABLE picking_data ADD COLUMN IF NOT EXISTS start_time_formatted VARCHAR(255) DEFAULT '';
+      ALTER TABLE picking_data ADD COLUMN IF NOT EXISTS end_time_formatted VARCHAR(255) DEFAULT '';
+      UPDATE picking_data SET status = 'completed' WHERE status = 'in-progress' AND end_time IS NOT NULL AND end_time != '';
 
       -- Seed default users
       INSERT INTO users (username, pin, role, active) VALUES
