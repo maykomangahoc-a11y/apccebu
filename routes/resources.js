@@ -62,7 +62,7 @@ router.put('/pickers/:id', authenticateToken, async (req, res) => {
 
     values.push(id);
     const result = await pool.query(
-      `UPDATE pickers SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+      `UPDATE pickers SET ${fields.join(', ')} WHERE CAST(id AS TEXT) = $${idx} OR code = $${idx} RETURNING *`,
       values
     );
 
@@ -81,7 +81,7 @@ router.put('/pickers/:id', authenticateToken, async (req, res) => {
 router.delete('/pickers/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM pickers WHERE id = $1 RETURNING id', [id]);
+    const result = await pool.query('DELETE FROM pickers WHERE CAST(id AS TEXT) = $1 OR code = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Picker not found' });
@@ -163,7 +163,7 @@ router.put('/checkers/:id', authenticateToken, async (req, res) => {
 
     values.push(id);
     const result = await pool.query(
-      `UPDATE checkers SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+      `UPDATE checkers SET ${fields.join(', ')} WHERE CAST(id AS TEXT) = $${idx} OR code = $${idx} RETURNING *`,
       values
     );
 
@@ -182,7 +182,7 @@ router.put('/checkers/:id', authenticateToken, async (req, res) => {
 router.delete('/checkers/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM checkers WHERE id = $1 RETURNING id', [id]);
+    const result = await pool.query('DELETE FROM checkers WHERE CAST(id AS TEXT) = $1 OR code = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Checker not found' });
@@ -244,7 +244,7 @@ router.put('/staging-areas/:id', authenticateToken, async (req, res) => {
     }
 
     const result = await pool.query(
-      'UPDATE staging_areas SET name = $1 WHERE id = $2 RETURNING *',
+      'UPDATE staging_areas SET name = $1 WHERE CAST(id AS TEXT) = $2 OR name = $2 RETURNING *',
       [name, id]
     );
 
@@ -263,7 +263,7 @@ router.put('/staging-areas/:id', authenticateToken, async (req, res) => {
 router.delete('/staging-areas/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM staging_areas WHERE id = $1 RETURNING id', [id]);
+    const result = await pool.query('DELETE FROM staging_areas WHERE CAST(id AS TEXT) = $1 OR name = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Staging area not found' });

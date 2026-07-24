@@ -39,9 +39,17 @@ const AuthGuard = (() => {
         const res = await fetch(url, { ...options, headers });
         if (res.status === 401) {
             logout();
-            throw new Error('Session expired');
+            throw new Error('Session expired. Please sign in again.');
         }
         if (res.status === 403) {
+            const clone = res.clone();
+            try {
+                const body = await clone.json();
+                if (body && body.error && (body.error.toLowerCase().includes('token') || body.error.toLowerCase().includes('expired'))) {
+                    logout();
+                    throw new Error('Session expired. Please sign in again.');
+                }
+            } catch (e) {}
             throw new Error('Access denied');
         }
         return res;
@@ -164,9 +172,17 @@ window.fetch = async function () {
             const res = await originalFetch(resource, config);
             if (res.status === 401) {
                 AuthGuard.logout();
-                throw new Error('Session expired');
+                throw new Error('Session expired. Please sign in again.');
             }
             if (res.status === 403) {
+                const clone = res.clone();
+                try {
+                    const body = await clone.json();
+                    if (body && body.error && (body.error.toLowerCase().includes('token') || body.error.toLowerCase().includes('expired'))) {
+                        AuthGuard.logout();
+                        throw new Error('Session expired. Please sign in again.');
+                    }
+                } catch (e) {}
                 throw new Error('Access denied');
             }
             return res;

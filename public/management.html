@@ -780,17 +780,20 @@
                 return;
             }
 
-            tbody.innerHTML = stagingAreas.map(area => `
+            tbody.innerHTML = stagingAreas.map(area => {
+                const name = typeof area === 'object' && area !== null ? (area.name || area.id) : area;
+                const targetId = typeof area === 'object' && area !== null ? (area.id || area.name) : area;
+                return `
                 <tr>
-                    <td style="font-weight:500;">${area}</td>
+                    <td style="font-weight:500;">${name}</td>
                     <td>
                         <div style="display:flex;gap:8px;">
-                            <button class="btn btn-secondary btn-sm" onclick="editStagingArea('${encodeURIComponent(area)}')">✏️ Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteStagingArea('${encodeURIComponent(area)}')">🗑️ Delete</button>
+                            <button class="btn btn-secondary btn-sm" onclick="editStagingArea('${encodeURIComponent(name)}')">✏️ Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteStagingArea('${encodeURIComponent(targetId)}')">🗑️ Delete</button>
                         </div>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+            }).join('');
         }
 
         // ── Picker Form ────────────────────────────────────────────────
