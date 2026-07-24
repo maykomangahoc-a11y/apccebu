@@ -1290,7 +1290,7 @@
 
         function buildOrderStatusCombo(id, current) {
             const color = ORDER_STATUS_COLORS[current] || 'rgba(255,255,255,0.3)';
-            const label = current || '-- Select Status --';
+            const label = current || '-';
             const dotStyle = current ? `background:${color};` : 'background:rgba(255,255,255,0.2);';
 
             const isDispatched = String(current || '').trim().toLowerCase() === 'dispatched';
@@ -1305,7 +1305,10 @@
                     </div>`;
             }
 
-            const options = ALL_ORDER_STATUSES.map(s => `
+            const options = `<div class="os-option" data-value="" onclick="selectOrderStatus('${id}', '', this)">
+                <span class="os-dot" style="background:rgba(255,255,255,0.2);"></span>
+                - (Blank)
+            </div>` + ALL_ORDER_STATUSES.map(s => `
                 <div class="os-option" data-value="${s}" onclick="selectOrderStatus('${id}', '${s}', this)">
                     <span class="os-dot" style="background:${ORDER_STATUS_COLORS[s]};"></span>
                     ${s}
@@ -2204,7 +2207,7 @@
                         invoiced_value: '0',
                         order_received: new Date().toISOString(),
                         status: determinedStatus,
-                        order_status: 'checking',
+                        order_status: '',
                         delivery_date: deliveryDateStr
                     };
                 } else {
