@@ -55,7 +55,7 @@ router.post('/', authenticateToken, async (req, res) => {
       'truck_size', 'trucker', 'loading_time', 'linechecker', 'dispatcher',
       'checked_qty', 'column_q', 'plate_no', 'time_arrival', 'start_loading',
       'loading_end', 'preparation', 'truck_arrival', 'est_amount',
-      'start_line_check', 'end_line_check', 'staging_area',
+      'start_line_check', 'end_line_check', 'staging_area', 'delivery_date',
       'dispatch_date', 'loading_date', 'rtd_date', 'line_check_date',
       'picking_date', 'done_pick_date', 'ready_for_dispatch', 'w_truck',
       'ongoing', 'loaded_date'
@@ -108,7 +108,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       'checked_qty', 'column_q', 'plate_no', 'time_arrival', 'start_loading',
       'loading_end', 'preparation', 'truck_arrival', 'est_amount',
       'start_line_check', 'end_line_check', 'archive_status', 'staging_area',
-      'invoiced_value_user', 'invoiced_value_ts',
+      'invoiced_value_user', 'invoiced_value_ts', 'delivery_date',
       'dispatch_date', 'loading_date', 'rtd_date', 'line_check_date',
       'picking_date', 'done_pick_date', 'ready_for_dispatch', 'w_truck',
       'ongoing', 'loaded_date'
