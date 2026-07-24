@@ -2485,17 +2485,24 @@
                 if (!cols) continue;
                 
                 let sto = (cols[idxSto] !== undefined) ? String(cols[idxSto]).trim() : '';
-                if (sto.toLowerCase() === 'sto #' || sto.toLowerCase() === 'orders') continue;
-                
-                // If the STO value looks like a date, it's the wrong column - treat as empty
-                if (!sto || looksLikeDate(sto)) {
+                const isRealSto = sto && !looksLikeDate(sto) && sto.toLowerCase() !== 'sto #' && sto.toLowerCase() !== 'orders';
+
+                if (!isRealSto) {
                     sto = 'TEMP-' + Date.now() + '-' + i;
                 }
 
                 const qty = idxQty >= 0 ? parseInt(String(cols[idxQty]).replace(/,/g, '') || '0') || 0 : 0;
                 const accountName = idxDestination >= 0 ? String(cols[idxDestination]).trim() : '';
                 
-                if (!accountName && qty === 0) continue;
+                // Strict Row Filtering: Must have valid customer/destination name
+                if (!accountName || accountName.length < 2) continue;
+
+                const lowerAcc = accountName.toLowerCase();
+                if (lowerAcc.includes('total') || lowerAcc.includes('summary') || lowerAcc.includes('remarks') || lowerAcc.includes('destination') || lowerAcc.includes('customer')) continue;
+                
+                // If it's a TEMP order (no STO #), it MUST have qty > 0 to be a valid order
+                if (!isRealSto && qty === 0) continue;
+
                 const type = accountName.toLowerCase().includes('station') ? 'STN' : 'DD';
                 
                 let rawDispatchDate = idxDispatchDate >= 0 ? String(cols[idxDispatchDate] || '').trim() : '';
