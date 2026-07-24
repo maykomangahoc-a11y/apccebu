@@ -647,10 +647,6 @@
                 <div id="new-order-inline-section" style="display: none; padding: 16px; background: rgba(15, 23, 42, 0.6); border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
                     <form id="form-new-order-inline" onsubmit="submitNewOrderInline(event)">
                         <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
-                            <div style="flex: 1; min-width: 120px;">
-                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">STO # / Order No</label>
-                                <input type="text" id="inline-new-sto" placeholder="e.g. 4500097830" required style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
-                            </div>
                             <div style="flex: 1; min-width: 130px;">
                                 <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Plan Status</label>
                                 <select id="inline-new-status" style="width: 100%; padding: 7px 10px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
@@ -660,6 +656,14 @@
                                     <option value="Pending Plan" selected>Pending Plan</option>
                                     <option value="Unconfirmed Plan">Unconfirmed Plan</option>
                                 </select>
+                            </div>
+                            <div style="flex: 1; min-width: 110px;">
+                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Order Date</label>
+                                <input type="text" id="inline-new-date" placeholder="e.g. 24-Jul-26" style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
+                            </div>
+                            <div style="flex: 1; min-width: 120px;">
+                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">STO # / Order No</label>
+                                <input type="text" id="inline-new-sto" placeholder="e.g. 4500097830" required style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
                             </div>
                             <div style="flex: 2; min-width: 160px;">
                                 <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Customer Name / Destination</label>
@@ -675,10 +679,6 @@
                             <div style="flex: 1; min-width: 90px;">
                                 <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Order Qty</label>
                                 <input type="number" id="inline-new-qty" min="0" placeholder="e.g. 1000" required style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
-                            </div>
-                            <div style="flex: 1; min-width: 110px;">
-                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Order Date</label>
-                                <input type="text" id="inline-new-date" placeholder="e.g. 24-Jul-26" style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
                             </div>
                             <div style="flex: 1; min-width: 110px;">
                                 <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Delivery Date</label>
