@@ -616,4 +616,41 @@ router.post('/upload', authenticateToken, async (req, res) => {
   }
 });
 
+// ─── CLEANUP: Delete orders with date-like FO values (parser bug) ───────────
+// POST /api/dispatch/cleanup-bad-fo
+router.post('/cleanup-bad-fo', authenticateToken, async (req, res) => {
+  try {
+    // First count them
+    const countResult = await pool.query(`
+      SELECT COUNT(*) as cnt FROM dispatch_orders 
+      WHERE fo ~ '^\\d{1,2}-[A-Za-z]{3}-\\d{2,4}$'
+         OR fo ~ '^[A-Za-z]{3}-\\d{1,2}-\\d{2,4}$'
+         OR fo ~ '^\\d{4}-\\d{2}-\\d{2}'
+         OR fo ~ '^\\d{1,2}/\\d{1,2}/\\d{2,4}$'
+         OR fo ~ '^\\d{5}$'
+    `);
+    
+    const badCount = parseInt(countResult.rows[0].cnt);
+    
+    if (badCount === 0) {
+      return res.json({ success: true, deleted: 0, message: 'No bad records found' });
+    }
+
+    // Delete them
+    const deleteResult = await pool.query(`
+      DELETE FROM dispatch_orders 
+      WHERE fo ~ '^\\d{1,2}-[A-Za-z]{3}-\\d{2,4}$'
+         OR fo ~ '^[A-Za-z]{3}-\\d{1,2}-\\d{2,4}$'
+         OR fo ~ '^\\d{4}-\\d{2}-\\d{2}'
+         OR fo ~ '^\\d{1,2}/\\d{1,2}/\\d{2,4}$'
+         OR fo ~ '^\\d{5}$'
+    `);
+
+    res.json({ success: true, deleted: deleteResult.rowCount, message: `Cleaned up ${deleteResult.rowCount} orders with date-like FO values` });
+  } catch (error) {
+    console.error('Cleanup bad FO error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
