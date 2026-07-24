@@ -169,6 +169,8 @@
         .ps-today      { background: rgba(72,187,120,0.12); color: var(--accent-green);  border: 1px solid rgba(72,187,120,0.25); }
         .ps-additional { background: rgba(159,122,234,0.12); color: var(--accent-purple); border: 1px solid rgba(159,122,234,0.25); }
         .ps-tomorrow   { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+        .ps-upcoming   { background: rgba(99,102,241,0.12); color: #6366f1; border: 1px solid rgba(99,102,241,0.25); }
+        .ps-unconfirmed{ background: rgba(59,130,246,0.12); color: #3b82f6; border: 1px solid rgba(59,130,246,0.25); }
         .ps-grand      { background: rgba(229,62,62,0.12); color: #e53e3e; border: 1px solid rgba(229,62,62,0.25); }
 
         /* ── Buttons ── */
@@ -527,6 +529,8 @@
         "today's plan":    { cls: 'ps-today',      label: "Today's Plan" },
         "additional plan": { cls: 'ps-additional', label: 'Additional Plan' },
         "tomorrow's plan": { cls: 'ps-tomorrow',   label: "Tomorrow's Plan" },
+        "upcoming plan":   { cls: 'ps-upcoming',   label: 'Upcoming Plan' },
+        "unconfirmed plan":{ cls: 'ps-unconfirmed',label: 'Unconfirmed Plan' },
         "grand advance":   { cls: 'ps-grand',      label: 'Grand Advance' },
     };
 
@@ -544,13 +548,12 @@
 
     function filterActiveOrders() {
         return dispatchData.filter(item => {
-            const planStatus  = (item.status      || '').toLowerCase().trim();
             const orderStatus = (item.orderStatus || '').toLowerCase().trim();
             const archStatus  = (item.archiveStatus || '').toLowerCase().trim();
             return (
-                ACTIVE_PLAN_STATUSES.includes(planStatus) &&
                 orderStatus !== 'dispatched' &&
-                archStatus  !== 'archive order'
+                archStatus  !== 'archive order' &&
+                archStatus  !== 'archived'
             );
         });
     }
