@@ -607,9 +607,7 @@
                     onmouseup="this.style.boxShadow='0 2px 10px rgba(220,38,38,0.4)'; this.style.transform='translateY(-1px)'">
                     📋 Upload Orders
                 </button>
-                <button id="btn-sync-dashboard" class="btn-auto-sync" onclick="syncOutboundDashboard()" style="display: none !important;" title="Sync OSLAI Dashboard data">
-                    📂 Upload Dashboard
-                </button>
+
                 <div class="refresh-badge">
                     <div class="pulse-dot-blue"></div>
                     <span id="last-update">Live Sync</span>
@@ -2041,6 +2039,9 @@
                     })
                     .catch(() => {});
             }
+
+            // Silently clean up any orders where FO was incorrectly parsed as a date value
+            AuthGuard.authFetch(`${API_BASE_URL}/dispatch/cleanup-bad-fo`, { method: 'POST' }).catch(() => {});
 
             loadData();
             setInterval(() => {
