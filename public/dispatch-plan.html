@@ -1178,7 +1178,7 @@
                         <span class="status-badge ${statusClass}" style="cursor: pointer;" onclick="navigateToOutbound('${(foList[0] || '').replace(/'/g, "\\'")}')"> ${statusLabel}</span>
                     </td>
                     <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'delivery_date', 'date', event)" title="Click to edit Delivery Date">
-                        ${formatOrderDate(item.deliveryDate)}
+                        ${formatDeliveryDate(item.deliveryDate)}
                     </td>
                     <td style="text-align: center;">
                         ${item.truckStatus === 'Dispatched' ? '<span class="status-badge status-dispatched">Dispatched</span>' : item.truckStatus === 'On Site' ? '<span class="status-badge status-on-site">On Site</span>' : '<span style="color: rgba(255,255,255,0.2); font-size: 11px;">—</span>'}
@@ -1189,6 +1189,7 @@
         }
 
         // Normalize an order date value to yyyy-mm-dd for comparison
+        const MONTH_ABBR = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
         function toISODate(value) {
             if (!value) return '';
             const datePart = String(value).trim().split(/[T ,]/)[0];
@@ -1196,6 +1197,14 @@
             if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
             const m = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); // m/d/yyyy
             if (m) return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+            const mn = datePart.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/); // d-Mon-yy or d-Mon-yyyy
+            if (mn) {
+                const mo = MONTH_ABBR[mn[2].toLowerCase()];
+                if (mo) {
+                    const yr = mn[3].length === 2 ? `20${mn[3]}` : mn[3];
+                    return `${yr}-${String(mo).padStart(2, '0')}-${mn[1].padStart(2, '0')}`;
+                }
+            }
             const d = new Date(datePart);
             return isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
@@ -1652,6 +1661,13 @@
         /* ── Inline Cell Editing ──────────────────────── */
         let activeInlineEdit = null; // { cellEl, restoreHTML }
         let inlineEditSuppressBlur = false;
+
+        // Render any stored delivery-date format ("07/30/2026", "30-Jul-26",
+        // ISO, etc.) uniformly as "30-Jul-26"; blank/unparseable -> "-".
+        function formatDeliveryDate(value) {
+            const iso = toISODate(value);
+            return iso ? isoToDisplayDate(iso) : '-';
+        }
 
         function isoToDisplayDate(iso) {
             if (!iso) return '';
