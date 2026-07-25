@@ -707,9 +707,9 @@
                                 <th>Customer Name</th>
                                 <th>Type</th>
                                 <th style="text-align: center;">Order Qty</th>
-                                <th style="text-align: center;">Invoiced Value</th>
                                 <th style="text-align: center;">Order Status</th>
                                 <th style="text-align: center;">Picking Status</th>
+                                <th style="text-align: center;">Loading Date</th>
                                 <th>Delivery Date</th>
                                 <th style="text-align: center;">Truck Status</th>
                             </tr>
@@ -975,7 +975,7 @@
                 filterDispatchTable();
                 const truckData = dispatchPlanData.filter(item => {
                     if (item.archiveStatus === 'Archived') return false;
-                    const status = computePlanStatus(item.deliveryDate).toLowerCase().trim();
+                    const status = computePlanStatus(item.dispatchDate).toLowerCase().trim();
                     return status === "today's plan" || status === "pending plan";
                 });
                 renderTruckAssignment(truckData);
@@ -1085,8 +1085,8 @@
             const sortedData = data
                 .map((item, idx) => ({ item, idx }))
                 .sort((a, b) => {
-                    const rankA = getStatusRank(computePlanStatus(a.item.deliveryDate));
-                    const rankB = getStatusRank(computePlanStatus(b.item.deliveryDate));
+                    const rankA = getStatusRank(computePlanStatus(a.item.dispatchDate));
+                    const rankB = getStatusRank(computePlanStatus(b.item.dispatchDate));
                     if (rankA !== rankB) {
                         return rankA - rankB;
                     }
@@ -1164,7 +1164,7 @@
 
                 tr.innerHTML = `
                     ${checkboxTd}
-                    <td style="text-align:center;">${buildPlanStatusBadge(computePlanStatus(item.deliveryDate), item.id, effectiveOrderStatus)}</td>
+                    <td style="text-align:center;">${buildPlanStatusBadge(computePlanStatus(item.dispatchDate), item.id, effectiveOrderStatus)}</td>
                     <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary); cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'order_received', 'date', event)" title="Click to edit Order Date">${formatOrderDate(item.orderReceived)}</td>
                     <td style="width: 140px; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'fo', 'text', event)" title="Click to edit STO #">
                         ${foDisplay}
@@ -1172,12 +1172,14 @@
                     <td style="font-weight: 600; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'account_name', 'text', event)" title="Click to edit Customer Name">${item.accountName || 'Unknown'}</td>
                     <td style="text-align: center; font-weight: 500; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'type', 'select-type', event)" title="Click to edit Type">${item.type || '-'}</td>
                     <td style="text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'qty', 'number', event)" title="Click to edit Order Qty">${itemQty.toLocaleString()}</td>
-                    <td style="text-align: center;">${valueDisplay}</td>
                     <td style="text-align: center;">
                         ${buildOrderStatusCombo(item.id, effectiveOrderStatus)}
                     </td>
                     <td style="text-align: center;">
                         <span class="status-badge ${statusClass}" style="cursor: pointer;" onclick="navigateToOutbound('${(foList[0] || '').replace(/'/g, "\\'")}')"> ${statusLabel}</span>
+                    </td>
+                    <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'dispatch_date', 'date', event)" title="Click to edit Loading Date">
+                        ${formatDeliveryDate(item.dispatchDate)}
                     </td>
                     <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'delivery_date', 'date', event)" title="Click to edit Delivery Date">
                         ${formatDeliveryDate(item.deliveryDate)}
@@ -1211,14 +1213,14 @@
             return isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
-        // Plan status is derived from the delivery date relative to today:
+        // Plan status is derived from the loading date relative to today:
         //   past (yesterday or before) -> Pending Plan
         //   today                      -> Today's Plan
         //   tomorrow                   -> Tomorrow's Plan
         //   beyond tomorrow            -> Upcoming Plan
-        //   no delivery date           -> Unconfirmed Plan
-        function computePlanStatus(deliveryDate) {
-            const iso = toISODate(deliveryDate);
+        //   no loading date            -> Unconfirmed Plan
+        function computePlanStatus(loadingDate) {
+            const iso = toISODate(loadingDate);
             if (!iso) return 'Unconfirmed Plan';
             const [y, m, d] = iso.split('-').map(Number);
             if (!y || !m || !d) return 'Unconfirmed Plan';
@@ -1489,15 +1491,7 @@
             if (String(value).trim().toLowerCase() === 'dispatched') {
                 const item = dispatchPlanData.find(d => d.id === id);
                 if (item) {
-                    // 1. Check invoiced value
-                    const hasValue = item.invoicedValue !== undefined && item.invoicedValue !== null && String(item.invoicedValue).trim() !== '';
-                    if (!hasValue) {
-                        alert('Cannot select "dispatched": Invoiced Value must be set first.');
-                        filterDispatchTable(); // Revert UI
-                        return;
-                    }
-
-                    // 2. Check picking status
+                    // Check picking status
                     let completedQty = 0;
                     const itemQty = parseInt(item.qty) || 0;
                     const itemFoStr = String(item.fo || '');
@@ -1722,7 +1716,8 @@
                 account_name: item.accountName || '',
                 type: item.type || 'DD',
                 qty: item.qty || 0,
-                delivery_date: item.deliveryDate || ''
+                delivery_date: item.deliveryDate || '',
+                dispatch_date: item.dispatchDate || ''
             };
             const rawValue = fieldValues[field];
             activeInlineEdit = { cellEl, restoreHTML: cellEl.innerHTML };
@@ -2255,7 +2250,7 @@
             const searchTerm = document.getElementById('truck-search')?.value.toLowerCase() || '';
             const filteredData = dispatchPlanData.filter(item => {
                 if (item.archiveStatus === 'Archived') return false;
-                const status = computePlanStatus(item.deliveryDate).toLowerCase().trim();
+                const status = computePlanStatus(item.dispatchDate).toLowerCase().trim();
                 if (status !== "today's plan" && status !== "pending plan") return false;
 
                 const foStr = String(item.fo || '').toLowerCase();
