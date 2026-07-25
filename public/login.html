@@ -379,7 +379,7 @@
             <h1 class="heading">Welcome back</h1>
             <p class="subheading">Sign in to your warehouse account</p>
 
-            <form id="login-form" onsubmit="handleLogin(event)">
+            <form id="login-form" onsubmit="handleLogin(event); return false;">
                 <div class="form-group">
                     <label for="login-username">Username</label>
                     <input type="text" id="login-username" placeholder="Your username" autocomplete="username" autocapitalize="none" required>
@@ -407,7 +407,7 @@
                 New accounts start as <strong>Viewer</strong> (read-only). An admin can grant you pick permissions.
             </div>
 
-            <form id="register-form" onsubmit="handleRegister(event)">
+            <form id="register-form" onsubmit="handleRegister(event); return false;">
                 <div class="form-group">
                     <label for="reg-username">Username</label>
                     <input type="text" id="reg-username" placeholder="Choose a username" autocomplete="username" autocapitalize="none" required
