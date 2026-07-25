@@ -423,9 +423,8 @@
                 </div>
                 <div style="display: flex; background: rgba(255,255,255,0.05); border-radius: 6px; padding: 2px; gap: 4px; margin-left: 12px;">
                     <button class="type-btn active" onclick="setTypeFilter('All')">All Types</button>
-                    <button class="type-btn" onclick="setTypeFilter('NKAG')">NKAG</button>
-                    <button class="type-btn" onclick="setTypeFilter('RD')">RD</button>
-                    <button class="type-btn" onclick="setTypeFilter('STO')">STO</button>
+                    <button class="type-btn" onclick="setTypeFilter('STN')">STN</button>
+                    <button class="type-btn" onclick="setTypeFilter('DD')">DD</button>
                 </div>
                 <div style="display: none; background: rgba(255,255,255,0.05); border-radius: 6px; padding: 2px; gap: 4px; margin-left: 12px;">
                     <button class="display-mode-btn active" onclick="setDisplayMode('QTY')">QTY</button>
@@ -782,7 +781,7 @@
 
                 allOrders = await ordersRes.json().catch(() => []);
                 pickersDatabase = await pickersRes.json().catch(() => []);
-                dispatchPlanData = (await dispatchRes.json().catch(() => [])).filter(item => item.archiveStatus !== 'Archived' && item.type !== 'STN' && item.type !== 'DD');
+                dispatchPlanData = (await dispatchRes.json().catch(() => [])).filter(item => item.archiveStatus !== 'Archived');
 
                 const config = await configRes.json().catch(() => ({ dayStartHour: 3, dailyGoalQty: 10000, dailyGoalValue: 5000000 }));
                 dashboardConfig = config;
