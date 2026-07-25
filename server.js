@@ -60,7 +60,15 @@ app.use((req, res, next) => {
 });
 
 // Serve static files from 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
+// no-store on HTML so embedded/TV browsers can't serve a stale cached login page
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+    }
+  }
+}));
 
 // ─── API Routes (New Structure) ─────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
