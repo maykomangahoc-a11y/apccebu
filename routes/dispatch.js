@@ -712,4 +712,103 @@ router.post('/delete-all', authenticateToken, async (req, res) => {
   }
 });
 
+// ─── SINGLE TRUCK FIELD UPDATE (used by Dispatch Plan & Outbound Checking) ──
+// POST /api/dispatch-plan/truck-field/:id   body: { field, value }
+// Updates one editable dispatch field (camelCase) plus its audit ts/user, and
+// returns { ...order, timestamp, username } so the UI can show who saved it.
+const TRUCK_FIELD_MAP = {
+  linechecker:    { col: 'linechecker',     tsCol: 'truck_linechecker_ts',   userCol: 'truck_linechecker_user' },
+  dispatcher:     { col: 'dispatcher',      tsCol: 'truck_dispatcher_ts',    userCol: 'truck_dispatcher_user' },
+  trucker:        { col: 'trucker',         tsCol: 'truck_trucker_ts',       userCol: 'truck_trucker_user' },
+  plateNo:        { col: 'plate_no',        tsCol: 'truck_plate_no_ts',      userCol: 'truck_plate_no_user' },
+  loadingTime:    { col: 'loading_time',    tsCol: 'truck_loading_time_ts',  userCol: 'truck_loading_time_user' },
+  timeArrival:    { col: 'time_arrival',    tsCol: 'truck_time_arrival_ts',  userCol: 'truck_time_arrival_user' },
+  startLoading:   { col: 'start_loading',   tsCol: 'truck_start_loading_ts', userCol: 'truck_start_loading_user' },
+  loadingEnd:     { col: 'loading_end',     tsCol: 'truck_loading_end_ts',   userCol: 'truck_loading_end_user' },
+  checkedQty:     { col: 'checked_qty' },
+  startLineCheck: { col: 'start_line_check' },
+  endLineCheck:   { col: 'end_line_check' },
+  stagingArea:    { col: 'staging_area' },
+};
+
+router.post('/truck-field/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { field, value } = req.body;
+
+    const map = TRUCK_FIELD_MAP[field];
+    if (!map) {
+      return res.status(400).json({ error: `Invalid field: ${field}` });
+    }
+
+    const username = req.user.username;
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+
+    const setParts = [`${map.col} = $1`];
+    const values = [value != null ? value : ''];
+    let idx = 2;
+    if (map.tsCol)   { setParts.push(`${map.tsCol} = $${idx++}`);   values.push(timestamp); }
+    if (map.userCol) { setParts.push(`${map.userCol} = $${idx++}`); values.push(username); }
+    values.push(id);
+
+    const result = await pool.query(
+      `UPDATE dispatch_orders SET ${setParts.join(', ')} WHERE id = $${idx} RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    res.json({ ...result.rows[0], timestamp, username });
+  } catch (error) {
+    console.error('Truck field update error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── LOG A LINE-CHECK ASSIGNMENT ────────────────────────────────────────────
+// POST /api/dispatch-plan/check-log
+router.post('/check-log', authenticateToken, async (req, res) => {
+  try {
+    const { id, fo, partyCode, accountName, qty, checker, checkedQty } = req.body;
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+
+    const result = await pool.query(
+      `INSERT INTO checking_data (
+        timestamp, order_id, fo, party_code, account_name, qty, checker, checked_qty, log_user
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [timestamp, id || '', fo || '', partyCode || '', accountName || '',
+       qty || '', checker || '', checkedQty || '', req.user.username]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Check log error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── LOG A DISPATCH ASSIGNMENT ──────────────────────────────────────────────
+// POST /api/dispatch-plan/dispatch-log
+router.post('/dispatch-log', authenticateToken, async (req, res) => {
+  try {
+    const { id, fo, partyCode, accountName, qty, dispatcher } = req.body;
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+
+    const result = await pool.query(
+      `INSERT INTO dispatching_data (
+        timestamp, order_id, fo, party_code, account_name, qty, dispatcher, log_user
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [timestamp, id || '', fo || '', partyCode || '', accountName || '',
+       qty || '', dispatcher || '', req.user.username]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Dispatch log error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
