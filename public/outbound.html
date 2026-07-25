@@ -3088,6 +3088,9 @@
                                                   <button class="btn btn-danger" style="padding: 10px 16px; font-size: 13px; background: #e53e3e;" onclick="editPickQty('${order.id}')">
                                                       ✎ Edit Qty
                                                   </button>
+                                                  <button class="btn" style="padding: 10px 16px; font-size: 13px; background: #4a5568; color: white;" onclick="cancelPick('${order.id}', this)">
+                                                      ✕ Cancel Pick
+                                                  </button>
                                                   ` : ''}
                                                  <button class="btn btn-success" style="padding: 10px 24px; font-size: 13px;" onclick="endPicking('${order.id}', this)">
                                                      ✓ Finish Pick
@@ -3154,6 +3157,47 @@
             } catch (error) {
                 console.error('Error editing quantity:', error);
                 alert('❌ Error: ' + error.message);
+            }
+        }
+
+        async function cancelPick(orderId, btnElement) {
+            const order = pickingOrders.find(o => String(o.id) === String(orderId));
+            if (!order) return;
+
+            if (!confirm(`Cancel this pick?\n\nPicker: ${order.pickerCode}\nFO# ${order.foNumber}\nQty: ${order.pickerQty}\n\nThis will remove the pick and free up the quantity for reassignment.`)) {
+                return;
+            }
+
+            if (btnElement) {
+                if (btnElement.disabled) return;
+                btnElement.disabled = true;
+                btnElement.dataset.originalText = btnElement.innerHTML;
+                btnElement.innerHTML = '⏳ Cancelling...';
+            }
+
+            try {
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/picking-orders/${orderId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    await loadPickingOrders();
+                    renderInProgress();
+                    refreshAllPickerOptions();
+                } else {
+                    alert('❌ Failed to cancel pick');
+                    if (btnElement) {
+                        btnElement.disabled = false;
+                        btnElement.innerHTML = btnElement.dataset.originalText || '✕ Cancel Pick';
+                    }
+                }
+            } catch (error) {
+                console.error('Error cancelling pick:', error);
+                alert('❌ Error: ' + error.message);
+                if (btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = btnElement.dataset.originalText || '✕ Cancel Pick';
+                }
             }
         }
 
