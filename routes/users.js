@@ -16,6 +16,34 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// POST /api/users
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const { username, pin, role } = req.body;
+    if (!username || !pin) {
+      return res.status(400).json({ error: 'Username and PIN are required' });
+    }
+
+    const existing = await pool.query(
+      'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
+      [username]
+    );
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'Username already exists' });
+    }
+
+    const result = await pool.query(
+      'INSERT INTO users (username, pin, role) VALUES ($1, $2, $3) RETURNING id, username, role, active, created_at',
+      [username, pin, role || 'viewer']
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Create user error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // PUT /api/users/:id
 router.put('/:username', authenticateToken, async (req, res) => {
   try {
