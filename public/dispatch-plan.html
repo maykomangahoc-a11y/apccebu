@@ -1178,7 +1178,7 @@
                         <span class="status-badge ${statusClass}" style="cursor: pointer;" onclick="navigateToOutbound('${(foList[0] || '').replace(/'/g, "\\'")}')"> ${statusLabel}</span>
                     </td>
                     <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'delivery_date', 'date', event)" title="Click to edit Delivery Date">
-                        ${item.delivery_date || '-'}
+                        ${formatOrderDate(item.deliveryDate)}
                     </td>
                     <td style="text-align: center;">
                         ${item.truckStatus === 'Dispatched' ? '<span class="status-badge status-dispatched">Dispatched</span>' : item.truckStatus === 'On Site' ? '<span class="status-badge status-on-site">On Site</span>' : '<span style="color: rgba(255,255,255,0.2); font-size: 11px;">—</span>'}
@@ -1682,7 +1682,7 @@
                 account_name: item.accountName || '',
                 type: item.type || 'DD',
                 qty: item.qty || 0,
-                delivery_date: item.delivery_date || ''
+                delivery_date: item.deliveryDate || ''
             };
             const rawValue = fieldValues[field];
             activeInlineEdit = { cellEl, restoreHTML: cellEl.innerHTML };
