@@ -820,6 +820,44 @@
             if (wmsPkPct) wmsPkPct.textContent = fmtPct(wmsPkQty);
         }
 
+        // Plan status is derived LIVE from the loading date (dispatchDate) relative to
+        // today — identical to the Dispatch Plan table (dispatch-plan.html) — so the
+        // dashboard cards never show a stale, stored "Tomorrow's Plan" that the table
+        // has already re-bucketed. Do NOT read the persisted `status` field for plan cards.
+        const MONTH_ABBR = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+        function toISODate(value) {
+            if (!value) return '';
+            const datePart = String(value).trim().split(/[T ,]/)[0];
+            if (!datePart) return '';
+            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
+            const m = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); // m/d/yyyy
+            if (m) return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+            const mn = datePart.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/); // d-Mon-yy or d-Mon-yyyy
+            if (mn) {
+                const mo = MONTH_ABBR[mn[2].toLowerCase()];
+                if (mo) {
+                    const yr = mn[3].length === 2 ? `20${mn[3]}` : mn[3];
+                    return `${yr}-${String(mo).padStart(2, '0')}-${mn[1].padStart(2, '0')}`;
+                }
+            }
+            const d = new Date(datePart);
+            return isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        function computePlanStatus(loadingDate) {
+            const iso = toISODate(loadingDate);
+            if (!iso) return 'Unconfirmed Plan';
+            const [y, m, d] = iso.split('-').map(Number);
+            if (!y || !m || !d) return 'Unconfirmed Plan';
+            const target = new Date(y, m - 1, d);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const diffDays = Math.round((target - today) / 86400000);
+            if (diffDays < 0) return 'Pending Plan';
+            if (diffDays === 0) return "Today's Plan";
+            if (diffDays === 1) return "Tomorrow's Plan";
+            return 'Upcoming Plan';
+        }
+
         function updateDashboard() {
             const orders = allOrders;
             const dispatchPlan = dispatchPlanData;
@@ -929,8 +967,8 @@
 
             // Individual Status Group Breakdowns
             const getStatusBreakdown = (statusMatchStr) => {
-                const statusFOs = dispatchPlan.filter(d => 
-                    (d.status || '').trim().toLowerCase() === statusMatchStr.toLowerCase() &&
+                const statusFOs = dispatchPlan.filter(d =>
+                    computePlanStatus(d.dispatchDate).toLowerCase() === statusMatchStr.toLowerCase() &&
                     (currentTypeFilter === 'All' || d.type === currentTypeFilter)
                 );
                 
