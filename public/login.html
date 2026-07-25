@@ -200,13 +200,18 @@
         .pin-input-hidden {
             position: absolute;
             inset: 0;
-            opacity: 0;
             width: 100%;
             height: 100%;
             border: none;
+            outline: none;
             background: transparent;
+            color: transparent;
+            caret-color: transparent;
+            text-shadow: none;
             cursor: text;
         }
+
+        .pin-input-hidden::selection { background: transparent; }
 
         .btn-main {
             width: 100%;
