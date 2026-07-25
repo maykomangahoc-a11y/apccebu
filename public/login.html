@@ -380,8 +380,8 @@
                     <label>PIN</label>
                     <div class="pin-wrapper">
                         <div class="pin-dots" id="login-pin-dots" onclick="document.getElementById('login-pin-hidden').focus()"></div>
-                        <input type="password" id="login-pin-hidden" class="pin-input-hidden" inputmode="numeric" maxlength="8"
-                            oninput="updatePinDots('login')" autocomplete="current-password">
+                        <input type="text" id="login-pin-hidden" class="pin-input-hidden" inputmode="numeric" maxlength="8"
+                            oninput="updatePinDots('login')" autocomplete="off">
                     </div>
                 </div>
 
@@ -409,8 +409,8 @@
                     <label>PIN</label>
                     <div class="pin-wrapper">
                         <div class="pin-dots" id="reg-pin-dots" onclick="document.getElementById('reg-pin-hidden').focus()"></div>
-                        <input type="password" id="reg-pin-hidden" class="pin-input-hidden" inputmode="numeric" maxlength="8"
-                            oninput="updatePinDots('reg')">
+                        <input type="text" id="reg-pin-hidden" class="pin-input-hidden" inputmode="numeric" maxlength="8"
+                            oninput="updatePinDots('reg')" autocomplete="off">
                     </div>
                     <div class="pin-strength" id="pin-strength-bars">
                         <div class="strength-bar" id="sbar-1"></div>
@@ -425,8 +425,8 @@
                     <label>Confirm PIN</label>
                     <div class="pin-wrapper">
                         <div class="pin-dots" id="reg-pin2-dots" onclick="document.getElementById('reg-pin2-hidden').focus()"></div>
-                        <input type="password" id="reg-pin2-hidden" class="pin-input-hidden" inputmode="numeric" maxlength="8"
-                            oninput="updatePinDots('reg-pin2')">
+                        <input type="text" id="reg-pin2-hidden" class="pin-input-hidden" inputmode="numeric" maxlength="8"
+                            oninput="updatePinDots('reg-pin2')" autocomplete="off">
                     </div>
                 </div>
 
