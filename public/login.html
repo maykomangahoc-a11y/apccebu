@@ -446,9 +446,21 @@
         <div class="footer-note" id="footer-note">
             Authorized warehouse staff only.<br>Contact your administrator if you have issues signing in.
         </div>
+
+        <div id="debug-line" style="margin-top:14px; font-size:10px; color:#4b5563; font-family:monospace; word-break:break-all; min-height:14px;"></div>
     </div>
 
     <script>
+        function debug(msg) {
+            var el = document.getElementById('debug-line');
+            if (el) el.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+            try { console.log('[debug]', msg); } catch (e) {}
+        }
+        window.onerror = function(msg, url, line, col, err) {
+            debug('JS ERROR: ' + msg + ' (line ' + line + ')');
+        };
+        debug('script started');
+
         let currentMode = 'login';
 
         // ── Mode switching ────────────────────────────────────────────
@@ -565,6 +577,7 @@
 
         // ── Login ─────────────────────────────────────────────────────
         async function handleLogin(e) {
+            debug('handleLogin fired');
             e.preventDefault();
             clearMessages();
 
@@ -572,26 +585,30 @@
             const username = document.getElementById('login-username').value.trim();
             const pin = document.getElementById('login-pin-hidden').value.trim();
 
-            if (!username || !pin) { showError('Please enter your username and PIN'); return; }
+            if (!username || !pin) { showError('Please enter your username and PIN'); debug('missing username or pin'); return; }
 
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span>Signing in...';
 
             try {
+                debug('sending fetch to /api/auth/login');
                 const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, pin })
                 });
+                debug('fetch responded: ' + res.status);
                 const data = await res.json();
 
                 if (res.ok) {
                     storeSession(data);
                     btn.innerHTML = '✓ Welcome back!';
                     btn.style.background = '#48bb78';
+                    debug('login ok, redirecting');
                     setTimeout(redirectAfterLogin, 400);
                 } else {
                     showError(data.error || 'Invalid username or PIN');
+                    debug('login rejected: ' + (data.error || res.status));
                     btn.disabled = false;
                     btn.innerHTML = 'Sign in';
                     document.getElementById('login-pin-hidden').value = '';
@@ -599,6 +616,7 @@
                 }
             } catch (err) {
                 showError('Could not connect to server. Please try again.');
+                debug('fetch threw: ' + (err && err.message));
                 btn.disabled = false;
                 btn.innerHTML = 'Sign in';
             }
@@ -684,6 +702,8 @@
         if (new URLSearchParams(window.location.search).get('mode') === 'register') {
             switchMode('register');
         }
+
+        debug('script fully loaded, ready');
     </script>
 </body>
 </html>
