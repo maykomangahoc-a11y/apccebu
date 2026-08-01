@@ -454,6 +454,25 @@ async function initDatabase() {
         ('BREMAR_PILLAR', '2019', 'processor', TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
+
+    // Ensure new columns exist on existing tables
+    await client.query(`
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS helper VARCHAR(500) DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS upload_timestamp VARCHAR(255) DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS processed_date VARCHAR(255) DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS completed_date VARCHAR(255) DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS printed_date VARCHAR(255) DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS processed_qty INTEGER DEFAULT 0;
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS unserved_qty INTEGER DEFAULT 0;
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS balance_qty INTEGER DEFAULT 0;
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS pending_skus TEXT DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS unserved TEXT DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS uploader VARCHAR(255) DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS processor VARCHAR(255) DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS completer VARCHAR(255) DEFAULT '';
+      ALTER TABLE processing_data ADD COLUMN IF NOT EXISTS printer VARCHAR(255) DEFAULT '';
+    `);
+
     console.log('Database tables initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error.message);

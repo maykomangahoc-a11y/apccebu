@@ -785,7 +785,7 @@
                 <td style="font-size:12px;color:var(--text-secondary);">${o.type || '—'}</td>
                 <td style="text-align:center;font-weight:700;">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</td>
                 <td style="text-align:center;font-weight:700;color:var(--onesource-red);">${pickedQty || '—'}</td>
-                <td>${checkerCell}</td>
+                <td style="cursor:pointer;" onclick="startInlineEdit(this, '${o.id}', 'linechecker', 'select-checker', event)" title="Click to edit Checker">${checkerCell}</td>
                 <td style="text-align:center;font-weight:700;color:var(--onesource-red);">${o.checkedQty || '—'}</td>
                 ${actionCell}
             </tr>${expandRow}`;
@@ -1006,8 +1006,8 @@
                 <td>${buildPlanBadge(o.status)}</td>
                 <td style="text-align:center;">${buildPickingBadge(o.id, o.qty)}</td>
                 <td>${buildOrderStatusDot(o.orderStatus)}</td>
-                <td>${checkerBadge}</td>
-                <td>${dispCell}</td>
+                <td style="cursor:pointer;" onclick="startInlineEdit(this, '${o.id}', 'linechecker', 'select-checker', event)" title="Click to edit Checker">${checkerBadge}</td>
+                <td style="cursor:pointer;" onclick="startInlineEdit(this, '${o.id}', 'dispatcher', 'select-dispatcher', event)" title="Click to edit Dispatcher">${dispCell}</td>
                 ${actionCell}
             </tr>${expandRow}`;
         }).join('');
@@ -1143,7 +1143,7 @@
                 ${checkedQtyCell}
                 <td>${buildPlanBadge(o.status)}</td>
                 <td>${buildOrderStatusDot(o.orderStatus)}</td>
-                <td>
+                <td style="cursor:pointer;" onclick="startInlineEdit(this, '${o.id}', '${isLC ? 'linechecker' : 'dispatcher'}', '${isLC ? 'select-checker' : 'select-dispatcher'}', event)" title="Click to edit ${isLC ? 'Linechecker' : 'Dispatcher'}">
                     <span class="person-badge ${personClass}">${person}</span>
                     ${byUser ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">by ${byUser}</div>` : ''}
                 </td>
@@ -1232,6 +1232,120 @@
         currentUser = user;
         loadData();
     });
+
+    // ── INLINE EDIT ──────────────────────────────────────────────
+    let activeInlineEdit = null;
+    let inlineEditSuppressBlur = false;
+
+    function cancelInlineEdit() {
+        if (activeInlineEdit) {
+            activeInlineEdit.cellEl.innerHTML = activeInlineEdit.restoreHTML;
+            activeInlineEdit = null;
+        }
+    }
+
+    function startInlineEdit(cellEl, orderId, field, type, event) {
+        if (event) event.stopPropagation();
+        if (activeInlineEdit && activeInlineEdit.cellEl === cellEl) return;
+        if (!currentUser || !['admin', 'supervisor', 'processor'].includes(currentUser.role)) return;
+
+        cancelInlineEdit();
+
+        const item = dispatchData.find(o => String(o.id) === String(orderId));
+        if (!item) return;
+
+        const rawValue = (item[field] || '').trim();
+        activeInlineEdit = { cellEl, restoreHTML: cellEl.innerHTML };
+
+        const inputStyle = 'width: 100%; padding: 4px 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; font-size: 12px;';
+        let inputHTML = '';
+
+        if (type === 'select-checker' || type === 'select-dispatcher') {
+            const options = _checkers.map(c => {
+                const val = `${c.code} - ${c.name}`;
+                return `<option value="${val}" ${rawValue === val ? 'selected' : ''}>${val}</option>`;
+            }).join('');
+            inputHTML = `<select class="inline-edit-input" style="${inputStyle}"><option value="">- Select -</option>${options}</select>`;
+        } else {
+            inputHTML = `<input type="text" class="inline-edit-input" value="${rawValue.replace(/"/g, '&quot;')}" style="${inputStyle}">`;
+        }
+
+        cellEl.innerHTML = inputHTML;
+        const inputEl = cellEl.querySelector('.inline-edit-input');
+        inputEl.addEventListener('click', e => e.stopPropagation());
+        inputEl.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                inputEl.blur();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                inlineEditSuppressBlur = true;
+                cancelInlineEdit();
+            }
+        });
+
+        if (type.startsWith('select')) {
+            inputEl.addEventListener('change', () => inputEl.blur());
+        }
+
+        inputEl.addEventListener('blur', () => {
+            if (inlineEditSuppressBlur) {
+                inlineEditSuppressBlur = false;
+                return;
+            }
+            commitInlineEdit(orderId, field, type, cellEl);
+        });
+
+        inputEl.focus();
+    }
+
+    async function commitInlineEdit(orderId, field, type, cellEl) {
+        if (!activeInlineEdit || activeInlineEdit.cellEl !== cellEl) return;
+        const inputEl = cellEl.querySelector('.inline-edit-input');
+        if (!inputEl) return;
+
+        let value = inputEl.value.trim();
+        const restoreHTML = activeInlineEdit.restoreHTML;
+        activeInlineEdit = null;
+        cellEl.style.opacity = '0.5';
+
+        try {
+            const res = await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${orderId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field, value })
+            });
+
+            if (res.ok) {
+                if (field === 'dispatcher' && value) {
+                    const endTs = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+                    await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${orderId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ field: 'endLineCheck', value: endTs })
+                    });
+                } else if (field === 'linechecker' && value) {
+                    const startTs = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+                    await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${orderId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ field: 'startLineCheck', value: startTs })
+                    });
+                }
+                loadData();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || 'Failed to update field');
+                cellEl.innerHTML = restoreHTML;
+                cellEl.style.opacity = '1';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error updating field: ' + err.message);
+            cellEl.innerHTML = restoreHTML;
+            cellEl.style.opacity = '1';
+        }
+    }
 
     // Auto-refresh every 2 minutes
     setInterval(loadData, 120000);

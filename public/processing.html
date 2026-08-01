@@ -1244,21 +1244,38 @@
                     if (plRes && plRes.ok) {
                         const raw = await plRes.json();
                         picklistDatabase = raw
-                            .filter(d => d.archiveStatus !== 'Archived')
+                            .filter(d => d.archive_status !== 'Archived')
                             .map(d => ({
                                 fo: d.fo,
-                                accountName: d.accountName,
-                                partyCode: d.partyCode,
+                                accountName: d.account_name,
+                                partyCode: d.party_code,
                                 cases: d.qty,
-                                size: d.truckSize,
+                                size: d.truck_size,
                                 trucker: d.trucker,
-                                loadingDate: d.loadingTime,
-                                planStatus: d.status || d.planStatus || '',
-                                orderStatus: d.orderStatus || '',
+                                loadingDate: d.loading_time,
+                                planStatus: d.status || d.plan_status || '',
+                                orderStatus: d.order_status || '',
                             }));
                     }
                     if (itemRes && itemRes.ok) itemDatabase = await itemRes.json();
-                    if (procRes && procRes.ok) processingOrders = await procRes.json();
+                    if (procRes && procRes.ok) {
+                        const rawProc = await procRes.json();
+                        processingOrders = rawProc.map(d => ({
+                            id: d.id,
+                            foNumber: d.fo,
+                            accountName: d.account_name,
+                            casesQty: d.cases,
+                            partyCode: d.party_code,
+                            processingStatus: d.processing_status,
+                            printingStatus: d.printing_status || '',
+                            processedQty: d.processed_qty || 0,
+                            unservedQty: d.unserved_qty || 0,
+                            balanceQty: d.balance_qty || 0,
+                            helper: d.helper || '',
+                            uploader: d.uploader || '',
+                            uploadTimestamp: d.upload_timestamp || ''
+                        }));
+                    }
                     if (skuRes && skuRes.ok) processingSkus = await skuRes.json();
                     updateSyncStatus(true);
                 } catch (e) {

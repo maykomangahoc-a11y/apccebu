@@ -153,7 +153,7 @@ router.post('/upload-order', authenticateToken, async (req, res) => {
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [
         fo, accountName, cases, partyCode, 'For Processing',
-        user, upload_timestamp, `${fo}-${accountName}`, 0, 0, cases || 0
+        user, upload_timestamp, `${fo}-${accountName}`, 0, 0, parseInt(String(cases).replace(/,/g, ''), 10) || 0
       ]
     );
 
