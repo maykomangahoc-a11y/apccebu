@@ -1443,7 +1443,7 @@
                     const pendingCount = skusForThisOrder.filter(s => s.status === 'Pending').length;
                     const unservedCount = skusForThisOrder.filter(s => s.status === 'Unserved').length;
 
-                    const addSkuHtml = isViewer ? '-' : `<span style="color: rgba(255, 255, 255, 0.3); cursor: pointer; text-decoration: underline; font-style: italic; font-size: 12px;" onclick="openOrderSkuModal('${key}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')">Add SKU</span>`;
+                    const addSkuHtml = isViewer ? '-' : `<span class="status-badge status-upload clickable" onclick="openOrderSkuModal('${key}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')">Add SKU</span>`;
 
                     const pendingHtml = pendingCount > 0 ? 
                         `<span class="status-badge status-processing-pill clickable" onclick="showSkuSummaryModal('${key}', 'Pending')">${pendingCount} ${pendingCount === 1 ? 'SKU' : 'SKUs'}</span>` : 
@@ -2295,7 +2295,7 @@
                 }
 
                 const title = 'Confirm Upload';
-                const msg = `Are you sure you want to upload <b>${accountName}</b> (FO# <b>${fo}</b>) with Cases Qty <b>${cases}</b> for processing?`;
+                const msg = '';
 
                 showConfirm(title, msg, '📤', async () => {
                     try {
@@ -2471,7 +2471,7 @@
                 );
 
                 if (orderSkus.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No SKUs recorded for this order yet. Click "+ Add Pending SKU" above.</div>';
+                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No SKUs recorded for this order yet. Click "+ Add Pending SKU" below.</div>';
                 } else {
                     orderSkus.forEach(s => {
                         createModalSkuCard(s, true);
