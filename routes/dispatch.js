@@ -443,6 +443,132 @@ router.get('/archived', authenticateToken, async (req, res) => {
   }
 });
 
+// ─── ARCHIVE COMPLETED ORDERS FROM YESTERDAY & BEYOND ──────────────────────
+// POST /api/dispatch/archive-completed-yesterday
+// Archives all active orders whose order_status indicates completion
+// (dispatched, Picking Completed, Loaded, Checked, Archive Order) AND whose
+// best-available date (dispatch_date, done_pick_date, loading_date,
+// delivery_date, order_received, or created_at) is before today (Manila TZ).
+router.post('/archive-completed-yesterday', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Today's date boundary in Manila timezone (midnight)
+    const todayMNL = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })
+    );
+    todayMNL.setHours(0, 0, 0, 0);
+    const todayISO = todayMNL.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    // Fetch all active (non-archived) orders
+    const activeResult = await client.query(
+      "SELECT * FROM dispatch_orders WHERE archive_status IS NULL OR LOWER(archive_status) != 'archived'"
+    );
+
+    const COMPLETED_STATUSES = new Set([
+      'dispatched', 'picking completed', 'loaded', 'checked', 'checking',
+      'archive order', 'archived order', 'complete', 'completed'
+    ]);
+
+    // Month name lookup for dd-MMM-yy parsing
+    const MONTHS = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5,
+                     jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+
+    // Parse various date formats into YYYY-MM-DD or null
+    function bestISO(raw) {
+      if (!raw) return null;
+      const s = String(raw).trim();
+      if (!s) return null;
+
+      // ISO / pg timestamp: 2026-07-31...
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+
+      // dd-Mon-yy  e.g. 31-Jul-26
+      const m1 = s.match(/^(\d{1,2})-(\w{3})-(\d{2,4})$/i);
+      if (m1) {
+        const day = m1[1].padStart(2, '0');
+        const mon = MONTHS[(m1[2]).toLowerCase()];
+        if (mon === undefined) return null;
+        let yr = parseInt(m1[3]);
+        if (yr < 100) yr += 2000;
+        return `${yr}-${String(mon + 1).padStart(2, '0')}-${day}`;
+      }
+
+      // M/D/YYYY  or  M/D/YY
+      const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if (m2) {
+        let yr = parseInt(m2[3]);
+        if (yr < 100) yr += 2000;
+        return `${yr}-${m2[1].padStart(2, '0')}-${m2[2].padStart(2, '0')}`;
+      }
+
+      return null;
+    }
+
+    // Determine the best date for an order (prefer the most meaningful)
+    function orderDate(row) {
+      return bestISO(row.dispatch_date)
+          || bestISO(row.done_pick_date)
+          || bestISO(row.loading_date)
+          || bestISO(row.delivery_date)
+          || bestISO(row.order_received)
+          || (row.created_at ? row.created_at.toISOString().slice(0, 10) : null);
+    }
+
+    let archivedCount = 0;
+
+    for (const order of activeResult.rows) {
+      const statusKey = (order.order_status || '').toLowerCase().trim();
+      const planKey = (order.status || '').toLowerCase().trim();
+
+      // Must be in a completed-like state
+      if (!COMPLETED_STATUSES.has(statusKey) && !COMPLETED_STATUSES.has(planKey)) continue;
+
+      // Must have a date that is before today
+      const iso = orderDate(order);
+      if (!iso || iso >= todayISO) continue;
+
+      // Insert into archive (ON CONFLICT skip if already there)
+      await client.query(
+        `INSERT INTO dispatch_archive (
+          id, status, order_received, party_code, account_name, type, qty, cbm, weight,
+          invoiced_value, order_status, fo, truck_size, trucker, loading_time, linechecker,
+          dispatcher, checked_qty, plate_no, time_arrival, start_loading, loading_end,
+          preparation, est_amount, start_line_check, end_line_check,
+          invoiced_value_user, dispatch_date, done_pick_date, delivery_date
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
+        ON CONFLICT (id) DO NOTHING`,
+        [
+          order.id, order.status, order.order_received, order.party_code, order.account_name,
+          order.type, order.qty, order.cbm, order.weight, order.invoiced_value, order.order_status,
+          order.fo, order.truck_size, order.trucker, order.loading_time, order.linechecker,
+          order.dispatcher, order.checked_qty, order.plate_no, order.time_arrival,
+          order.start_loading, order.loading_end, order.preparation, order.est_amount,
+          order.start_line_check, order.end_line_check, order.invoiced_value_user,
+          order.dispatch_date, order.done_pick_date, order.delivery_date
+        ]
+      );
+
+      await client.query(
+        "UPDATE dispatch_orders SET archive_status = 'Archived' WHERE id = $1",
+        [order.id]
+      );
+
+      archivedCount++;
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, archived: archivedCount });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Archive completed yesterday error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
 // ─── SEARCH BY FO ───────────────────────────────────────────────────────────
 // GET /api/dispatch/search
 router.get('/search', authenticateToken, async (req, res) => {

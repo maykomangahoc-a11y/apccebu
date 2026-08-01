@@ -1,880 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dispatch Plan & Truck Assignment</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="/auth.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
-        :root {
-            --onesource-red: #E63946;
-            --bg-dark: #0f172a;
-            --bg-card: #1e293b;
-            --text-primary: #ffffff;
-            --text-secondary: #a0aec0;
-            --accent-blue: #4299e1;
-            --accent-green: #48bb78;
-            --accent-orange: #ed8936;
-            --accent-purple: #9f7aea;
-            --danger: #ef4444;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: var(--bg-dark);
-            min-height: 100vh;
-            color: var(--text-primary);
-        }
-
-        .app-container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 16px;
-        }
-
-        /* Header Styles */
-        header {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .logo {
-            height: 40px;
-            width: auto;
-        }
-
-        .header-title {
-            border-left: 3px solid var(--onesource-red);
-            padding-left: 14px;
-        }
-
-        .header-title h1 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .header-title p {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        /* Tab Navigation */
-        .tabs-header {
-            display: flex;
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 8px;
-            margin-bottom: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            gap: 8px;
-        }
-
-        .tab-button {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 14px 20px;
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 8px;
-            white-space: nowrap;
-        }
-
-        .tab-button:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-primary);
-        }
-
-        .tab-button.active {
-            background: var(--onesource-red);
-            color: white;
-            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Card Styles */
-        .card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .card-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--onesource-red), #c8102e);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-        }
-
-        .card-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        /* Table Styles */
-        .table-container {
-            overflow-x: auto;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 10px 12px;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        td {
-            padding: 12px 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            font-size: 13px;
-            color: var(--text-primary);
-        }
-
-        tbody tr:hover {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .status-todays-plan { background: #c8e6c9; color: #1b5e20; }
-        .status-pending-plan { background: #ffe0b2; color: #e65100; }
-        .status-additional-plan { background: #bbdefb; color: #0d47a1; }
-        .status-grand-advance { background: #ffcdd2; color: #b71c1c; }
-        .status-tomorrows-plan { background: #e8d5f5; color: #6b21a8; }
-        .status-upcoming-plan { background: #dbeafe; color: #1e40af; }
-        .status-unconfirmed { background: #f3f4f6; color: #4b5563; }
-        .status-archive-order { background: #e5e7eb; color: #374151; }
-
-        /* Truck Status Colors */
-        .status-on-site { background: rgba(66,153,225,0.15); color: #4299e1; }
-        .status-dispatched { background: rgba(72,187,120,0.15); color: #48bb78; }
-
-        /* Outbound Status Colors */
-        .status-pending { background: transparent; color: var(--text-secondary); padding: 0; }
-        .status-ongoing { background: transparent; color: var(--accent-orange); padding: 0; }
-        .status-completed { background: transparent; color: var(--accent-green); padding: 0; }
-
-        /* FO Badge Wrapping */
-        .fo-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            max-width: 400px;
-        }
-
-        .fo-badge-pill {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        /* Loading Spinner */
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-secondary);
-        }
-
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid var(--onesource-red);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .refresh-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(66, 153, 225, 0.1);
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            color: var(--accent-blue);
-            font-weight: 500;
-        }
-
-        .pulse-dot-blue {
-            width: 8px;
-            height: 8px;
-            background-color: var(--accent-blue);
-            border-radius: 50%;
-            display: inline-block;
-            animation: pulse-blue 2s infinite;
-        }
-
-        @keyframes pulse-blue {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.7);
-            }
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 6px rgba(66, 153, 225, 0);
-            }
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(66, 153, 225, 0);
-            }
-        }
-
-        /* ── Order Status Combobox ─────────────────────────────── */
-        .order-status-colors {
-            --os-ready:    #f4a261;
-            --os-sorting:  #e9c46a;
-            --os-sorted:   #c77dff;
-            --os-picking:  #a8c4d4;
-            --os-picksort: #90e0ef;
-            --os-loading:  #f9e03a;
-            --os-loaded:   #57cc99;
-            --os-dispatch: #48bb78;
-            --os-checking: #ffb4a2;
-        }
-
-        .os-combobox {
-            position: relative;
-            display: inline-block;
-            min-width: 160px;
-        }
-        .os-trigger {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 6px;
-            padding: 4px 10px;
-            font-size: 12px;
-            color: white;
-            cursor: pointer;
-            user-select: none;
-            white-space: nowrap;
-            transition: border-color 0.2s;
-        }
-        .os-trigger:hover { border-color: rgba(255,255,255,0.3); }
-        .os-trigger .os-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        .os-trigger .os-caret { margin-left: auto; opacity: 0.5; font-size: 10px; }
-        .os-dropdown {
-            display: none;
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            z-index: 9999;
-            background: #1e293b;
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 8px;
-            min-width: 200px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            overflow: hidden;
-        }
-        .os-dropdown.open { display: block; }
-        .os-search {
-            width: 100%;
-            background: rgba(255,255,255,0.07);
-            border: none;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            padding: 8px 12px;
-            color: white;
-            font-size: 12px;
-            outline: none;
-        }
-        .os-search::placeholder { color: rgba(255,255,255,0.3); }
-        .os-options { max-height: 220px; overflow-y: auto; }
-        .os-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 7px 12px;
-            font-size: 12px;
-            color: white;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .os-option:hover { background: rgba(255,255,255,0.07); }
-        .os-option .os-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-        .os-option.hidden { display: none; }
-
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        /* Truck Assignment Editable Inputs */
-        .ta-input {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 6px;
-            color: white;
-            padding: 5px 8px;
-            font-size: 12px;
-            width: 100%;
-            min-width: 100px;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .ta-input:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 2px rgba(66,153,225,0.2);
-        }
-        .ta-input.saved {
-            border-color: var(--accent-green);
-            box-shadow: 0 0 0 2px rgba(72,187,120,0.2);
-        }
-        .ta-input::placeholder {
-            color: rgba(255,255,255,0.25);
-        }
-        .ta-meta {
-            font-size: 10px;
-            color: var(--text-secondary);
-            margin-top: 2px;
-            opacity: 0.7;
-        }
-
-        /* ── Order Date filter dropdown ─────────────────────── */
-        #dispatch-date-filter option {
-            background: #1a1f2e;
-            color: white;
-        }
-
-        /* ── Bulk Action Styles ─────────────────────────────── */
-        .btn-bulk {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .btn-bulk:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.2);
-            color: var(--text-primary);
-        }
-        .btn-bulk.active {
-            background: rgba(230, 57, 70, 0.15);
-            border-color: var(--onesource-red);
-            color: var(--onesource-red);
-        }
-
-        .bulk-checkbox {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--onesource-red);
-            cursor: pointer;
-        }
-
-        .bulk-action-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1e293b;
-            border-top: 2px solid var(--onesource-red);
-            padding: 12px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            z-index: 9999;
-            box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
-            animation: slideUp 0.25s ease-out;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-
-        .bulk-action-bar .bulk-count {
-            font-size: 14px;
-            font-weight: 700;
-            color: white;
-            background: var(--onesource-red);
-            padding: 4px 12px;
-            border-radius: 20px;
-            min-width: 28px;
-            text-align: center;
-        }
-
-        .bulk-action-bar .bulk-label {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
-        .bulk-status-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 8px;
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .bulk-status-btn:hover {
-            background: rgba(255,255,255,0.12);
-            border-color: rgba(255,255,255,0.25);
-            transform: translateY(-1px);
-        }
-        .bulk-status-btn .bulk-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .bulk-cancel-btn {
-            padding: 8px 16px;
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .bulk-cancel-btn:hover {
-            background: rgba(255,255,255,0.05);
-            color: white;
-        }
-
-        th.bulk-th, td.bulk-td {
-            width: 40px;
-            text-align: center;
-            padding: 10px 8px;
-        }
-        /* ── Auto Sync Button ─────────────────────────────── */
-        .btn-auto-sync {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #0f172a;
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            letter-spacing: 0.2px;
-            box-shadow: 0 2px 10px rgba(253, 160, 133, 0.35);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            white-space: nowrap;
-        }
-        .btn-auto-sync:hover {
-            background: linear-gradient(135deg, #fde68a 0%, #f6a35b 100%);
-            box-shadow: 0 4px 16px rgba(253, 160, 133, 0.5);
-            transform: translateY(-1px);
-        }
-        .btn-auto-sync:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 6px rgba(253, 160, 133, 0.3);
-        }
-        .btn-auto-sync:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-</head>
-<body>
-    <div class="app-container">
-        <header>
-            <div class="logo-section">
-                <img src="/onesource.png" alt="Onesource Logistics" class="logo">
-                <div class="header-title">
-                    <h1>Dispatch Plan & Truck Assignment</h1>
-                    <p>Real-time dispatch and truck tracking</p>
-                </div>
-            </div>
-            <div style="display: flex; gap: 12px; align-items: center;">
-                <button class="btn btn-primary" onclick="document.getElementById('paste-modal').style.display='flex'" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 13px; font-weight: 700; background: var(--onesource-red); color: white; border: none; border-radius: 8px; cursor: pointer; letter-spacing: 0.2px; box-shadow: 0 2px 10px rgba(220, 38, 38, 0.4); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;" id="btn-sync"
-                    onmouseover="this.style.boxShadow='0 4px 16px rgba(220,38,38,0.55)'; this.style.transform='translateY(-1px)'"
-                    onmouseout="this.style.boxShadow='0 2px 10px rgba(220,38,38,0.4)'; this.style.transform=''"
-                    onmousedown="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 6px rgba(220,38,38,0.3)'"
-                    onmouseup="this.style.boxShadow='0 2px 10px rgba(220,38,38,0.4)'; this.style.transform='translateY(-1px)'">
-                    📋 Upload Orders
-                </button>
-
-                <button id="btn-archive-yesterday" onclick="archiveYesterdayCompleted()" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 13px; font-weight: 600; background: rgba(107,114,128,0.15); color: #9ca3af; border: 1px solid rgba(107,114,128,0.3); border-radius: 8px; cursor: pointer; letter-spacing: 0.2px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;"
-                    onmouseover="this.style.background='rgba(107,114,128,0.25)'; this.style.color='#d1d5db'; this.style.transform='translateY(-1px)'"
-                    onmouseout="this.style.background='rgba(107,114,128,0.15)'; this.style.color='#9ca3af'; this.style.transform=''"
-                    onmousedown="this.style.transform='translateY(0)'"
-                    onmouseup="this.style.transform='translateY(-1px)'"
-                    title="Auto archive orders completed from yesterday, 3pm">
-                    🗄️ Auto Archive
-                </button>
-
-                <div class="refresh-badge">
-                    <div class="pulse-dot-blue"></div>
-                    <span id="last-update">Live Sync</span>
-                </div>
-            </div>
-        </header>
-
-        <div class="tabs-header">
-            <button class="tab-button active" onclick="switchTab('dispatch-plan')">📋 Dispatch Plan</button>
-            <button class="tab-button" onclick="switchTab('truck-assignment')">🚛 Truck Assignment</button>
-            <button class="tab-button" onclick="switchTab('archived-orders')">🗄️ Archived Orders</button>
-        </div>
-
-        <!-- Dispatch Plan Tab -->
-        <div id="dispatch-plan" class="tab-content active">
-            <div class="card">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 12px; flex: 0 0 auto;">
-                        <div class="card-icon">📋</div>
-                        <h2 class="card-title">Dispatch Plan</h2>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; flex: 1 1 auto;">
-                        <button class="btn-bulk" id="btn-new-order-toggle" onclick="toggleNewOrderInline()" style="background: rgba(37,99,235,0.2); border: 1px solid rgba(37,99,235,0.4); color: #60a5fa; padding: 10px 14px; font-size: 13px; font-weight: 600; white-space: nowrap;">
-                            ➕ New Order
-                        </button>
-                        <button class="btn-bulk" id="btn-bulk-toggle" onclick="toggleBulkMode()" style="display: none; padding: 10px 14px; font-size: 13px; white-space: nowrap;">
-                            ☑ Bulk Action
-                        </button>
-                        <select id="dispatch-date-filter" onchange="filterDispatchTable()" title="Filter by Order Date" style="padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                            <option value="">📅 All Order Dates</option>
-                        </select>
-                        <input type="text" id="dispatch-search" placeholder="🔍 Search STO # or Customer Name..." oninput="filterDispatchTable()" style="flex: 1 1 200px; min-width: 200px; max-width: 320px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                    </div>
-                </div>
-
-                <!-- Inline New Order Form Section -->
-                <div id="new-order-inline-section" style="display: none; padding: 16px; background: rgba(15, 23, 42, 0.6); border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                    <form id="form-new-order-inline" onsubmit="submitNewOrderInline(event)">
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
-                            <div style="flex: 1; min-width: 130px;">
-                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Plan Status</label>
-                                <select id="inline-new-status" style="width: 100%; padding: 7px 10px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
-                                    <option value="Today's Plan">Today's Plan</option>
-                                    <option value="Tomorrow's Plan">Tomorrow's Plan</option>
-                                    <option value="Upcoming Plan">Upcoming Plan</option>
-                                    <option value="Pending Plan" selected>Pending Plan</option>
-                                    <option value="Unconfirmed Plan">Unconfirmed Plan</option>
-                                </select>
-                            </div>
-                            <div style="flex: 1; min-width: 110px;">
-                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Order Date</label>
-                                <input type="text" id="inline-new-date" placeholder="e.g. 24-Jul-26" style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
-                            </div>
-                            <div style="flex: 1; min-width: 120px;">
-                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">STO # / Order No</label>
-                                <input type="text" id="inline-new-sto" placeholder="e.g. 4500097830" required style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
-                            </div>
-                            <div style="flex: 2; min-width: 160px;">
-                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Customer Name / Destination</label>
-                                <input type="text" id="inline-new-customer" placeholder="e.g. Cebu Station" required style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
-                            </div>
-                            <div style="flex: 0 0 80px;">
-                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Type</label>
-                                <select id="inline-new-type" style="width: 100%; padding: 7px 10px; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
-                                    <option value="STN">STN</option>
-                                    <option value="DD" selected>DD</option>
-                                </select>
-                            </div>
-                            <div style="flex: 1; min-width: 90px;">
-                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Order Qty</label>
-                                <input type="number" id="inline-new-qty" min="0" placeholder="e.g. 1000" required style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
-                            </div>
-                            <div style="flex: 1; min-width: 110px;">
-                                <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px;">Delivery Date</label>
-                                <input type="text" id="inline-new-delivery" placeholder="e.g. 27-Jul-26" style="width: 100%; padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: white; font-size: 12px;">
-                            </div>
-                            <div style="display: flex; gap: 6px;">
-                                <button type="submit" id="btn-save-inline-order" style="padding: 7px 14px; background: #2563eb; border: none; border-radius: 6px; color: white; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap;">Save Order</button>
-                                <button type="button" onclick="toggleNewOrderInline()" style="padding: 7px 12px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; font-size: 12px; cursor: pointer;">Cancel</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="table-container">
-                    <div id="dispatch-loading" class="loading">
-                        <div class="spinner"></div>
-                        <p>Loading Dispatch Plan...</p>
-                    </div>
-                    <table id="dispatch-table" style="display: none;">
-                        <thead>
-                            <tr>
-                                <th>Plan Status</th>
-                                <th>Order Date</th>
-                                <th>STO #</th>
-                                <th>Customer Name</th>
-                                <th>Type</th>
-                                <th style="text-align: center;">Order Qty</th>
-                                <th style="text-align: center;">Order Status</th>
-                                <th style="text-align: center;">Picking Status</th>
-                                <th style="text-align: center;">Loading Date</th>
-                                <th>Delivery Date</th>
-                                <th style="text-align: center;">Truck Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dispatch-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Truck Assignment Tab -->
-        <div id="truck-assignment" class="tab-content">
-            <div class="card">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="card-icon">🚛</div>
-                        <h2 class="card-title">Truck Assignment</h2>
-                    </div>
-                    <div style="min-width: 300px; flex-grow: 1; max-width: 400px;">
-                        <input type="text" id="truck-search" placeholder="🔍 Search STO # or Customer Name..." oninput="filterTruckTable()" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                    </div>
-                </div>
-                <div class="table-container">
-                    <div id="truck-loading" class="loading">
-                        <div class="spinner"></div>
-                        <p>Loading Truck Assignments...</p>
-                    </div>
-                    <table id="truck-table" style="display: none;">
-                        <thead>
-                            <tr>
-                                <th>STO #</th>
-                                <th>Customer Name</th>
-                                <th style="text-align: center;">Order Qty</th>
-                                <th style="text-align: center;">CBM</th>
-                                <th style="text-align: center;">Weight</th>
-                                <th>Truck Size</th>
-                                <th>Trucker</th>
-                                <th>Plate No</th>
-                                <th style="text-align: center;">Loading Time</th>
-                                <th>Linechecker</th>
-                                <th>Dispatcher</th>
-                                <th style="text-align: center;">Time Arrival</th>
-                                <th style="text-align: center;">Start Loading</th>
-                                <th style="text-align: center;">Loading End</th>
-                            </tr>
-                        </thead>
-                        <tbody id="truck-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Archived Orders Tab -->
-        <div id="archived-orders" class="tab-content">
-            <div class="card">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="card-icon">🗄️</div>
-                        <h2 class="card-title">Archived Orders</h2>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-grow: 1; justify-content: flex-end;">
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="font-size: 12px; color: var(--text-secondary);">From</span>
-                            <input type="date" id="archived-date-from" onchange="filterArchivedTable()" style="padding: 8px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 12px; outline: none; color-scheme: dark;">
-                            <span style="font-size: 12px; color: var(--text-secondary);">To</span>
-                            <input type="date" id="archived-date-to" onchange="filterArchivedTable()" style="padding: 8px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 12px; outline: none; color-scheme: dark;">
-                            <button onclick="clearArchivedDateRange()" title="Clear date filter" style="padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-secondary); font-size: 12px; cursor: pointer;">All</button>
-                        </div>
-                        <input type="text" id="archived-search" placeholder="🔍 Search STO # or Customer Name..." oninput="filterArchivedTable()" style="min-width: 200px; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 13px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(255,255,255,0.25)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                    </div>
-                </div>
-                <div class="table-container">
-                    <table id="archived-table" style="display: none;">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>STO #</th>
-                                <th>Customer Name</th>
-                                <th>Type</th>
-                                <th style="text-align: center;">Order Qty</th>
-                                <th style="text-align: center;">Invoiced Value</th>
-                                <th style="text-align: center;">Picking Status</th>
-                                <th>Pickers</th>
-                                <th>Operator</th>
-                            </tr>
-                        </thead>
-                        <tbody id="archived-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Order Status Modal -->
-        <div id="status-modal" class="modal" onclick="closePlanStatusModal()" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
-                    <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: white;">Update Order Status</h3>
-                    <span onclick="closePlanStatusModal()" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
-                </div>
-                <div id="status-modal-grid" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
-                    <!-- Status options loaded dynamically -->
-                </div>
-                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); text-align: right;">
-                    <span onclick="deleteOrderFromPlanStatusModal()" title="Delete this order" style="cursor: pointer; color: var(--text-secondary); font-size: 11px; opacity: 0.5;" onmouseover="this.style.opacity=1; this.style.color='#ef4444'" onmouseout="this.style.opacity=0.5; this.style.color='var(--text-secondary)'">Delete order</span>
-                </div>
-            </div>
-        </div>
-
-
-
-
-        <!-- Paste Orders Modal -->
-        <div id="paste-modal" class="modal" onclick="document.getElementById('paste-modal').style.display='none'" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-            <div class="modal-content" onclick="event.stopPropagation()" style="background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 24px; width: 90%; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: modalFadeIn 0.2s ease-out;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: white;">Upload Orders from Excel</h3>
-                    <span onclick="document.getElementById('paste-modal').style.display='none'" style="cursor: pointer; color: var(--text-secondary); font-size: 20px; font-weight: 700; line-height: 1;">&times;</span>
-                </div>
-                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Select an Excel file or paste rows directly. Expected columns:<br><strong style="color:white">STO # | Customer Code | Customer Name | P.O No | P.O No Date | Other Ref | Delivery Addr | Remarks | Mat | Desc | UOM | Qty</strong><br><em>Line items will be grouped by STO #. Type is auto-determined.</em></p>
-                <input type="file" id="excel-file-upload" accept=".xlsx, .xls" style="margin-bottom: 12px; color: white; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); width: 100%; cursor: pointer;" onchange="handleExcelUpload(event)">
-                <select id="sheet-selector" style="display: none; width: 100%; margin-bottom: 12px; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
-                    <!-- Populated dynamically -->
-                </select>
-                <div style="text-align: center; color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">OR</div>
-                <textarea id="paste-area" placeholder="Paste data here..." style="width: 100%; height: 200px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 12px; font-family: monospace; font-size: 12px; outline: none; margin-bottom: 12px; resize: vertical;"></textarea>
-                <div id="upload-status-msg" style="margin-bottom: 16px; font-size: 14px; font-weight: 500;"></div>
-                <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                    <button onclick="document.getElementById('paste-modal').style.display='none'" style="padding: 8px 16px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer;">Cancel</button>
-                    <button onclick="processPastedOrders()" id="btn-process-paste" style="padding: 8px 16px; background: var(--onesource-red); border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;">Upload Orders</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bulk Action Bar (hidden by default) -->
-    <div id="bulk-action-bar" class="bulk-action-bar" style="display: none;">
-        <span class="bulk-count" id="bulk-count">0</span>
-        <span class="bulk-label">selected — Set Plan Status:</span>
-        <button class="bulk-status-btn" onclick="bulkApplyStatus('Today\'s Plan')">
-            <span class="bulk-dot" style="background: #48bb78;"></span> Today's Plan
-        </button>
-        <button class="bulk-status-btn" onclick="bulkApplyStatus('Pending Plan')">
-            <span class="bulk-dot" style="background: #ed8936;"></span> Pending Plan
-        </button>
-
-        <button class="bulk-status-btn" onclick="bulkApplyStatus('Tomorrow\'s Plan')">
-            <span class="bulk-dot" style="background: #10b981;"></span> Tomorrow's Plan
-        </button>
-
-        <button class="bulk-status-btn" onclick="bulkArchiveOrders()">
-            <span class="bulk-dot" style="background: #6b7280;"></span> Archive
-        </button>
-        <button class="bulk-cancel-btn" onclick="toggleBulkMode()">✕ Cancel</button>
-    </div>
-
-    <script>
         const API_BASE_URL = '/api';
         
         const ALL_PLAN_STATUSES = ["Today's Plan", "Tomorrow's Plan", "Upcoming Plan", "Unconfirmed Plan", "Pending Plan", "Archive Order"];
@@ -984,7 +108,7 @@
                 filterDispatchTable();
                 const truckData = dispatchPlanData.filter(item => {
                     if (item.archiveStatus === 'Archived') return false;
-                    const status = computePlanStatus(item.dispatchDate).toLowerCase().trim();
+                    const status = (item.status || '').toLowerCase().trim();
                     return status === "today's plan" || status === "pending plan";
                 });
                 renderTruckAssignment(truckData);
@@ -1094,8 +218,8 @@
             const sortedData = data
                 .map((item, idx) => ({ item, idx }))
                 .sort((a, b) => {
-                    const rankA = getStatusRank(computePlanStatus(a.item.dispatchDate));
-                    const rankB = getStatusRank(computePlanStatus(b.item.dispatchDate));
+                    const rankA = getStatusRank(a.item.status);
+                    const rankB = getStatusRank(b.item.status);
                     if (rankA !== rankB) {
                         return rankA - rankB;
                     }
@@ -1173,25 +297,21 @@
 
                 tr.innerHTML = `
                     ${checkboxTd}
-                    <td style="text-align:center;">${buildPlanStatusBadge(computePlanStatus(item.dispatchDate), item.id, effectiveOrderStatus)}</td>
-                    <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary); cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'order_received', 'date', event)" title="Click to edit Order Date">${formatOrderDate(item.orderReceived)}</td>
-                    <td style="width: 140px; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'fo', 'text', event)" title="Click to edit STO #">
-                        ${foDisplay}
-                    </td>
-                    <td style="font-weight: 600; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'account_name', 'text', event)" title="Click to edit Customer Name">${item.accountName || 'Unknown'}</td>
-                    <td style="text-align: center; font-weight: 500; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'type', 'select-type', event)" title="Click to edit Type">${item.type || '-'}</td>
-                    <td style="text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'qty', 'number', event)" title="Click to edit Order Qty">${itemQty.toLocaleString()}</td>
+                    <td style="text-align:center;">${buildPlanStatusBadge(item.status, item.id, effectiveOrderStatus)}</td>
+                    <td style="text-align: center; white-space: nowrap; font-size: 12px; color: var(--text-secondary); cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-date')" title="Click to edit Order Date">${formatOrderDate(item.orderReceived)}</td>
+                    <td style="width: 140px; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-sto')" title="Click to edit STO #">${foDisplay}</td>
+                    <td style="font-weight: 600; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-customer')" title="Click to edit Customer Name">${item.accountName || 'Unknown'}</td>
+                    <td style="text-align: center; font-weight: 500; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-type')" title="Click to edit Type">${item.type || '-'}</td>
+                    <td style="text-align: center; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-qty')" title="Click to edit Order Qty">${itemQty.toLocaleString()}</td>
+                    <td style="text-align: center;">${valueDisplay}</td>
                     <td style="text-align: center;">
                         ${buildOrderStatusCombo(item.id, effectiveOrderStatus)}
                     </td>
                     <td style="text-align: center;">
                         <span class="status-badge ${statusClass}" style="cursor: pointer;" onclick="navigateToOutbound('${(foList[0] || '').replace(/'/g, "\\'")}')"> ${statusLabel}</span>
                     </td>
-                    <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'dispatch_date', 'date', event)" title="Click to edit Loading Date">
-                        ${formatDeliveryDate(item.dispatchDate)}
-                    </td>
-                    <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'delivery_date', 'date', event)" title="Click to edit Delivery Date">
-                        ${formatDeliveryDate(item.deliveryDate)}
+                    <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="openEditOrderModal('${escapedId}', 'edit-order-delivery')" title="Click to edit Delivery Date">
+                        ${item.delivery_date || '-'}
                     </td>
                     <td style="text-align: center;">
                         ${item.truckStatus === 'Dispatched' ? '<span class="status-badge status-dispatched">Dispatched</span>' : item.truckStatus === 'On Site' ? '<span class="status-badge status-on-site">On Site</span>' : '<span style="color: rgba(255,255,255,0.2); font-size: 11px;">—</span>'}
@@ -1202,7 +322,6 @@
         }
 
         // Normalize an order date value to yyyy-mm-dd for comparison
-        const MONTH_ABBR = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
         function toISODate(value) {
             if (!value) return '';
             const datePart = String(value).trim().split(/[T ,]/)[0];
@@ -1210,37 +329,8 @@
             if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
             const m = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); // m/d/yyyy
             if (m) return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
-            const mn = datePart.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/); // d-Mon-yy or d-Mon-yyyy
-            if (mn) {
-                const mo = MONTH_ABBR[mn[2].toLowerCase()];
-                if (mo) {
-                    const yr = mn[3].length === 2 ? `20${mn[3]}` : mn[3];
-                    return `${yr}-${String(mo).padStart(2, '0')}-${mn[1].padStart(2, '0')}`;
-                }
-            }
             const d = new Date(datePart);
             return isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
-
-        // Plan status is derived from the loading date relative to today:
-        //   past (yesterday or before) -> Pending Plan
-        //   today                      -> Today's Plan
-        //   tomorrow                   -> Tomorrow's Plan
-        //   beyond tomorrow            -> Upcoming Plan
-        //   no loading date            -> Unconfirmed Plan
-        function computePlanStatus(loadingDate) {
-            const iso = toISODate(loadingDate);
-            if (!iso) return 'Unconfirmed Plan';
-            const [y, m, d] = iso.split('-').map(Number);
-            if (!y || !m || !d) return 'Unconfirmed Plan';
-            const target = new Date(y, m - 1, d);
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const diffDays = Math.round((target - today) / 86400000);
-            if (diffDays < 0) return 'Pending Plan';
-            if (diffDays === 0) return "Today's Plan";
-            if (diffDays === 1) return "Tomorrow's Plan";
-            return 'Upcoming Plan';
         }
 
         // Trace date column: prefer the real archived-at timestamp (date + time);
@@ -1370,25 +460,6 @@
             }
         }
 
-        async function archiveYesterdayCompleted() {
-            if (!confirm('Are you sure you want to auto archive orders completed from yesterday 3:00 PM and older?')) return;
-            try {
-                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch/archive-completed-yesterday`, {
-                    method: 'POST'
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    alert(`Successfully archived ${data.archived || 0} orders.`);
-                    loadData();
-                } else {
-                    alert('Failed to auto archive. Check authorization.');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Error auto archiving: ' + err.message);
-            }
-        }
-
         async function promptInvoicedValue(id, currentValue) {
             const val = prompt("Enter Invoiced Value (₱):", currentValue || "");
             if (val === null) return;
@@ -1417,7 +488,6 @@
             "today's plan":      { cls: 'status-todays-plan',    label: "Today's Plan"    },
             "pending plan":      { cls: 'status-pending-plan',   label: 'Pending Plan'    },
             "unconfirmed plan":  { cls: 'status-unconfirmed',    label: 'Unconfirmed Plan'},
-            "upcoming plan":     { cls: 'status-upcoming-plan',  label: 'Upcoming Plan'   },
             "archive order":     { cls: 'status-archive-order',  label: 'Archive Order'   },
             "tomorrow's plan":   { cls: 'status-tomorrows-plan', label: "Tomorrow's Plan" },
         };
@@ -1519,7 +589,15 @@
             if (String(value).trim().toLowerCase() === 'dispatched') {
                 const item = dispatchPlanData.find(d => d.id === id);
                 if (item) {
-                    // Check picking status
+                    // 1. Check invoiced value
+                    const hasValue = item.invoicedValue !== undefined && item.invoicedValue !== null && String(item.invoicedValue).trim() !== '';
+                    if (!hasValue) {
+                        alert('Cannot select "dispatched": Invoiced Value must be set first.');
+                        filterDispatchTable(); // Revert UI
+                        return;
+                    }
+
+                    // 2. Check picking status
                     let completedQty = 0;
                     const itemQty = parseInt(item.qty) || 0;
                     const itemFoStr = String(item.fo || '');
@@ -1639,13 +717,6 @@
             closePlanStatusModal();
         }
 
-        function deleteOrderFromPlanStatusModal() {
-            const orderId = activePlanOrderId;
-            if (!orderId) return;
-            closePlanStatusModal();
-            deleteOrderById(orderId);
-        }
-
         /* ── New Order Inline Functions ──────────────────────── */
         function toggleNewOrderInline() {
             const section = document.getElementById('new-order-inline-section');
@@ -1704,151 +775,94 @@
             }
         }
 
-        /* ── Inline Cell Editing ──────────────────────── */
-        let activeInlineEdit = null; // { cellEl, restoreHTML }
-        let inlineEditSuppressBlur = false;
+        /* ── Edit Order Modal Functions ──────────────────────── */
+        let activeEditingOrderId = null;
 
-        // Render any stored delivery-date format ("07/30/2026", "30-Jul-26",
-        // ISO, etc.) uniformly as "30-Jul-26"; blank/unparseable -> "-".
-        function formatDeliveryDate(value) {
-            const iso = toISODate(value);
-            return iso ? isoToDisplayDate(iso) : '-';
-        }
-
-        function isoToDisplayDate(iso) {
-            if (!iso) return '';
-            const [y, m, d] = String(iso).split('-').map(Number);
-            if (!y || !m || !d) return iso;
-            const dt = new Date(y, m - 1, d);
-            return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-');
-        }
-
-        function cancelInlineEdit() {
-            if (activeInlineEdit) {
-                activeInlineEdit.cellEl.innerHTML = activeInlineEdit.restoreHTML;
-                activeInlineEdit = null;
-            }
-        }
-
-        function startInlineEdit(cellEl, orderId, field, type, event) {
-            if (event) event.stopPropagation();
-            if (activeInlineEdit && activeInlineEdit.cellEl === cellEl) return;
-            cancelInlineEdit();
-
+        function openEditOrderModal(orderId, focusFieldId = null) {
             const item = (dispatchPlanData || []).find(o => String(o.id) === String(orderId));
             if (!item) return;
 
-            const fieldValues = {
-                order_received: item.orderReceived || '',
-                fo: item.fo || '',
-                account_name: item.accountName || '',
-                type: item.type || 'DD',
-                qty: item.qty || 0,
-                delivery_date: item.deliveryDate || '',
-                dispatch_date: item.dispatchDate || ''
-            };
-            const rawValue = fieldValues[field];
-            activeInlineEdit = { cellEl, restoreHTML: cellEl.innerHTML };
+            activeEditingOrderId = orderId;
+            document.getElementById('edit-order-id').value = orderId;
+            document.getElementById('edit-order-sto').value = item.fo || '';
+            document.getElementById('edit-order-status').value = item.status || "Pending Plan";
+            document.getElementById('edit-order-customer').value = item.accountName || '';
+            document.getElementById('edit-order-type').value = item.type || 'DD';
+            document.getElementById('edit-order-qty').value = item.qty || 0;
+            document.getElementById('edit-order-date').value = formatOrderDate(item.orderReceived);
+            document.getElementById('edit-order-delivery').value = item.delivery_date || '';
 
-            const inputStyle = 'width: 100%; padding: 4px 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; font-size: 12px;';
-            let inputHTML;
-            if (type === 'date') {
-                inputHTML = `<input type="date" class="inline-edit-input" value="${toISODate(rawValue)}" style="${inputStyle}">`;
-            } else if (type === 'select-type') {
-                inputHTML = `<select class="inline-edit-input" style="${inputStyle}">
-                    <option value="STN" ${rawValue === 'STN' ? 'selected' : ''}>STN</option>
-                    <option value="DD" ${rawValue === 'DD' ? 'selected' : ''}>DD</option>
-                </select>`;
-            } else if (type === 'number') {
-                inputHTML = `<input type="number" min="0" class="inline-edit-input" value="${rawValue}" style="${inputStyle} text-align: center;">`;
-            } else {
-                inputHTML = `<input type="text" class="inline-edit-input" value="${String(rawValue).replace(/"/g, '&quot;')}" style="${inputStyle}">`;
-            }
+            document.getElementById('edit-order-modal').style.display = 'flex';
 
-            cellEl.innerHTML = inputHTML;
-            const inputEl = cellEl.querySelector('.inline-edit-input');
-            inputEl.addEventListener('click', e => e.stopPropagation());
-            inputEl.addEventListener('keydown', e => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    inputEl.blur();
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    inlineEditSuppressBlur = true;
-                    cancelInlineEdit();
-                }
-            });
-            if (type === 'date' || type === 'select-type') {
-                inputEl.addEventListener('change', () => inputEl.blur());
-            }
-            inputEl.addEventListener('blur', () => {
-                if (inlineEditSuppressBlur) {
-                    inlineEditSuppressBlur = false;
-                    return;
-                }
-                commitInlineEdit(orderId, field, type, cellEl);
-            });
-
-            inputEl.focus();
-            if (inputEl.select) inputEl.select();
-            if (type === 'date' && inputEl.showPicker) {
-                try { inputEl.showPicker(); } catch (e) {}
+            if (focusFieldId) {
+                setTimeout(() => {
+                    const el = document.getElementById(focusFieldId);
+                    if (el) {
+                        el.focus();
+                        if (el.select) el.select();
+                    }
+                }, 100);
             }
         }
 
-        async function commitInlineEdit(orderId, field, type, cellEl) {
-            if (!activeInlineEdit || activeInlineEdit.cellEl !== cellEl) return;
-            const inputEl = cellEl.querySelector('.inline-edit-input');
-            if (!inputEl) return;
+        function closeEditOrderModal() {
+            document.getElementById('edit-order-modal').style.display = 'none';
+            activeEditingOrderId = null;
+        }
 
-            let value = inputEl.value;
-            if (type === 'date') {
-                value = value ? isoToDisplayDate(value) : '';
-            } else if (type === 'number') {
-                value = parseInt(value) || 0;
-            } else {
-                value = value.trim();
-            }
+        async function submitEditOrder(event) {
+            event.preventDefault();
+            const orderId = document.getElementById('edit-order-id').value;
+            if (!orderId) return;
 
-            if ((field === 'fo' || field === 'account_name') && !value) {
-                cancelInlineEdit();
-                return;
-            }
+            const btn = document.getElementById('btn-save-edit-order');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
 
-            const restoreHTML = activeInlineEdit.restoreHTML;
-            activeInlineEdit = null;
-            cellEl.style.opacity = '0.5';
+            const payload = {
+                fo: document.getElementById('edit-order-sto').value.trim(),
+                status: document.getElementById('edit-order-status').value,
+                account_name: document.getElementById('edit-order-customer').value.trim(),
+                type: document.getElementById('edit-order-type').value,
+                qty: parseInt(document.getElementById('edit-order-qty').value) || 0,
+                order_received: document.getElementById('edit-order-date').value.trim(),
+                delivery_date: document.getElementById('edit-order-delivery').value.trim()
+            };
 
             try {
                 const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch/${orderId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ [field]: value })
+                    body: JSON.stringify(payload)
                 });
                 if (res.ok) {
+                    closeEditOrderModal();
                     await loadData();
                 } else {
-                    const err = await res.json().catch(() => ({}));
+                    const err = await res.json();
                     alert(`❌ Error updating order: ${err.error || 'Failed'}`);
-                    cellEl.innerHTML = restoreHTML;
                 }
             } catch (err) {
                 alert('❌ Network error: ' + err.message);
-                cellEl.innerHTML = restoreHTML;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
             }
         }
 
-        async function deleteOrderById(orderId) {
-            const item = (dispatchPlanData || []).find(o => String(o.id) === String(orderId));
+        async function deleteSingleOrder() {
+            if (!activeEditingOrderId) return;
+            const item = (dispatchPlanData || []).find(o => String(o.id) === String(activeEditingOrderId));
             const stoName = item ? (item.fo || item.accountName) : 'this order';
-
+            
             if (!confirm(`⚠️ Are you sure you want to delete order "${stoName}"?\n\nThis cannot be undone.`)) return;
 
             try {
-                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch/${orderId}`, {
+                const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch/${activeEditingOrderId}`, {
                     method: 'DELETE'
                 });
                 if (res.ok) {
+                    closeEditOrderModal();
                     await loadData();
                 } else {
                     const err = await res.json();
@@ -2278,7 +1292,7 @@
             const searchTerm = document.getElementById('truck-search')?.value.toLowerCase() || '';
             const filteredData = dispatchPlanData.filter(item => {
                 if (item.archiveStatus === 'Archived') return false;
-                const status = computePlanStatus(item.dispatchDate).toLowerCase().trim();
+                const status = (item.status || '').toLowerCase().trim();
                 if (status !== "today's plan" && status !== "pending plan") return false;
 
                 const foStr = String(item.fo || '').toLowerCase();
@@ -2687,6 +1701,4 @@
                 btn.textContent = 'Upload Orders';
             }
         }
-    </script>
-</body>
-</html>
+    

@@ -1,0 +1,2426 @@
+
+        // API Configuration
+        const API_BASE_URL = '/api';
+
+        // Table Sorting & Filtering State
+        let tableSort = {
+            column: null,
+            direction: 'asc'
+        };
+        let tableFilters = {
+            fo: '',
+            accountName: '',
+            qty: '',
+            picked: '',
+            pending: '',
+            progress: '',
+            status: '',
+            staging: ''
+        };
+
+        // Report Table Sorting & Filtering State
+        let reportTableSort = {
+            column: null,
+            direction: 'asc'
+        };
+        let reportTableFilters = {
+            date: '',
+            fo: '',
+            accountName: '',
+            pickerCode: '',
+            qty: '',
+            duration: '',
+            status: ''
+        };
+
+        // State
+        function parseNum(val) {
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            return parseInt(String(val || '').replace(/[^0-9.-]/g, ''), 10) || 0;
+        }
+
+        function matchPickingOrder(order, item) {
+            if (!order || !item) return false;
+            const itemFoStr = String(item.fo || item.foNumber || '').trim();
+            const foList = itemFoStr.split(',').map(f => f.trim()).filter(Boolean);
+            const orderFo = String(order.foNumber || '').trim();
+            if (!orderFo) return false;
+            const foMatch = foList.includes(orderFo) || orderFo === itemFoStr;
+            if (!foMatch) return false;
+            const partyMatch = !order.partyCode || !item.partyCode || String(order.partyCode).trim() === String(item.partyCode).trim();
+            return partyMatch;
+        }
+
+        let foDatabase = [];
+        let pickersDatabase = [];
+        let stagingAreas = [];
+        let pickingOrders = [];
+        let serverDrafts = [];
+        let pickerCounter = 0;
+        let isConnected = false;
+
+        // Initialize app
+        async function initializeApp() {
+            console.log('🚀 Initializing App...');
+            try {
+                // Check connection status but don't block data loading on it
+                checkServerConnection();
+
+                // Always attempt to load data — let individual calls fail gracefully
+                await loadInitialData();
+                await loadPickingOrders();
+                
+                // Render the currently active tab
+                const currentTab = localStorage.getItem('outbound_tab') || 'orders-status';
+                renderActiveTab(currentTab);
+
+                // Set up intervals safely
+                setInterval(() => {
+                        if (document.hidden) return; checkServerConnection(); }, 30000);
+                setInterval(async () => {
+                        if (document.hidden) return;
+                    try {
+                        await loadPickingOrders();
+                        const currentTab = localStorage.getItem('outbound_tab') || 'orders-status';
+                        renderActiveTab(currentTab);
+                    } catch (e) { console.error('Refresh error:', e); }
+                }, 30000);
+            } catch (error) {
+                console.error('❌ Critical initialization error:', error);
+                updateConnectionStatus(false);
+                // Still retry after 5s even on failure
+                setTimeout(initializeApp, 5000);
+            }
+        }
+
+        // Check server connection
+        async function checkServerConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+
+                if (response.ok || (data && String(data.status).toLowerCase() === 'ok')) {
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                } else {
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                }
+            } catch (error) {
+                isConnected = false;
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Update connection status UI
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            const alert = document.getElementById('connection-alert');
+
+            if (connected) {
+                if (dot) dot.className = 'status-dot status-connected';
+                if (text) {
+                    const now = new Date();
+                    text.textContent = `Live Sync ${now.toLocaleTimeString()}`;
+                }
+                if (alert) alert.innerHTML = '';
+            } else {
+                if (dot) dot.className = 'status-dot status-disconnected';
+                if (text) text.textContent = 'Server Disconnected';
+                if (alert) {
+                    alert.innerHTML = `
+                        <div class="alert alert-danger">
+                            <span class="alert-icon">⚠️</span>
+                            <div>
+                                <strong>Connection Error:</strong> Cannot connect to server. Make sure the server is running at ${API_BASE_URL}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Setup Searchable Select Component
+        function setupSearchableSelect(config) {
+            const container = document.getElementById(config.containerId);
+            const searchInput = document.getElementById(config.inputId);
+            const optionsList = document.getElementById(config.optionsId);
+            const hiddenInput = document.getElementById(config.hiddenId);
+
+            let filteredOptions = config.options;
+
+            function renderOptions() {
+                optionsList.innerHTML = '';
+
+                if (filteredOptions.length === 0) {
+                    optionsList.innerHTML = '<div class="no-results">No matches found</div>';
+                    return;
+                }
+
+                let lastGroup = null;
+                filteredOptions.forEach(opt => {
+                    if (opt.group && opt.group !== lastGroup) {
+                        const groupLabel = document.createElement('div');
+                        groupLabel.className = 'option-group-label';
+                        groupLabel.textContent = opt.group;
+                        optionsList.appendChild(groupLabel);
+                        lastGroup = opt.group;
+                    }
+
+                    const item = document.createElement('div');
+                    item.className = 'option-item';
+                    item.textContent = opt.text;
+                    item.onclick = () => selectOption(opt);
+                    optionsList.appendChild(item);
+                });
+            }
+
+            function selectOption(opt) {
+                searchInput.value = opt.text;
+                hiddenInput.value = opt.value;
+                optionsList.classList.remove('active');
+                if (config.onSelect) config.onSelect(opt.value);
+            }
+
+            searchInput.onfocus = () => {
+                optionsList.classList.add('active');
+                renderOptions();
+            };
+
+            searchInput.oninput = (e) => {
+                const term = e.target.value.toLowerCase();
+                filteredOptions = config.options.filter(opt =>
+                    opt.text.toLowerCase().includes(term) ||
+                    (opt.group && opt.group.toLowerCase().includes(term))
+                );
+                renderOptions();
+            };
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) {
+                    optionsList.classList.remove('active');
+                }
+            });
+        }
+
+        let dayStartHour = 3;
+        const getLogicalDateStr = (dateInput) => {
+            const d = new Date(dateInput || new Date());
+            d.setHours(d.getHours() - dayStartHour);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        // Load initial data from Google Sheets
+        async function loadInitialData() {
+            try {
+                // Load config
+                const configRes = await fetch(`${API_BASE_URL}/config`);
+                const config = await configRes.json().catch(() => ({ dayStartHour: 3 }));
+                dayStartHour = config.dayStartHour !== undefined ? config.dayStartHour : 3;
+
+                // Load FO data
+                const foResponse = await fetch(`${API_BASE_URL}/dispatch-plan`);
+                const allFos = await foResponse.json().catch(() => []);
+                foDatabase = allFos.filter(item => item.archiveStatus !== 'Archived');
+
+                // Setup Searchable FO Select
+                const foOptions = foDatabase.map((fo, index) => ({
+                    value: index,
+                    text: `${fo.fo} - ${fo.accountName}`
+                }));
+                foOptions.push({ value: 'BTC', text: '--- Back to Location ---' });
+
+                setupSearchableSelect({
+                    containerId: 'fo-select-container',
+                    inputId: 'fo-search',
+                    optionsId: 'fo-options',
+                    hiddenId: 'fo-select',
+                    options: foOptions,
+                    onSelect: (val) => selectFO()
+                });
+
+                // Load pickers
+                const pickersResponse = await fetch(`${API_BASE_URL}/pickers`);
+                pickersDatabase = await pickersResponse.json();
+
+                // Load staging areas
+                const areasResponse = await fetch(`${API_BASE_URL}/staging-areas`);
+                const rawAreas = await areasResponse.json();
+                stagingAreas = Array.isArray(rawAreas) ? rawAreas.map(a => typeof a === 'string' ? a : (a.name || a.staging_area || a.id || '')).filter(Boolean) : [];
+
+                // Setup Searchable Staging Select
+                setupSearchableSelect({
+                    containerId: 'staging-select-container',
+                    inputId: 'staging-search',
+                    optionsId: 'staging-options',
+                    hiddenId: 'staging-area',
+                    options: stagingAreas.map(area => ({
+                        value: area,
+                        text: area
+                    }))
+                });
+
+                console.log('✅ Data loaded');
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+            }
+        }
+
+        // Load picking orders
+        async function loadPickingOrders() {
+            try {
+                await loadPickingDrafts();
+                const response = await fetch(`${API_BASE_URL}/picking-orders`);
+                pickingOrders = await response.json();
+
+                // Rebuild FO options to exclude fully completed orders
+                const activeFoOptions = [];
+                foDatabase.forEach((fo, index) => {
+                    let pickedQty = 0;
+                    pickingOrders.forEach(order => {
+                        if (matchPickingOrder(order, fo)) {
+                            // Deduct already drafted/started pickers for this FO
+                            pickedQty += parseNum(order.pickerQty);
+                        }
+                    });
+                    if (pickedQty < fo.qty) {
+                        activeFoOptions.push({
+                            value: index,
+                            text: `${fo.fo} - ${fo.accountName}`
+                        });
+                    }
+                });
+
+                activeFoOptions.push({ value: 'BTC', text: '--- Back to Location ---' });
+
+                setupSearchableSelect({
+                    containerId: 'fo-select-container',
+                    inputId: 'fo-search',
+                    optionsId: 'fo-options',
+                    hiddenId: 'fo-select',
+                    options: activeFoOptions,
+                    onSelect: (val) => selectFO()
+                });
+
+                // Refresh balance if FO is selected
+                const foSelect = document.getElementById('fo-select');
+                if (foSelect && foSelect.value !== '') {
+                    selectFO(true); // Pass true to indicate it's an auto-refresh
+                }
+                
+                // Ensure UI is updated
+                const currentTab = localStorage.getItem('outbound_tab') || 'orders-status';
+                renderActiveTab(currentTab);
+                updateConnectionStatus(true);
+            } catch (error) {
+                console.error('Error loading picking orders:', error);
+            }
+        }
+
+        async function loadPickingDrafts() {
+            try {
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/picking-drafts`);
+                if (response.ok) {
+                    serverDrafts = await response.json();
+                }
+            } catch (err) {
+                console.error('Failed to load picking drafts:', err);
+            }
+        }
+
+        function selectFO(isAutoRefresh = false) {
+            if (!isAutoRefresh) {
+                // Reset existing picker assignment blocks only on manual selection
+                document.getElementById('picker-assignments').innerHTML = '';
+                pickerCounter = 0;
+                
+                // Clear previous staging area inputs
+                const stagingAreaInput = document.getElementById('staging-area');
+                if (stagingAreaInput) stagingAreaInput.value = '';
+                const stagingTextInput = document.querySelector('#staging-select-container input[type="text"]');
+                if (stagingTextInput) stagingTextInput.value = '';
+            }
+
+            const select = document.getElementById('fo-select');
+            const index = select.value;
+
+            if (index === '') {
+                document.getElementById('account-name').value = '';
+                document.getElementById('party-code').value = '';
+                document.getElementById('total-qty').value = '';
+                if (document.getElementById('balance-qty')) {
+                    document.getElementById('balance-qty').value = '';
+                    document.getElementById('balance-qty').style.color = '';
+                }
+                return;
+            }
+
+            if (index === 'BTC') {
+                const today = new Date();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                const prefix = `BTC${mm}${dd}`;
+                
+                let series = 1;
+                pickingOrders.forEach(o => {
+                    if (o.foNumber && String(o.foNumber).startsWith(prefix)) {
+                        const num = parseInt(String(o.foNumber).substring(prefix.length));
+                        if (!isNaN(num) && num >= series) {
+                            series = num + 1;
+                        }
+                    }
+                });
+                
+                const generatedFo = `${prefix}${String(series).padStart(3, '0')}`;
+                select.dataset.generatedFo = generatedFo;
+
+                document.getElementById('account-name').value = 'Back To Location';
+                document.getElementById('party-code').value = 'BTC';
+                
+                const totalQtyInput = document.getElementById('total-qty');
+                totalQtyInput.value = '';
+                totalQtyInput.readOnly = false;
+                totalQtyInput.placeholder = 'Enter Quantity';
+                
+                const balanceInput = document.getElementById('balance-qty');
+                if (balanceInput) {
+                    balanceInput.value = '';
+                    balanceInput.style.color = '';
+                    balanceInput.style.fontWeight = '';
+                }
+                
+                const stagingAreaInput = document.getElementById('staging-area');
+                if (stagingAreaInput) stagingAreaInput.value = 'Back to Location';
+                const stagingTextInput = document.querySelector('#staging-select-container input[type="text"]');
+                if (stagingTextInput) stagingTextInput.value = 'Back to Location';
+                
+                const stagingHint = document.getElementById('staging-hint');
+                if (stagingHint) stagingHint.style.display = 'none';
+                toggleSearchableDisabled('staging-select-container', false);
+                
+                return;
+            } else {
+                const totalQtyInput = document.getElementById('total-qty');
+                if (totalQtyInput) {
+                    totalQtyInput.readOnly = true;
+                    totalQtyInput.placeholder = 'Auto-filled';
+                }
+            }
+
+            const fo = foDatabase[index];
+            document.getElementById('account-name').value = fo.accountName;
+            document.getElementById('party-code').value = fo.partyCode;
+            document.getElementById('total-qty').value = fo.qty;
+
+            // Calculate balance quantity
+            let pickedQty = 0;
+            pickingOrders.forEach(order => {
+                if (matchPickingOrder(order, fo)) {
+                    // deduct already drafted/started
+                    pickedQty += parseNum(order.pickerQty);
+                }
+            });
+
+            const balanceQty = Math.max(0, fo.qty - pickedQty);
+            const balanceInput = document.getElementById('balance-qty');
+            if (balanceInput) {
+                balanceInput.value = balanceQty;
+
+                if (balanceQty === 0) {
+                    balanceInput.style.color = '#48bb78'; // Green
+                    balanceInput.style.fontWeight = 'bold';
+                } else {
+                    balanceInput.style.color = '';
+                    balanceInput.style.fontWeight = '';
+                }
+            }
+
+            // Lock staging area if FO# + PartyCode + Qty exists in Picking Data
+            updateStagingStatus(fo.fo, fo.partyCode, fo.qty);
+
+            // Check for server-side drafts - ONLY on initial selection, not auto-refresh
+            if (!isAutoRefresh) {
+                const sDrafts = serverDrafts.filter(d => String(d.foNumber) === String(fo.fo) && String(d.partyCode) === String(fo.partyCode));
+                
+                if (sDrafts.length > 0) {
+                    // If staging area was saved, restore it
+                    const firstDraft = sDrafts[0];
+                    if (firstDraft.stagingArea) {
+                        document.getElementById('staging-area').value = firstDraft.stagingArea;
+                        const stagingSearch = document.getElementById('staging-search');
+                        if (stagingSearch) stagingSearch.value = firstDraft.stagingArea;
+                    }
+
+                    // Restore assignment cards
+                    sDrafts.forEach(draft => {
+                        addPickerAssignment();
+                        const currentCounter = pickerCounter;
+                        setTimeout(() => {
+                            const blEl = document.getElementById(`bl-number-${currentCounter}`);
+                            const qtyEl = document.getElementById(`picker-qty-${currentCounter}`);
+                            const pickerSelect = document.getElementById(`picker-select-${currentCounter}`);
+                            const pickerSearch = document.getElementById(`picker-search-${currentCounter}`);
+                            
+                            if (blEl) blEl.value = draft.blNumber;
+                            if (qtyEl) qtyEl.value = draft.pickerQty;
+                            
+                            const idEl = document.getElementById(`draft-id-${currentCounter}`);
+                            if (idEl) idEl.value = draft.id || '';
+
+                            if (draft.pickerCode !== 'PENDING') {
+                                if (pickerSelect) pickerSelect.value = draft.pickerCode;
+                                if (pickerSearch) {
+                                    const picker = pickersDatabase.find(p => p.code === draft.pickerCode);
+                                    pickerSearch.value = picker ? `${picker.code} - ${picker.name}` : draft.pickerCode;
+                                }
+                                updatePickerInfo(currentCounter, draft.pickerCode);
+                            }
+                        }, 50);
+                    });
+                } else {
+                    // Fallback to local storage drafts
+                    const drafts = getDrafts().filter(d => String(d.foNumber) === String(fo.fo) && String(d.partyCode) === String(fo.partyCode));
+                    if (drafts.length > 0) {
+                        // If staging area was saved, restore it
+                        const firstDraft = drafts[0];
+                        if (firstDraft.stagingArea) {
+                            document.getElementById('staging-area').value = firstDraft.stagingArea;
+                            const stagingSearch = document.getElementById('staging-search');
+                            if (stagingSearch) stagingSearch.value = firstDraft.stagingArea;
+                        }
+
+                        // Restore assignment cards
+                        drafts.forEach(draft => {
+                            addPickerAssignment();
+                            const currentCounter = pickerCounter;
+                            setTimeout(() => {
+                                const blEl = document.getElementById(`bl-number-${currentCounter}`);
+                                const qtyEl = document.getElementById(`picker-qty-${currentCounter}`);
+                                if (blEl) blEl.value = draft.blNumber;
+                                if (qtyEl) qtyEl.value = draft.qty;
+                            }, 50);
+                        });
+
+                        // Remove these drafts from storage since they are now loaded into the active form
+                        let allDrafts = getDrafts();
+                        allDrafts = allDrafts.filter(d => String(d.foNumber) !== String(fo.fo) || String(d.partyCode) !== String(fo.partyCode));
+                        saveDrafts(allDrafts);
+                    } else {
+                        // No drafts anywhere, just start fresh with one card
+                        addPickerAssignment();
+                    }
+                }
+            }
+        }
+
+        function updateStagingStatus(foNumber, partyCode) {
+            const stagingHint = document.getElementById('staging-hint');
+            if (!stagingHint) return;
+
+            // Look for ANY pick for THIS specific order (FO + PartyCode)
+            const activePick = pickingOrders.find(o => 
+                String(o.foNumber) === String(foNumber) && 
+                String(o.partyCode) === String(partyCode) && 
+                o.status === 'in-progress'
+            );
+            const completedPick = pickingOrders.find(o => 
+                String(o.foNumber) === String(foNumber) && 
+                String(o.partyCode) === String(partyCode) && 
+                o.status === 'completed'
+            );
+
+            const existingPick = activePick || completedPick;
+
+            if (existingPick) {
+                stagingHint.style.display = 'flex';
+                const lockType = activePick ? 'active' : 'previous';
+                stagingHint.querySelector('span').innerHTML = `Locked to match ${lockType} picking: <strong>${existingPick.stagingArea}</strong>`;
+
+                // Set staging area value directly (hidden input is outside the container)
+                const stagingAreaInput = document.getElementById('staging-area');
+                if (stagingAreaInput) stagingAreaInput.value = existingPick.stagingArea;
+                const stagingTextInput = document.querySelector('#staging-select-container input[type="text"]');
+                if (stagingTextInput) stagingTextInput.value = existingPick.stagingArea;
+
+                toggleSearchableDisabled('staging-select-container', true);
+            } else {
+                stagingHint.style.display = 'none';
+                toggleSearchableDisabled('staging-select-container', false);
+            }
+        }
+
+        // Helper to set value of custom searchable select
+        function setSearchableValue(containerId, value) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const hiddenInput = container.querySelector('input[type="hidden"]');
+            const textInput = container.querySelector('input[type="text"]');
+            if (hiddenInput) hiddenInput.value = value;
+            if (textInput) textInput.value = value;
+        }
+
+        // Helper to disable/enable custom searchable select
+        function toggleSearchableDisabled(containerId, disabled) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const textInput = container.querySelector('input[type="text"]');
+            if (textInput) {
+                textInput.disabled = disabled;
+                textInput.style.opacity = disabled ? '0.6' : '1';
+                textInput.style.cursor = disabled ? 'not-allowed' : 'text';
+            }
+            container.style.pointerEvents = disabled ? 'none' : 'auto';
+        }
+
+        // Custom Modal with Searchable Dropdown (Combo Box)
+        function showDropdownModal(title, message, options, currentValue, callback) {
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.background = 'rgba(0,0,0,0.85)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = '10000';
+            modal.style.backdropFilter = 'blur(8px)';
+
+            const content = document.createElement('div');
+            content.style.background = '#1a202c';
+            content.style.padding = '32px';
+            content.style.borderRadius = '16px';
+            content.style.width = '420px';
+            content.style.border = '1px solid rgba(255,255,255,0.1)';
+            content.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)';
+
+            const titleEl = document.createElement('h3');
+            titleEl.textContent = title;
+            titleEl.marginTop = '0';
+            titleEl.marginBottom = '8px';
+            titleEl.style.color = 'var(--text-primary)';
+            titleEl.style.fontSize = '20px';
+            titleEl.style.fontWeight = '700';
+
+            const msgEl = document.createElement('p');
+            msgEl.textContent = message;
+            msgEl.style.marginBottom = '24px';
+            msgEl.style.color = 'var(--text-secondary)';
+            msgEl.style.fontSize = '14px';
+
+            // Create Searchable Select Structure
+            const uniqueId = Math.random().toString(36).substr(2, 9);
+            const containerId = `modal-select-container-${uniqueId}`;
+            const inputId = `modal-select-input-${uniqueId}`;
+            const hiddenId = `modal-select-hidden-${uniqueId}`;
+            const optionsId = `modal-select-options-${uniqueId}`;
+
+            const selectContainer = document.createElement('div');
+            selectContainer.id = containerId;
+            selectContainer.className = 'searchable-select-container';
+            selectContainer.style.width = '100%';
+            selectContainer.style.marginBottom = '24px';
+
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.id = inputId;
+            searchInput.placeholder = 'Search or select...';
+            searchInput.style.width = '100%';
+
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.id = hiddenId;
+            hiddenInput.value = currentValue || '';
+
+            const optionsList = document.createElement('div');
+            optionsList.id = optionsId;
+            optionsList.className = 'options-list';
+            optionsList.style.width = '100%';
+
+            selectContainer.appendChild(searchInput);
+            selectContainer.appendChild(hiddenInput);
+            selectContainer.appendChild(optionsList);
+
+            // Find current text for placeholder or initial value
+            const currentOpt = options.find(opt => opt.value === currentValue);
+            if (currentOpt) {
+                searchInput.value = currentOpt.text;
+            }
+
+            const btnContainer = document.createElement('div');
+            btnContainer.style.display = 'flex';
+            btnContainer.style.justifyContent = 'flex-end';
+            btnContainer.style.gap = '12px';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.background = '#4a5568';
+            cancelBtn.style.color = 'white';
+            cancelBtn.style.padding = '10px 20px';
+            cancelBtn.onclick = () => {
+                document.body.removeChild(modal);
+            };
+
+            const okBtn = document.createElement('button');
+            okBtn.className = 'btn';
+            okBtn.textContent = 'Apply';
+            okBtn.style.background = 'var(--accent-primary)';
+            okBtn.style.color = 'white';
+            okBtn.style.padding = '10px 20px';
+            okBtn.onclick = () => {
+                callback(hiddenInput.value);
+                document.body.removeChild(modal);
+            };
+
+            btnContainer.appendChild(cancelBtn);
+            btnContainer.appendChild(okBtn);
+
+            content.appendChild(titleEl);
+            content.appendChild(msgEl);
+            content.appendChild(selectContainer);
+            content.appendChild(btnContainer);
+            modal.appendChild(content);
+
+            document.body.appendChild(modal);
+
+            // Initialize Searchable Select
+            setupSearchableSelect({
+                containerId: containerId,
+                inputId: inputId,
+                optionsId: optionsId,
+                hiddenId: hiddenId,
+                options: options
+            });
+        }
+
+        // Refresh all picker dropdowns to exclude busy pickers
+        function refreshAllPickerOptions() {
+            const busyPickers = new Set();
+            pickingOrders.forEach(order => {
+                if (order.status === 'in-progress') {
+                    busyPickers.add(order.pickerCode);
+                }
+            });
+
+            for (let i = 1; i <= pickerCounter; i++) {
+                const container = document.getElementById(`picker-select-container-${i}`);
+                if (!container) continue;
+
+                const searchInput = container.querySelector('input[type="text"]');
+                const hiddenInput = container.querySelector('input[type="hidden"]');
+                const currentValue = hiddenInput ? hiddenInput.value : '';
+
+                // Rebuild options for this dropdown
+                const sortedPickers = [...pickersDatabase].sort((a, b) => {
+                    const shiftOrder = (a.shift || '').localeCompare(b.shift || '');
+                    if (shiftOrder !== 0) return shiftOrder;
+                    return (a.designation || '').localeCompare(b.designation || '');
+                });
+
+                const pickerOptions = [];
+                sortedPickers.forEach(p => {
+                    if (busyPickers.has(p.code) && p.code !== currentValue) return;
+                    const group = `${p.shift} - ${p.designation}s`;
+                    pickerOptions.push({
+                        value: p.code,
+                        text: `${p.code} - ${p.name}`,
+                        group: group
+                    });
+                });
+
+                // Re-setup the searchable select with filtered options
+                const optionsList = document.getElementById(`picker-options-${i}`);
+                if (optionsList) {
+                    optionsList.innerHTML = '';
+                    let lastGroup = null;
+                    pickerOptions.forEach(opt => {
+                        if (opt.group && opt.group !== lastGroup) {
+                            const groupLabel = document.createElement('div');
+                            groupLabel.className = 'option-group-label';
+                            groupLabel.textContent = opt.group;
+                            optionsList.appendChild(groupLabel);
+                            lastGroup = opt.group;
+                        }
+                        const item = document.createElement('div');
+                        item.className = 'option-item';
+                        item.textContent = opt.text;
+                        item.onclick = () => {
+                            searchInput.value = opt.text;
+                            hiddenInput.value = opt.value;
+                            optionsList.classList.remove('active');
+                            updatePickerInfo(i, opt.value);
+                        };
+                        optionsList.appendChild(item);
+                    });
+                }
+            }
+        }
+
+        // Add picker assignment
+        function addPickerAssignment() {
+            pickerCounter++;
+            const container = document.getElementById('picker-assignments');
+
+            let defaultQtyStr = '';
+            const foSelect = document.getElementById('fo-select');
+            if (foSelect && foSelect.value !== '') {
+                let totalOrderQty = 0;
+                let pickedQty = 0;
+                
+                if (foSelect.value === 'BTC') {
+                    totalOrderQty = parseNum(document.getElementById('total-qty').value);
+                    pickingOrders.forEach(order => {
+                        if (matchPickingOrder(order, { fo: foSelect.dataset.generatedFo, partyCode: 'BTC' })) {
+                            pickedQty += parseNum(order.pickerQty);
+                        }
+                    });
+                } else {
+                    const selectedFo = foDatabase[foSelect.value];
+                    if (selectedFo) {
+                        totalOrderQty = parseNum(selectedFo.qty);
+                        pickingOrders.forEach(order => {
+                            if (matchPickingOrder(order, selectedFo)) {
+                                pickedQty += parseNum(order.pickerQty);
+                            }
+                        });
+                    }
+                }
+                
+                const balance = Math.max(0, totalOrderQty - pickedQty);
+                if (balance > 0) {
+                    defaultQtyStr = `value="${balance}"`;
+                }
+            }
+
+            const assignmentDiv = document.createElement('div');
+            assignmentDiv.className = 'picker-card';
+            assignmentDiv.id = `picker-${pickerCounter}`;
+
+            assignmentDiv.innerHTML = `
+                <div class="picker-card-header">
+                    <div class="picker-number">
+                        👤 Picker Assignment #${pickerCounter}
+                    </div>
+                    <button class="btn btn-danger" style="padding: 6px 12px; font-size: 11px;" onclick="removePickerAssignment(${pickerCounter})">✕ Remove</button>
+                </div>
+                <input type="hidden" id="draft-id-${pickerCounter}" value="">
+                <div class="form-grid" style="margin-bottom: 12px; gap: 12px;">
+                    <div class="form-group" style="flex: 2;">
+                        <label class="required" style="font-size: 11px;">Picker/Operator</label>
+                        <div id="picker-select-container-${pickerCounter}" class="searchable-select-container">
+                            <div class="search-input-wrapper">
+                                <input type="text" id="picker-search-${pickerCounter}" placeholder="🔍 Search Picker..." autocomplete="off" style="padding: 8px 12px; font-size: 14px;">
+                                <i style="font-size: 8px;">▼</i>
+                            </div>
+                            <div id="picker-options-${pickerCounter}" class="options-list"></div>
+                        </div>
+                        <input type="hidden" id="picker-select-${pickerCounter}">
+                        <div id="picker-info-${pickerCounter}" style="margin-top: 4px; font-size: 11px;"></div>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="required" style="font-size: 11px;">Quantity</label>
+                        <input type="number" id="picker-qty-${pickerCounter}" ${defaultQtyStr} placeholder="Qty" min="1" style="padding: 8px 12px; font-size: 14px;">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="required" style="font-size: 11px;">BL# (Batch Load)</label>
+                        <input type="text" id="bl-number-${pickerCounter}" placeholder="Required" required style="padding: 8px 12px; font-size: 14px;">
+                    </div>
+                </div>
+                <div style="margin-top: 8px; display: flex; justify-content: flex-end; gap: 8px;">
+                    <button class="btn" style="width: 150px; padding: 8px; font-size: 12px; background: var(--accent-orange); color: white; border: none; font-weight: 600;" onclick="preSaveDraft(this)">💾 Draft</button>
+                    <button class="btn btn-success" style="width: 150px; padding: 8px; font-size: 12px;" onclick="startPicking(${pickerCounter}, this)">▶ Start Picking</button>
+                </div>
+            `;
+
+            container.appendChild(assignmentDiv);
+
+            // Setup Searchable Picker Select
+            const pickerOptions = [];
+
+            // Get picker codes that already have in-progress pickings
+            const busyPickers = new Set();
+            pickingOrders.forEach(order => {
+                if (order.status === 'in-progress') {
+                    busyPickers.add(order.pickerCode);
+                }
+            });
+
+            // SORT BY SHIFT AND DESIGNATION TO FIX HEADERS
+            const sortedPickers = [...pickersDatabase].sort((a, b) => {
+                const shiftOrder = (a.shift || '').localeCompare(b.shift || '');
+                if (shiftOrder !== 0) return shiftOrder;
+                return (a.designation || '').localeCompare(b.designation || '');
+            });
+
+            sortedPickers.forEach(p => {
+                // Skip pickers who already have an in-progress picking
+                if (busyPickers.has(p.code)) return;
+                const group = `${p.shift} - ${p.designation}s`;
+                pickerOptions.push({
+                    value: p.code,
+                    text: `${p.code} - ${p.name}`,
+                    group: group,
+                    ...p
+                });
+            });
+
+            // Add "CANCELLED" option if FO# is >= 95% complete
+            const selectedFoIndex = document.getElementById('fo-select').value;
+            if (selectedFoIndex !== '') {
+                const selectedFo = foDatabase[selectedFoIndex];
+                let pickedQty = 0;
+                pickingOrders.forEach(order => {
+                    if (matchPickingOrder(order, selectedFo)) {
+                        pickedQty += parseNum(order.pickerQty);
+                    }
+                });
+                const userRole = window._authUser ? window._authUser.role : '';
+                const isSuperOrAdmin = userRole === 'supervisor' || userRole === 'admin';
+                
+                // ONLY supervisors and admins can perform cancellations.
+                // However, they CANNOT cancel the entire order quantity (pickedQty must be > 0).
+                const canCancel = isSuperOrAdmin && pickedQty > 0;
+                
+                if (canCancel && pickedQty < selectedFo.qty) {
+                    pickerOptions.push({
+                        value: 'CANCELLED',
+                        text: '⚠️ CANCELLED - Close remaining order',
+                        group: 'Order Closure',
+                        designation: 'N/A',
+                        shift: 'N/A'
+                    });
+                }
+            }
+
+            setupSearchableSelect({
+                containerId: `picker-select-container-${pickerCounter}`,
+                inputId: `picker-search-${pickerCounter}`,
+                optionsId: `picker-options-${pickerCounter}`,
+                hiddenId: `picker-select-${pickerCounter}`,
+                options: pickerOptions,
+                onSelect: (val) => updatePickerInfo(pickerCounter, val)
+            });
+        }
+
+        function updatePickerInfo(pickerId, pickerCode) {
+            const infoDiv = document.getElementById(`picker-info-${pickerId}`);
+            const qtyInput = document.getElementById(`picker-qty-${pickerId}`);
+
+            if (pickerCode === 'CANCELLED') {
+                infoDiv.innerHTML = `<span class="badge" style="background:#e53e3e; color:white;">CLOSURE</span>`;
+                // Autofill remaining quantity and disable input
+                const selectedFoIndex = document.getElementById('fo-select').value;
+                if (selectedFoIndex !== '') {
+                    const selectedFo = foDatabase[selectedFoIndex];
+                    let pickedQty = 0;
+                    pickingOrders.forEach(order => {
+                        if (matchPickingOrder(order, selectedFo)) {
+                            pickedQty += parseNum(order.pickerQty);
+                        }
+                    });
+                    const remaining = Math.max(0, selectedFo.qty - pickedQty);
+                    if (qtyInput) {
+                        qtyInput.value = remaining;
+                        qtyInput.readOnly = true;
+                    }
+                }
+                return;
+            } else {
+                if (qtyInput) {
+                    qtyInput.readOnly = false;
+                }
+            }
+
+            const picker = pickersDatabase.find(p => p.code === pickerCode);
+            if (picker) {
+                const shiftClass = picker.shift === '1st Shift' ? 'badge-shift-1' : 'badge-shift-2';
+                const designationClass = picker.designation === 'Picker' ? 'badge-picker' : 'badge-operator';
+
+                infoDiv.innerHTML = `
+                    <span class="badge ${designationClass}">${picker.designation}</span>
+                    <span class="badge ${shiftClass}">${picker.shift}</span>
+                `;
+            } else {
+                infoDiv.innerHTML = '';
+            }
+        }
+
+        function removePickerAssignment(id) {
+            const element = document.getElementById(`picker-${id}`);
+            if (element) {
+                element.remove();
+            }
+        }
+
+        function getDrafts() {
+            try { return JSON.parse(localStorage.getItem('ONESOURCE_PICKING_DRAFTS')) || []; } catch(e) { return []; }
+        }
+
+        function saveDrafts(drafts) {
+            try { localStorage.setItem('ONESOURCE_PICKING_DRAFTS', JSON.stringify(drafts)); } catch(e) { console.error(e); }
+        }
+
+        async function preSaveDraft(btn) {
+            const foSelect = document.getElementById('fo-select');
+            const foIndex = foSelect.value;
+            if (!foIndex) {
+                alert('⚠️ Please select an FO# before pre-saving');
+                return;
+            }
+
+            const card = btn.closest('.picker-card');
+            if (!card) return;
+            const idNum = card.id.replace('picker-', '');
+
+            let foNumber, accountName, partyCode, totalOrderQty;
+
+            if (foIndex === 'BTC') {
+                foNumber = foSelect.dataset.generatedFo;
+                accountName = 'Back To Location';
+                partyCode = 'BTC';
+                totalOrderQty = parseNum(document.getElementById('total-qty').value);
+            } else {
+                const fo = foDatabase[foIndex];
+                foNumber = fo.fo;
+                accountName = fo.accountName;
+                partyCode = fo.partyCode;
+                totalOrderQty = fo.qty;
+            }
+
+            const stagingArea = document.getElementById('staging-area').value;
+            const blEl = document.getElementById(`bl-number-${idNum}`);
+            const qtyEl = document.getElementById(`picker-qty-${idNum}`);
+            const pickerSelect = document.getElementById(`picker-select-${idNum}`);
+            const draftIdEl = document.getElementById(`draft-id-${idNum}`);
+
+            const pQty = parseInt(qtyEl.value);
+            if (!blEl || !blEl.value || isNaN(pQty) || pQty <= 0) {
+                alert('⚠️ Please enter a valid Quantity (>0) and BL# to pre-save');
+                return;
+            }
+
+            if (foIndex !== 'BTC') {
+                // Check Balance for Draft
+                let currentlyPicked = 0;
+                pickingOrders.forEach(order => {
+                    if (matchPickingOrder(order, { fo: foNumber, partyCode: partyCode })) {
+                        // deduct already drafted/started
+                        currentlyPicked += parseNum(order.pickerQty);
+                    }
+                });
+                const draftBalance = Math.max(0, totalOrderQty - currentlyPicked);
+                if (pQty > draftBalance) {
+                    alert(`⚠️ Draft quantity (${pQty}) exceeds available balance (${draftBalance}) for FO# ${foNumber}`);
+                    return;
+                }
+            }
+
+            const pCode = (pickerSelect && pickerSelect.value) ? pickerSelect.value : 'PENDING';
+
+            const assignment = {
+                id: draftIdEl ? draftIdEl.value : '',
+                accountName: accountName,
+                partyCode: partyCode,
+                totalOrderQty: totalOrderQty,
+                blNumber: blEl.value,
+                pickerCode: pCode,
+                pickerQty: pQty,
+                stagingArea: stagingArea
+            };
+
+            // Sync to server
+            try {
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/picking-drafts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ foNumber: foNumber, assignments: [assignment] })
+                });
+                
+                if (response.ok) {
+                    await loadPickingDrafts();
+                }
+            } catch (err) {
+                console.error('Failed to sync draft:', err);
+            }
+            
+            // Visual feedback
+            const originalText = btn.innerHTML;
+            const originalBg = btn.style.background;
+            btn.style.background = '#4299e1'; // Blue
+            btn.innerHTML = '✅ Saved';
+            
+            setTimeout(() => {
+                btn.style.background = originalBg;
+                btn.innerHTML = originalText;
+            }, 3000);
+        }
+
+        function clearForm() {
+            document.getElementById('fo-select').value = '';
+            document.getElementById('fo-search').value = '';
+            document.getElementById('account-name').value = '';
+            document.getElementById('party-code').value = '';
+            const totalQtyInput = document.getElementById('total-qty');
+            if (totalQtyInput) {
+                totalQtyInput.value = '';
+                totalQtyInput.readOnly = true;
+                totalQtyInput.placeholder = 'Auto-filled';
+            }
+            if (document.getElementById('balance-qty')) {
+                document.getElementById('balance-qty').value = '';
+                document.getElementById('balance-qty').style.color = '';
+            }
+            document.getElementById('staging-area').value = '';
+            const stagingSearch = document.getElementById('staging-search');
+            if (stagingSearch) stagingSearch.value = '';
+            // Unlock staging area
+            toggleSearchableDisabled('staging-select-container', false);
+            const stagingHint = document.getElementById('staging-hint');
+            if (stagingHint) stagingHint.style.display = 'none';
+            document.getElementById('picker-assignments').innerHTML = '';
+            pickerCounter = 0;
+            // Refresh picker options in case a picker was freed
+            refreshAllPickerOptions();
+        }
+
+        async function startPicking(pickerId, btnElement) {
+            if (!isConnected) {
+                if (!confirm('⚠️ Server connection is uncertain. Try anyway?')) return;
+            }
+
+            const foSelect = document.getElementById('fo-select');
+            const foIndex = foSelect.value;
+
+            if (!foIndex) {
+                alert('⚠️ Please select an FO#');
+                return;
+            }
+
+            let foNumber, accountName, partyCode, totalOrderQty, orderId;
+
+            if (foIndex === 'BTC') {
+                foNumber = foSelect.dataset.generatedFo;
+                accountName = 'Back To Location';
+                partyCode = 'BTC';
+                totalOrderQty = parseNum(document.getElementById('total-qty').value);
+                orderId = '';
+            } else {
+                const fo = foDatabase[foIndex];
+                foNumber = fo.fo;
+                accountName = fo.accountName;
+                partyCode = fo.partyCode;
+                totalOrderQty = fo.qty;
+                orderId = fo.id || '';
+            }
+
+            const blNumber = document.getElementById(`bl-number-${pickerId}`).value;
+            const stagingArea = document.getElementById('staging-area').value;
+            const pickerCode = document.getElementById(`picker-select-${pickerId}`).value;
+            const pickerQty = document.getElementById(`picker-qty-${pickerId}`).value;
+
+            if (!foNumber || !accountName || !stagingArea || !pickerCode || !pickerQty || !blNumber) {
+                alert('⚠️ Please fill in all required fields (including BL#)');
+                return;
+            }
+
+            if (pickerCode === 'CANCELLED') {
+                const userRole = window._authUser ? window._authUser.role : '';
+                const isSuperOrAdmin = userRole === 'supervisor' || userRole === 'admin';
+                
+                if (!isSuperOrAdmin) {
+                    alert('⚠️ Only supervisors and admins are allowed to perform cancellations.');
+                    return;
+                }
+                
+                let pickedQty = 0;
+                pickingOrders.forEach(order => {
+                    if (matchPickingOrder(order, { fo: foNumber, partyCode: partyCode })) {
+                        pickedQty += parseNum(order.pickerQty);
+                    }
+                });
+                
+                if (pickedQty === 0) {
+                    alert('⚠️ Cancelling the entire order quantity is not allowed. At least some quantity must be picked first.');
+                    return;
+                }
+            }
+
+            if (foIndex !== 'BTC') {
+                // Validate pickerQty does not exceed remaining balance
+                let pickedQty = 0;
+                pickingOrders.forEach(order => {
+                    if (matchPickingOrder(order, { fo: foNumber, partyCode: partyCode })) {
+                        pickedQty += parseNum(order.pickerQty);
+                    }
+                });
+                const balanceQty = Math.max(0, totalOrderQty - pickedQty);
+                if (parseInt(pickerQty) <= 0) {
+                    alert('⚠️ Quantity must be greater than zero');
+                    return;
+                }
+
+                if (parseInt(pickerQty) > balanceQty) {
+                    alert(`⚠️ Picker quantity (${pickerQty}) exceeds remaining balance (${balanceQty}) for FO# ${foNumber}`);
+                    return;
+                }
+            } else {
+                if (parseInt(pickerQty) <= 0) {
+                    alert('⚠️ Quantity must be greater than zero');
+                    return;
+                }
+            }
+
+            const formatLocalDateTime = (date) => {
+                return date.toLocaleString('en-US', {
+                    month: 'numeric',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                }).replace(', ', ' ');
+            };
+
+            const now = new Date();
+            const nowIso = now.toISOString();
+            const nowFormatted = formatLocalDateTime(now);
+
+            const pickingOrder = {
+                foNumber,
+                accountName,
+                partyCode: partyCode,
+                totalOrderQty: totalOrderQty,
+                blNumber,
+                pickerCode,
+                pickerQty: parseInt(pickerQty),
+                stagingArea,
+                startTime: nowIso,
+                startTimeFormatted: nowFormatted,
+                endTime: pickerCode === 'CANCELLED' ? nowIso : null,
+                endTimeFormatted: pickerCode === 'CANCELLED' ? nowFormatted : null,
+                status: pickerCode === 'CANCELLED' ? 'completed' : 'in-progress',
+                orderId: orderId,
+            };
+
+            if (btnElement) {
+                if (btnElement.disabled) return;
+                btnElement.disabled = true;
+                btnElement.dataset.originalText = btnElement.innerHTML;
+                btnElement.innerHTML = '⏳ Starting...';
+            }
+
+            try {
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/picking-orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pickingOrder)
+                });
+
+                if (response.ok) {
+                    alert(`✅ Picking started successfully!\n\nPicker: ${pickerCode}\nFO#: ${foNumber}\nQuantity: ${pickerQty}`);
+
+                    // Remove from server drafts using the ID
+                    const draftIdEl = document.getElementById(`draft-id-${pickerId}`);
+                    const draftId = draftIdEl ? draftIdEl.value : null;
+
+                    if (draftId) {
+                        AuthGuard.authFetch(`${API_BASE_URL}/picking-drafts/${draftId}`, {
+                            method: 'DELETE'
+                        }).then(res => {
+                            if (res.ok) loadPickingDrafts();
+                        }).catch(err => console.warn('Draft cleanup failed:', err));
+                    }
+
+                    document.getElementById(`picker-${pickerId}`).remove();
+                    await loadPickingOrders();
+
+                    // Refresh remaining picker dropdowns to exclude busy pickers
+                    refreshAllPickerOptions();
+                } else {
+                    alert('❌ Failed to save picking order');
+                    if (btnElement) {
+                        btnElement.disabled = false;
+                        btnElement.innerHTML = btnElement.dataset.originalText || '▶ Start Picking';
+                    }
+                }
+            } catch (error) {
+                console.error('Error starting picking:', error);
+                alert('❌ Error: ' + error.message);
+                if (btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = btnElement.dataset.originalText || '▶ Start Picking';
+                }
+            }
+        }
+
+        async function endPicking(orderId, btnElement) {
+            if (!isConnected) {
+                if (!confirm('⚠️ Server connection is uncertain. Try to finish anyway?')) return;
+            } else if (!confirm('Are you sure you want to complete this picking order?')) {
+                return;
+            }
+
+            const formatLocalDateTime = (date) => {
+                return date.toLocaleString('en-US', {
+                    month: 'numeric',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                }).replace(', ', ' ');
+            };
+
+            if (btnElement) {
+                if (btnElement.disabled) return;
+                btnElement.disabled = true;
+                btnElement.dataset.originalText = btnElement.innerHTML;
+                btnElement.innerHTML = '⏳ Completing...';
+            }
+
+            try {
+                const order = pickingOrders.find(o => String(o.id) === String(orderId));
+                const duration = order ? getActiveMinutes(order.startTime) : 0;
+
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/picking-orders/${orderId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        endTime: new Date().toISOString(),
+                        endTimeFormatted: formatLocalDateTime(new Date()),
+                        duration: duration,
+                        status: 'completed'
+                    })
+                });
+
+                if (response.ok) {
+                    if (order) order.status = 'completed';
+
+                    if (order) {
+                        alert(`✅ Picking completed!\n\nPicker: ${order.pickerCode}\nDuration: ${duration} minutes`);
+                    } else {
+                        alert('✅ Picking completed!');
+                    }
+
+                    await loadPickingOrders();
+                    renderInProgress();
+                    refreshAllPickerOptions();
+                } else {
+                    alert('❌ Failed to update picking order');
+                    if (btnElement) {
+                        btnElement.disabled = false;
+                        btnElement.innerHTML = btnElement.dataset.originalText || '✓ Finish Pick';
+                    }
+                }
+            } catch (error) {
+                console.error('Error ending picking:', error);
+                alert('❌ Error: ' + error.message);
+                if (btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = btnElement.dataset.originalText || '✓ Finish Pick';
+                }
+            }
+        }
+
+        function renderActiveTab(tabId) {
+            if (tabId === 'orders-status') renderOrdersStatus();
+            if (tabId === 'in-progress') renderInProgress();
+            if (tabId === 'completed') renderCompleted();
+        }
+
+        function switchTab(tabId) {
+            localStorage.setItem('outbound_tab', tabId);
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) targetTab.classList.add('active');
+
+            // Highlight the correct button
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(btn => {
+                const onclick = btn.getAttribute('onclick');
+                if (onclick && onclick.includes(`'${tabId}'`)) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Render specific content based on tab
+            renderActiveTab(tabId);
+        }
+
+        function handleHeaderClick(column) {
+            if (tableSort.column === column) {
+                if (tableSort.direction === 'asc') {
+                    tableSort.direction = 'desc';
+                } else {
+                    tableSort.column = null; // Clear sort
+                    tableSort.direction = 'asc';
+                }
+            } else {
+                tableSort.column = column;
+                tableSort.direction = 'asc';
+            }
+            updateSortIcons();
+            renderOrdersStatus();
+        }
+
+        function updateSortIcons() {
+            const columns = ['fo', 'accountName', 'qty', 'picked', 'pending', 'progress', 'status', 'staging'];
+            columns.forEach(col => {
+                const iconSpan = document.getElementById(`sort-icon-${col}`);
+                if (!iconSpan) return;
+                if (tableSort.column === col) {
+                    iconSpan.innerHTML = tableSort.direction === 'asc' ? ' ▲' : ' ▼';
+                    iconSpan.style.opacity = '1';
+                } else {
+                    iconSpan.innerHTML = ' ↕';
+                    iconSpan.style.opacity = '0.4';
+                }
+            });
+        }
+
+        function setFilter(column, value) {
+            tableFilters[column] = value;
+            renderOrdersStatus();
+        }
+
+        function renderOrdersStatus() {
+            const tbody = document.getElementById('status-table-body');
+            if (!tbody) return;
+
+            const searchTerm = document.getElementById('status-search')?.value.toLowerCase() || '';
+
+            tbody.innerHTML = '';
+
+            if (foDatabase.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">No dispatch data found</td></tr>';
+                return;
+            }
+
+            // Build the enriched list
+            const enrichedFOs = foDatabase.map((item, idx) => {
+                let completedQty = 0;
+                let ongoingQty = 0;
+                let ongoingPickers = 0;
+
+                const itemFoStr = String(item.fo || '');
+                const itemQty = parseNum(item.qty);
+
+                let stagingArea = '-';
+
+                pickingOrders.forEach(order => {
+                    if (matchPickingOrder(order, item)) {
+                        
+                        // Get staging area (all pickers for same FO/PartyCode use same staging area)
+                        if (order.stagingArea) stagingArea = order.stagingArea;
+
+                        if (order.status === 'completed') {
+                            completedQty += parseNum(order.pickerQty);
+                        } else if (order.status === 'in-progress') {
+                            ongoingQty += parseNum(order.pickerQty);
+                            ongoingPickers++;
+                        }
+                    }
+                });
+
+                const pendingQty = Math.max(0, itemQty - completedQty);
+
+                // DO NOT ROUND UP - Use Floor to ensure 100% only means 100%
+                const completedProgress = itemQty > 0 ? (completedQty >= itemQty ? 100 : Math.floor((completedQty / itemQty) * 100)) : 0;
+                const ongoingProgress = itemQty > 0 ? (completedQty + ongoingQty >= itemQty ? (100 - completedProgress) : Math.floor((ongoingQty / itemQty) * 100)) : 0;
+                const totalProgress = completedQty + ongoingQty >= itemQty ? 100 : Math.floor(((completedQty + ongoingQty) / itemQty) * 100);
+
+                let statusLabel = 'Pending';
+                let statusClass = 'status-pending';
+
+                if (completedQty >= itemQty && itemQty > 0) {
+                    statusLabel = 'Completed';
+                    statusClass = 'status-completed';
+                } else if (ongoingPickers > 0 || completedQty > 0) {
+                    statusLabel = 'On-going';
+                    statusClass = 'status-ongoing';
+                }
+
+                return {
+                    ...item,
+                    originalIndex: idx, // Important for indexing
+                    completedQty,
+                    ongoingQty,
+                    ongoingPickers,
+                    pendingQty,
+                    completedProgress,
+                    ongoingProgress,
+                    totalProgress,
+                    statusLabel,
+                    statusClass,
+                    stagingArea
+                };
+            });
+
+            // Filter FOs
+            let filteredFOs = enrichedFOs.filter(item => {
+                const searchStr = searchTerm.toLowerCase();
+                const foStr = String(item.fo || '').toLowerCase();
+                const accStr = String(item.accountName || '').toLowerCase();
+                
+                // General search match
+                const matchesGeneral = foStr.includes(searchStr) || accStr.includes(searchStr);
+                if (!matchesGeneral) return false;
+
+                // Column-specific Filters
+                if (tableFilters.fo && !foStr.includes(tableFilters.fo.toLowerCase())) return false;
+                if (tableFilters.accountName && !accStr.includes(tableFilters.accountName.toLowerCase())) return false;
+                if (tableFilters.qty && !String(item.qty || '').includes(tableFilters.qty)) return false;
+                if (tableFilters.picked && !String(item.completedQty || '').includes(tableFilters.picked)) return false;
+                if (tableFilters.pending && !String(item.pendingQty || '').includes(tableFilters.pending)) return false;
+                if (tableFilters.progress && !String(item.completedProgress || '').includes(tableFilters.progress)) return false;
+                if (tableFilters.status && item.statusLabel.toLowerCase() !== tableFilters.status.toLowerCase()) return false;
+                if (tableFilters.staging && !String(item.stagingArea || '').toLowerCase().includes(tableFilters.staging.toLowerCase())) return false;
+
+                return true;
+            });
+
+            // Sort FOs
+            if (tableSort.column) {
+                filteredFOs.sort((a, b) => {
+                    let valA, valB;
+                    switch (tableSort.column) {
+                        case 'fo':
+                            valA = String(a.fo || '');
+                            valB = String(b.fo || '');
+                            return tableSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        case 'accountName':
+                            valA = String(a.accountName || '');
+                            valB = String(b.accountName || '');
+                            return tableSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        case 'qty':
+                            valA = parseInt(a.qty) || 0;
+                            valB = parseInt(b.qty) || 0;
+                            return tableSort.direction === 'asc' ? valA - valB : valB - valA;
+                        case 'picked':
+                            valA = parseInt(a.completedQty) || 0;
+                            valB = parseInt(b.completedQty) || 0;
+                            return tableSort.direction === 'asc' ? valA - valB : valB - valA;
+                        case 'pending':
+                            valA = parseInt(a.pendingQty) || 0;
+                            valB = parseInt(b.pendingQty) || 0;
+                            return tableSort.direction === 'asc' ? valA - valB : valB - valA;
+                        case 'progress':
+                            valA = parseInt(a.completedProgress) || 0;
+                            valB = parseInt(b.completedProgress) || 0;
+                            return tableSort.direction === 'asc' ? valA - valB : valB - valA;
+                        case 'status':
+                            valA = String(a.statusLabel || '');
+                            valB = String(b.statusLabel || '');
+                            return tableSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        case 'staging':
+                            valA = String(a.stagingArea || '');
+                            valB = String(b.stagingArea || '');
+                            return tableSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        default:
+                            return 0;
+                    }
+                });
+            } else {
+                // Default sort: same as Dispatch Plan (by status rank, then by newest)
+                const ALL_PLAN_STATUSES = ["Today's Plan", "Tomorrow's Plan", "Upcoming Plan", "Unconfirmed Plan", "Pending Plan", "Archive Order"];
+                const getStatusRank = (status) => {
+                    if (!status) return 999;
+                    const normalized = status.toLowerCase().trim();
+                    const statusToMatch = normalized === 'grand advanced' ? 'grand advance' : normalized;
+                    const idx = ALL_PLAN_STATUSES.findIndex(s => s.toLowerCase().trim() === statusToMatch);
+                    return idx === -1 ? 999 : idx;
+                };
+
+                filteredFOs = filteredFOs
+                    .map((item, idx) => ({ item, idx }))
+                    .sort((a, b) => {
+                        // 1. Move completed orders to the bottom
+                        const aComp = (a.item.completedQty >= a.item.qty && a.item.qty > 0) ? 1 : 0;
+                        const bComp = (b.item.completedQty >= b.item.qty && b.item.qty > 0) ? 1 : 0;
+                        if (aComp !== bComp) return aComp - bComp;
+
+                        // 2. Sort by Dispatch Plan Status Rank
+                        const rankA = getStatusRank(a.item.status);
+                        const rankB = getStatusRank(b.item.status);
+                        if (rankA !== rankB) {
+                            return rankA - rankB;
+                        }
+
+                        // 3. Keep original Dispatch Plan order
+                        return a.idx - b.idx;
+                    })
+                    .map(w => w.item);
+            }
+
+            if (filteredFOs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:40px; color: var(--text-secondary);">No matches found</td></tr>`;
+                return;
+            }
+
+            filteredFOs.forEach(item => {
+                try {
+                    const itemFoStr = String(item.fo || '');
+                    const itemQty = parseInt(item.qty) || 0;
+
+                    // Handle Multiple FOs
+                    const foList = itemFoStr.split(',').map(f => f.trim()).filter(f => f);
+                    const foDisplay = `
+                        <div class="fo-container">
+                            ${foList.map(f => `<span class="fo-badge-pill">${f}</span>`).join('')}
+                        </div>
+                    `;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="width: 140px;">${foDisplay}</td>
+                        <td style="width: 200px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.accountName || ''}">${item.accountName || 'Unknown'}</td>
+                        <td style="width: 100px; text-align: center;"
+                            ${window._authUser && (window._authUser.role === 'supervisor' || window._authUser.role === 'admin') ?
+                                `class="clickable-qty" onclick="changeOrderQty('${item.id}', '${itemFoStr}', ${itemQty})" title="Click to update order quantity"` : ''}>
+                            ${window._authUser && (window._authUser.role === 'supervisor' || window._authUser.role === 'admin') ?
+                                `<span>${itemQty.toLocaleString()}</span>` : itemQty.toLocaleString()}
+                        </td>
+                        <td style="width: 100px; text-align: center; color: var(--accent-green); font-weight: 700;">${item.completedQty.toLocaleString()}</td>
+                        <td style="width: 100px; text-align: center; color: ${item.pendingQty > 0 ? 'var(--onesource-red)' : 'var(--text-secondary)'}; font-weight: 600;">${item.pendingQty.toLocaleString()}</td>
+                        <td style="width: 200px;">
+                            <div class="progress-wrapper" style="min-width: 150px;">
+                                <div class="progress-bar-bg" style="display: flex;">
+                                    <div class="progress-bar-fill" style="width: ${item.completedProgress}%; background: var(--accent-green); border-radius: 4px 0 0 4px;"></div>
+                                    <div class="progress-bar-fill" style="width: ${item.ongoingProgress}%; background: var(--accent-orange); border-radius: ${item.completedProgress > 0 ? '0' : '4px'} ${item.totalProgress >= 100 ? '4px' : '0'} ${item.totalProgress >= 100 ? '4px' : '0'} ${item.completedProgress > 0 ? '0' : '4px'};"></div>
+                                </div>
+                                <div class="progress-text">${item.completedProgress}%</div>
+                            </div>
+                        </td>
+                        <td style="width: 120px; text-align: center;">
+                            <span class="status-badge ${item.statusClass}" 
+                                  style="${(item.statusLabel === 'On-going' || item.statusLabel === 'Completed') && window._authUser && !['visitor', 'viewer'].includes(window._authUser.role) ? `cursor: pointer;${item.statusLabel === 'On-going' ? ' text-decoration: underline;' : ''}` : ''}"
+                                  ${item.statusLabel === 'On-going' && window._authUser && !['visitor', 'viewer'].includes(window._authUser.role) ? `onclick="viewInProgress('${itemFoStr}')"` : 
+                                    item.statusLabel === 'Completed' && window._authUser && !['visitor', 'viewer'].includes(window._authUser.role) ? `onclick="viewCompleted('${itemFoStr}')"` : ''}>
+                                ${item.statusLabel}
+                            </span>
+                        </td>
+                        <td style="width: 150px;" 
+                            ${window._authUser && (window._authUser.role === 'supervisor' || window._authUser.role === 'admin') ? 
+                                `class="clickable-staging" onclick="changeOrderStaging('${itemFoStr}', '${item.partyCode}', '${item.stagingArea}')" title="Click to change staging area for entire order"` : ''}>
+                            ${item.stagingArea !== '-' ? `<span style="color: var(--accent-green); font-weight: 600; font-size: 11px;"><span style="font-size: 10px;">📍</span> ${item.stagingArea}</span>` : '-'}
+                        </td>
+                        <td style="width: 100px; text-align: center;">
+                            ${item.completedQty < itemQty && (window._authUser && window._authUser.role !== 'viewer' && window._authUser.role !== 'visitor' && window._authUser.role !== 'client') ?
+                            `<button class="btn btn-primary" style="padding: 4px 12px; font-size: 12px;" onclick="selectFOFromStatus(${item.originalIndex})">Pick</button>` :
+                            (item.completedQty >= itemQty ? 'Finished' : '')}
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                } catch (err) {
+                    console.error("Error rendering row:", err, item);
+                }
+            });
+        }
+
+        function viewInProgress(fo) {
+            // Role check: Only non-restricted roles can view progress details
+            if (window._authUser && ['visitor', 'viewer'].includes(window._authUser.role)) {
+                return;
+            }
+            const searchInput = document.getElementById('in-progress-search');
+            if (searchInput) {
+                searchInput.value = fo;
+            }
+            switchTab('in-progress');
+            renderInProgress();
+        }
+
+        function viewCompleted(fo) {
+            // Role check: Only non-restricted roles can view details
+            if (window._authUser && ['visitor', 'viewer'].includes(window._authUser.role)) {
+                return;
+            }
+            const searchInput = document.getElementById('completed-search');
+            if (searchInput) searchInput.value = fo;
+
+            switchTab('completed');
+            renderCompleted();
+        }
+
+        function selectFOFromStatus(index) {
+            switchTab('new-picking');
+
+            if (index !== -1 && foDatabase[index]) {
+                const item = foDatabase[index];
+                const select = document.getElementById('fo-select');
+                const searchInput = document.getElementById('fo-search');
+
+                searchInput.value = `${item.fo} - ${item.accountName}`;
+                select.value = index;
+                selectFO(); // This triggers field auto-fill, draft checks, and adds 1 picker assignment card
+                refreshAllPickerOptions();
+            }
+        }
+
+        async function changeOrderStaging(foNumber, partyCode, currentStaging) {
+            const busyStagingAreas = new Set();
+            pickingOrders.forEach(o => {
+                if (o.status === 'in-progress' && o.stagingArea) {
+                    busyStagingAreas.add(o.stagingArea);
+                }
+            });
+
+            const stagingOptions = [];
+            stagingAreas.forEach(area => {
+                if (busyStagingAreas.has(area) && area !== currentStaging) return;
+                stagingOptions.push({
+                    value: area,
+                    text: area
+                });
+            });
+
+            showDropdownModal(
+                'Change Staging Area',
+                `Select new staging area for FO ${foNumber}:`,
+                stagingOptions,
+                currentStaging,
+                async (newStaging) => {
+                    const trimmedStaging = newStaging.trim().toUpperCase();
+                    if (!trimmedStaging) {
+                        alert('Staging area cannot be empty.');
+                        return;
+                    }
+
+                    try {
+                        const res = await AuthGuard.authFetch(`${API_BASE_URL}/picking-orders/update-staging`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ foNumber, partyCode, stagingArea: trimmedStaging })
+                        });
+                        
+                        const result = await res.json();
+                        if (res.ok) {
+                            alert(result.message || 'Staging area updated successfully!');
+                            await loadPickingOrders();
+                            renderOrdersStatus();
+                        } else {
+                            alert('Failed to update staging area: ' + result.error);
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Error updating staging area: ' + err.message);
+                    }
+                }
+            );
+        }
+
+        function changeOrderQty(itemId, foNumber, currentQty) {
+            showInputModal(
+                'Update Order Quantity',
+                `FO: ${foNumber}`,
+                currentQty,
+                'number',
+                async (newQtyStr) => {
+                    const newQty = parseInt(newQtyStr);
+                    if (isNaN(newQty) || newQty < 0) {
+                        alert('Please enter a valid quantity.');
+                        return;
+                    }
+                    if (newQty === currentQty) return;
+                    try {
+                        const res = await AuthGuard.authFetch(`${API_BASE_URL}/dispatch-plan/update-qty/${encodeURIComponent(itemId)}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ qty: newQty })
+                        });
+                        const result = await res.json();
+                        if (res.ok) {
+                            const foItem = foDatabase.find(f => f.id === itemId);
+                            if (foItem) foItem.qty = newQty;
+                            renderOrdersStatus();
+                        } else {
+                            alert('Failed to update quantity: ' + result.error);
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Error updating quantity: ' + err.message);
+                    }
+                }
+            );
+        }
+
+        function showInputModal(title, message, currentValue, inputType, callback) {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(8px);';
+
+            const content = document.createElement('div');
+            content.style.cssText = 'background:#1a202c;padding:32px;border-radius:16px;width:380px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);';
+
+            const titleEl = document.createElement('h3');
+            titleEl.textContent = title;
+            titleEl.style.cssText = 'margin:0 0 8px;color:var(--text-primary);font-size:20px;font-weight:700;';
+
+            const msgEl = document.createElement('p');
+            msgEl.textContent = message;
+            msgEl.style.cssText = 'margin:0 0 20px;color:var(--text-secondary);font-size:14px;';
+
+            const input = document.createElement('input');
+            input.type = inputType || 'text';
+            input.value = currentValue !== undefined ? currentValue : '';
+            input.min = inputType === 'number' ? '0' : undefined;
+            input.style.cssText = 'width:100%;padding:10px 14px;font-size:16px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:#2d3748;color:var(--text-primary);box-sizing:border-box;margin-bottom:24px;';
+
+            const btnContainer = document.createElement('div');
+            btnContainer.style.cssText = 'display:flex;justify-content:flex-end;gap:12px;';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.className = 'btn btn-secondary';
+            cancelBtn.onclick = () => document.body.removeChild(modal);
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.textContent = 'Update';
+            confirmBtn.className = 'btn btn-primary';
+            confirmBtn.onclick = () => {
+                document.body.removeChild(modal);
+                callback(input.value);
+            };
+
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { document.body.removeChild(modal); callback(input.value); }
+                if (e.key === 'Escape') document.body.removeChild(modal);
+            });
+
+            btnContainer.appendChild(cancelBtn);
+            btnContainer.appendChild(confirmBtn);
+            content.appendChild(titleEl);
+            content.appendChild(msgEl);
+            content.appendChild(input);
+            content.appendChild(btnContainer);
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            input.focus();
+            input.select();
+        }
+
+        // Break windows in PH time (UTC+8): 12:00–13:00 (lunch) and 18:00–19:00 (dinner)
+        const PH_OFFSET_MS = 8 * 60 * 60 * 1000;
+        const BREAK_WINDOWS = [
+            { start: 12, end: 13 }, // 12:00 PM – 1:00 PM PH
+            { start: 18, end: 19 }, // 6:00 PM – 7:00 PM PH
+        ];
+
+        /**
+         * Calculate active (non-break) minutes between two timestamps.
+         * Handles spans across multiple days and multiple break windows per day.
+         * Automatically respects the local timezone for calculating break overlaps.
+         */
+        function getActiveMinutes(startTime, endTime = new Date()) {
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            if (end <= start) return 0;
+
+            let breakMs = 0;
+
+            // Iterate each local calendar day that the interval touches
+            const dayStart = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const dayEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+            for (let d = new Date(dayStart); d <= dayEnd; d.setDate(d.getDate() + 1)) {
+                for (const w of BREAK_WINDOWS) {
+                    const bStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.start, 0, 0, 0);
+                    const bEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.end, 0, 0, 0, 0);
+
+                    // Overlap of [start, end] with [bStart, bEnd]
+                    const overlapStart = Math.max(start.getTime(), bStart.getTime());
+                    const overlapEnd = Math.min(end.getTime(), bEnd.getTime());
+                    if (overlapEnd > overlapStart) {
+                        breakMs += overlapEnd - overlapStart;
+                    }
+                }
+            }
+
+            return Math.floor((end.getTime() - start.getTime() - breakMs) / 60000);
+        }
+
+        function renderInProgress() {
+            const container = document.getElementById('in-progress-list');
+            const searchTerm = document.getElementById('in-progress-search').value.toLowerCase();
+            const sortBy = document.getElementById('in-progress-sort').value;
+
+            let inProgressOrders = pickingOrders.filter(order => order.status === 'in-progress');
+
+            // Apply search filter
+            if (searchTerm) {
+                const searchStr = searchTerm.toLowerCase();
+                inProgressOrders = inProgressOrders.filter(order =>
+                    String(order.foNumber || '').toLowerCase().includes(searchStr) ||
+                    String(order.accountName || '').toLowerCase().includes(searchStr)
+                );
+            }
+
+            // Apply sorting
+            inProgressOrders.sort((a, b) => {
+                if (sortBy === 'newest') return new Date(b.startTime) - new Date(a.startTime);
+                if (sortBy === 'oldest') return new Date(a.startTime) - new Date(b.startTime);
+                if (sortBy === 'fo') return a.foNumber.localeCompare(b.foNumber);
+                if (sortBy === 'account') return a.accountName.localeCompare(b.accountName);
+                return 0;
+            });
+
+            if (inProgressOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📦</div>
+                        <div class="empty-title">${searchTerm ? 'No matches found' : 'No Active Orders'}</div>
+                        <div class="empty-text">${searchTerm ? 'Try a different search term' : 'All picking orders have been completed'}</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // GROUP BY FO#
+            const groupedOrders = {};
+            inProgressOrders.forEach(order => {
+                if (!groupedOrders[order.foNumber]) {
+                    groupedOrders[order.foNumber] = {
+                        accountName: order.accountName,
+                        stagingArea: order.stagingArea,
+                        pickers: []
+                    };
+                }
+                groupedOrders[order.foNumber].pickers.push(order);
+            });
+
+            container.innerHTML = Object.entries(groupedOrders).map(([foNumber, data]) => {
+                const totalPickers = data.pickers.length;
+                const totalQty = data.pickers.reduce((sum, p) => sum + p.pickerQty, 0);
+
+                return `
+                    <div class="progress-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px; margin-bottom: 24px; position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--onesource-red);"></div>
+                        
+                        <div class="progress-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div>
+                                <div class="progress-title" style="font-weight: 700; font-size: 18px; margin-bottom: 4px;">FO# ${foNumber}</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">${data.accountName}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Unified Staging</div>
+                                <div style="font-weight: 700; color: var(--accent-green); background: rgba(72, 187, 120, 0.1); padding: 4px 10px; border-radius: 4px; display: inline-block;">📍 ${data.stagingArea}</div>
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                                <span>ASSIGNED PICKERS (${totalPickers})</span>
+                                <span>TOTAL QTY: ${totalQty.toLocaleString()}</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                 ${data.pickers.map(order => {
+                    let timeStr = '';
+                    try {
+                        const dateObj = new Date(order.startTime);
+                        timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                    } catch (e) {
+                        timeStr = order.startTime || 'N/A';
+                    }
+
+                    const startTimeIso = typeof order.startTime === 'string' && order.startTime.includes('T')
+                        ? order.startTime
+                        : new Date().toISOString();
+                    const duration = getActiveMinutes(startTimeIso);
+
+                    // Performance Calculation
+                    const pickerData = pickersDatabase.find(p => p.code === order.pickerCode);
+                    const designation = pickerData ? pickerData.designation : 'Picker';
+
+                    // Rates: Operator 840/hr (14/min), Picker 110/hr (1.833/min)
+                    const ratePerMin = designation === 'Operator' ? 14 : 1.833;
+                    const targetMinutes = Math.ceil(order.pickerQty / ratePerMin);
+                    const isOverdue = duration > targetMinutes;
+
+                    return `
+                                         <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s ease;">
+                                             <div style="display: grid; grid-template-columns: 120px 80px 100px 100px; gap: 32px; align-items: center; flex-grow: 1;">
+                                                 <div>
+                                                     <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Staff</div>
+                                                     <div style="font-weight: 700; font-size: 15px; color: var(--text-primary);">${order.pickerCode}</div>
+                                                     <div style="font-size: 9px; color: var(--text-secondary);">${designation}</div>
+                                                     ${order.startUser ? `<div style="font-size: 9px; color: var(--accent-green); margin-top: 2px;">👤 ${order.startUser}</div>` : ''}
+                                                 </div>
+                                                 <div>
+                                                     <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Qty</div>
+                                                     <div style="font-weight: 600; font-size: 14px;">${order.pickerQty.toLocaleString()}</div>
+                                                 </div>
+                                                 <div>
+                                                     <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Started</div>
+                                                     <div style="font-size: 14px; color: var(--text-secondary);">${timeStr}</div>
+                                                 </div>
+                                                 <div>
+                                                     <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Elapsed</div>
+                                                     <div style="font-weight: 700; font-size: 14px; color: ${isOverdue ? '#f56565' : '#48bb78'};" title="Target: ${targetMinutes} mins">
+                                                         ${duration} mins
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                             ${(window._authUser && !['viewer', 'visitor', 'client'].includes(window._authUser.role)) ? `
+                                             <div style="display: flex; gap: 8px; margin-left: 24px;">
+                                                  ${window._authUser && (window._authUser.role === 'supervisor' || window._authUser.role === 'admin') ? `
+                                                  <button class="btn" style="padding: 10px 16px; font-size: 13px; background: #ed8936; color: white;" onclick="changePicker('${order.id}')">
+                                                      👤 Change Picker
+                                                  </button>
+                                                  <button class="btn btn-danger" style="padding: 10px 16px; font-size: 13px; background: #e53e3e;" onclick="editPickQty('${order.id}')">
+                                                      ✎ Edit Qty
+                                                  </button>
+                                                  ` : ''}
+                                                 <button class="btn btn-success" style="padding: 10px 24px; font-size: 13px;" onclick="endPicking('${order.id}', this)">
+                                                     ✓ Finish Pick
+                                                 </button>
+                                             </div>
+                                             ` : ''}
+                                         </div>
+                                     `;
+                }).join('')}
+                             </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function editPickQty(orderId) {
+            const order = pickingOrders.find(o => String(o.id) === String(orderId));
+            if (!order) return;
+
+            const newQty = prompt(`Edit Quantity for ${order.pickerCode} (FO# ${order.foNumber}):`, order.pickerQty);
+            if (newQty === null) return; // Cancelled
+
+            const parsedQty = parseInt(newQty);
+            if (isNaN(parsedQty) || parsedQty <= 0) {
+                alert('❌ Please enter a valid quantity greater than zero');
+                return;
+            }
+
+            // Calculate balance EXCLUDING this specific order's current quantity
+            let otherPickedQty = 0;
+            pickingOrders.forEach(o => {
+                if (String(o.id) !== String(orderId) &&
+                    String(o.foNumber) === String(order.foNumber) &&
+                    String(o.partyCode) === String(order.partyCode)) {
+                    otherPickedQty += parseInt(o.pickerQty) || 0;
+                }
+            });
+            
+            // Find current qty in dispatch plan
+            const activeFo = foDatabase.find(fo => String(fo.fo) === String(order.foNumber) && String(fo.partyCode) === String(order.partyCode));
+            const currentTotalQty = activeFo ? parseInt(activeFo.qty) : order.totalOrderQty;
+            const currentBalance = Math.max(0, currentTotalQty - otherPickedQty);
+            
+            if (parsedQty > currentBalance) {
+                alert(`❌ Quantity (${parsedQty}) exceeds available balance (${currentBalance}) for FO# ${order.foNumber}`);
+                return;
+            }
+
+            try {
+                const response = await AuthGuard.authFetch(`${API_BASE_URL}/picking-orders/${orderId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pickerQty: parsedQty })
+                });
+
+                if (response.ok) {
+                    alert('✅ Quantity updated successfully');
+                    await loadPickingOrders();
+                    renderInProgress();
+                } else {
+                    alert('❌ Failed to update quantity');
+                }
+            } catch (error) {
+                console.error('Error editing quantity:', error);
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        async function changePicker(orderId) {
+            const order = pickingOrders.find(o => String(o.id) === String(orderId));
+            if (!order) return;
+
+            const busyPickers = new Set();
+            pickingOrders.forEach(o => {
+                if (o.status === 'in-progress') {
+                    busyPickers.add(o.pickerCode);
+                }
+            });
+
+            const pickerOptions = [];
+            [...pickersDatabase].sort((a, b) => (a.shift || '').localeCompare(b.shift || '')).forEach(p => {
+                if (busyPickers.has(p.code) && p.code !== order.pickerCode) return;
+                pickerOptions.push({
+                    value: p.code,
+                    text: `${p.code} - ${p.name} (${p.shift})`
+                });
+            });
+
+            showDropdownModal(
+                'Change Picker',
+                `Select new Picker for FO# ${order.foNumber}:`,
+                pickerOptions,
+                order.pickerCode,
+                async (newPickerCode) => {
+                    const trimmedCode = newPickerCode.trim().toUpperCase();
+                    if (!trimmedCode) {
+                        alert('❌ Picker Code cannot be empty.');
+                        return;
+                    }
+
+                    try {
+                        const response = await AuthGuard.authFetch(`${API_BASE_URL}/picking-orders/${orderId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pickerCode: trimmedCode })
+                        });
+
+                        if (response.ok) {
+                            alert('✅ Picker updated successfully');
+                            await loadPickingOrders();
+                            renderInProgress();
+                        } else {
+                            alert('❌ Failed to update picker');
+                        }
+                    } catch (error) {
+                        console.error('Error changing picker:', error);
+                        alert('❌ Error: ' + error.message);
+                    }
+                }
+            );
+        }
+
+        function renderCompleted() {
+            const container = document.getElementById('completed-list');
+            const searchTerm = document.getElementById('completed-search').value.toLowerCase();
+
+            // Set default dates to today if not set AND no search term is present
+            const startInput = document.getElementById('completed-start-date');
+            const endInput = document.getElementById('completed-end-date');
+
+            if (startInput && !startInput.value && !searchTerm) {
+                startInput.value = getLogicalDateStr();
+            }
+            if (endInput && !endInput.value && !searchTerm) {
+                endInput.value = getLogicalDateStr();
+            }
+            const startDate = startInput ? new Date(startInput.value) : null;
+            if (startDate) startDate.setHours(dayStartHour, 0, 0, 0);
+            
+            const endDate = endInput ? new Date(endInput.value) : null;
+            if (endDate) {
+                endDate.setDate(endDate.getDate() + 1);
+                endDate.setHours(dayStartHour - 1, 59, 59, 999);
+            }
+
+            const filteredOrders = pickingOrders.filter(o => {
+                if (o.status !== 'completed') return false;
+
+                const searchStr = searchTerm.toLowerCase();
+                const matchesSearch = String(o.foNumber || '').toLowerCase().includes(searchStr) ||
+                    (o.pickerCode && String(o.pickerCode).toLowerCase().includes(searchStr)) ||
+                    (o.accountName && String(o.accountName).toLowerCase().includes(searchStr));
+
+                const orderDate = new Date(o.endTime);
+                const matchesDate = (!startDate || orderDate >= startDate) &&
+                    (!endDate || orderDate <= endDate);
+
+                return matchesSearch && matchesDate;
+            });
+
+            if (filteredOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">✅</div>
+                        <div class="empty-title">No Completed Orders</div>
+                        <div class="empty-text">Finished orders will appear here</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // GROUP BY FO#
+            const groupedOrders = {};
+            filteredOrders.forEach(order => {
+                if (!groupedOrders[order.foNumber]) {
+                    groupedOrders[order.foNumber] = {
+                        accountName: order.accountName,
+                        stagingArea: order.stagingArea,
+                        pickers: []
+                    };
+                }
+                groupedOrders[order.foNumber].pickers.push(order);
+            });
+
+            container.innerHTML = Object.entries(groupedOrders).map(([foNumber, data]) => {
+                const totalPickers = data.pickers.length;
+                const totalQty = data.pickers.reduce((sum, p) => sum + p.pickerQty, 0);
+
+                return `
+                    <div class="progress-card completed" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px; margin-bottom: 24px; position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-green);"></div>
+                        
+                        <div class="progress-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div>
+                                <div class="progress-title" style="font-weight: 700; font-size: 18px; margin-bottom: 4px;">FO# ${foNumber}</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">${data.accountName}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Staging Area</div>
+                                <div style="font-weight: 700; color: var(--accent-green); background: rgba(72, 187, 120, 0.1); padding: 4px 10px; border-radius: 4px; display: inline-block;">📍 ${data.stagingArea}</div>
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                                <span>COMPLETED BY (${totalPickers} STAFF)</span>
+                                <span>TOTAL QTY: ${totalQty.toLocaleString()}</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                 ${data.pickers.map(order => {
+                    const startDate = new Date(order.startTime);
+                    const endDate = new Date(order.endTime);
+                    const duration = getActiveMinutes(order.startTime, order.endTime);
+
+                    const startTimeStr = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const endTimeStr = endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+                    return `
+                                         <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px;">
+                                             <div>
+                                                 <div style="font-weight: 700; font-size: 14px;">${order.pickerCode}</div>
+                                                 <div style="font-size: 12px; color: var(--text-secondary);">${order.pickerQty.toLocaleString()} items • BL: ${order.blNumber || '-'}</div>
+                                                 <div style="font-size: 10px; color: var(--accent-green); margin-top: 4px;">
+                                                     👤 Start: ${order.startUser || '-'} • End: ${order.endUser || '-'}
+                                                 </div>
+                                             </div>
+                                             <div style="text-align: right;">
+                                                 <div style="font-weight: 700; font-size: 14px; color: var(--accent-green);">${duration}m</div>
+                                                 <div style="font-size: 11px; color: var(--text-secondary);">${startTimeStr} – ${endTimeStr}</div>
+                                             </div>
+                                         </div>
+                                     `;
+                }).join('')}
+                             </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Report Table Helpers
+        function handleReportHeaderClick(column) {
+            if (reportTableSort.column === column) {
+                if (reportTableSort.direction === 'asc') {
+                    reportTableSort.direction = 'desc';
+                } else {
+                    reportTableSort.column = null; // Clear sort
+                    reportTableSort.direction = 'asc';
+                }
+            } else {
+                reportTableSort.column = column;
+                reportTableSort.direction = 'asc';
+            }
+            renderReports();
+        }
+
+        function setReportFilter(column, value) {
+            reportTableFilters[column] = value;
+            renderReports();
+        }
+
+        function renderReportSortIcon(column) {
+            if (reportTableSort.column === column) {
+                return reportTableSort.direction === 'asc' ? '<span class="sort-icon" style="opacity:1;"> ▲</span>' : '<span class="sort-icon" style="opacity:1;"> ▼</span>';
+            }
+            return '<span class="sort-icon" style="opacity:0.4;"> ↕</span>';
+        }
+
+        function renderReports() {
+            const container = document.getElementById('report-results');
+            const searchTerm = document.getElementById('report-search').value.toLowerCase();
+            const startStr = document.getElementById('report-start').value;
+            const endStr = document.getElementById('report-end').value;
+
+            const filtered = pickingOrders.filter(o => {
+                const searchStr = searchTerm.toLowerCase();
+                const matchesSearch = String(o.foNumber || '').toLowerCase().includes(searchStr) ||
+                    String(o.pickerCode || '').toLowerCase().includes(searchStr) ||
+                    String(o.accountName || '').toLowerCase().includes(searchStr);
+
+                const orderDate = o.startTime ? new Date(o.startTime).toISOString().split('T')[0] : '';
+                const matchesDate = (!startStr || orderDate >= startStr) && (!endStr || orderDate <= endStr);
+
+                return matchesSearch && matchesDate;
+            });
+            // Apply advanced filters
+            let tableFiltered = filtered.filter(item => {
+                const dateStr = item.startTime ? new Date(item.startTime).toLocaleDateString() : '';
+                const foStr = String(item.foNumber || '').toLowerCase();
+                const accStr = String(item.accountName || '').toLowerCase();
+                const pickerStr = String(item.pickerCode || '').toLowerCase();
+                const qtyStr = String(item.pickerQty || '');
+                const durationVal = item.endTime ? Math.floor((new Date(item.endTime) - new Date(item.startTime)) / 60000) : null;
+                const durationStr = durationVal !== null ? `${durationVal}m` : 'Live';
+                const statusStr = String(item.status || '').toLowerCase();
+
+                if (reportTableFilters.date && !dateStr.includes(reportTableFilters.date)) return false;
+                if (reportTableFilters.fo && !foStr.includes(reportTableFilters.fo.toLowerCase())) return false;
+                if (reportTableFilters.accountName && !accStr.includes(reportTableFilters.accountName.toLowerCase())) return false;
+                if (reportTableFilters.pickerCode && !pickerStr.includes(reportTableFilters.pickerCode.toLowerCase())) return false;
+                if (reportTableFilters.qty && !qtyStr.includes(reportTableFilters.qty)) return false;
+                if (reportTableFilters.duration && !durationStr.toLowerCase().includes(reportTableFilters.duration.toLowerCase())) return false;
+                if (reportTableFilters.status && statusStr !== reportTableFilters.status.toLowerCase()) return false;
+
+                return true;
+            });
+
+            // Sort logic
+            if (reportTableSort.column) {
+                tableFiltered.sort((a, b) => {
+                    let valA, valB;
+                    switch (reportTableSort.column) {
+                        case 'date':
+                            valA = new Date(a.startTime).getTime();
+                            valB = new Date(b.startTime).getTime();
+                            return reportTableSort.direction === 'asc' ? valA - valB : valB - valA;
+                        case 'fo':
+                            valA = String(a.foNumber || '');
+                            valB = String(b.foNumber || '');
+                            return reportTableSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        case 'accountName':
+                            valA = String(a.accountName || '');
+                            valB = String(b.accountName || '');
+                            return reportTableSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        case 'pickerCode':
+                            valA = String(a.pickerCode || '');
+                            valB = String(b.pickerCode || '');
+                            return reportTableSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        case 'qty':
+                            valA = parseInt(a.pickerQty) || 0;
+                            valB = parseInt(b.pickerQty) || 0;
+                            return reportTableSort.direction === 'asc' ? valA - valB : valB - valA;
+                        case 'duration':
+                            valA = a.endTime ? new Date(a.endTime).getTime() - new Date(a.startTime).getTime() : 0;
+                            valB = b.endTime ? new Date(b.endTime).getTime() - new Date(b.startTime).getTime() : 0;
+                            return reportTableSort.direction === 'asc' ? valA - valB : valB - valA;
+                        case 'status':
+                            valA = String(a.status || '');
+                            valB = String(b.status || '');
+                            return reportTableSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        default:
+                            return 0;
+                    }
+                });
+            } else {
+                // Default sorting: Newest first
+                tableFiltered.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+            }
+
+            if (tableFiltered.length === 0) {
+                container.innerHTML = '<div class="empty-state">No matching orders found</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable-header" onclick="handleReportHeaderClick('date')" style="cursor:pointer;">Date ${renderReportSortIcon('date')}</th>
+                                <th class="sortable-header" onclick="handleReportHeaderClick('fo')" style="cursor:pointer;">STO# ${renderReportSortIcon('fo')}</th>
+                                <th class="sortable-header" onclick="handleReportHeaderClick('accountName')" style="cursor:pointer;">Account ${renderReportSortIcon('accountName')}</th>
+                                <th class="sortable-header" onclick="handleReportHeaderClick('pickerCode')" style="cursor:pointer;">Picker ${renderReportSortIcon('pickerCode')}</th>
+                                <th class="sortable-header" onclick="handleReportHeaderClick('qty')" style="cursor:pointer;">Qty ${renderReportSortIcon('qty')}</th>
+                                <th class="sortable-header" onclick="handleReportHeaderClick('duration')" style="cursor:pointer;">Duration ${renderReportSortIcon('duration')}</th>
+                                <th class="sortable-header" onclick="handleReportHeaderClick('status')" style="cursor:pointer;">Status ${renderReportSortIcon('status')}</th>
+                            </tr>
+
+                        </thead>
+                        <tbody>
+                            ${tableFiltered.map(o => {
+                const start = new Date(o.startTime);
+                const end = o.endTime ? new Date(o.endTime) : null;
+                const duration = end ? Math.floor((end - start) / 60000) + 'm' : 'Live';
+                return `
+                                    <tr>
+                                        <td>${start.toLocaleDateString()}</td>
+                                        <td>${o.foNumber}</td>
+                                        <td>${o.accountName}</td>
+                                        <td>${o.pickerCode}</td>
+                                        <td>${o.pickerQty.toLocaleString()}</td>
+                                        <td>${duration}</td>
+                                        <td><span class="status-badge ${o.status === 'completed' ? 'status-completed' : 'status-ongoing'}">${o.status}</span></td>
+                                    </tr>
+                                `;
+            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Initialize on load
+        window.onload = async function () {
+            // Auth guard: validate token. Redirect to login if not authenticated.
+            const user = await AuthGuard.init();
+            if (!user) return;
+
+            // Store role globally for use in render functions
+            window._authUser = user;
+
+            // Hide the 'New Picking' tab for viewers and visitors
+            if (user.role === 'viewer' || user.role === 'visitor') {
+                const newPickingBtn = document.querySelector('[onclick="switchTab(\'new-picking\')"]');
+                if (newPickingBtn) newPickingBtn.style.display = 'none';
+            }
+            
+            // Hide 'In Progress' and 'Completed' tabs for visitors and viewers
+            if (user.role === 'visitor' || user.role === 'viewer') {
+                const inProgressBtn = document.querySelector('[onclick="switchTab(\'in-progress\')"]');
+                if (inProgressBtn) inProgressBtn.style.display = 'none';
+                
+                const completedBtn = document.querySelector('[onclick="switchTab(\'completed\')"]');
+                if (completedBtn) completedBtn.style.display = 'none';
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            let savedTab = localStorage.getItem('outbound_tab') || 'orders-status';
+            if (urlParams.has('search')) {
+                savedTab = 'orders-status';
+                localStorage.setItem('outbound_tab', 'orders-status');
+            }
+            
+            // Redirect viewers and visitors away from restricted tabs — only orders-status allowed
+            const restrictedRoles = ['viewer', 'visitor'];
+            const allowedTabs = ['orders-status'];
+            if (restrictedRoles.includes(user.role) && !allowedTabs.includes(savedTab)) {
+                savedTab = 'orders-status';
+            }
+            
+            switchTab(savedTab);
+            
+            if (urlParams.has('search')) {
+                const searchVal = urlParams.get('search');
+                setTimeout(() => {
+                    const searchInput = document.getElementById('status-search');
+                    if (searchInput) {
+                        searchInput.value = searchVal;
+                        renderOrdersStatus();
+                    }
+                }, 100);
+            }
+            
+            initializeApp();
+        };
+    

@@ -134,6 +134,74 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+// POST /upload-order
+router.post('/upload-order', authenticateToken, async (req, res) => {
+  try {
+    const { fo, accountName, cases, partyCode, user } = req.body;
+    
+    const existing = await pool.query('SELECT * FROM processing_data WHERE fo = $1', [fo]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Order already uploaded for processing' });
+    }
+
+    const upload_timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+
+    const result = await pool.query(
+      `INSERT INTO processing_data (
+        fo, account_name, cases, party_code, processing_status, 
+        uploader, upload_timestamp, helper, processed_qty, unserved_qty, balance_qty
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [
+        fo, accountName, cases, partyCode, 'For Processing',
+        user, upload_timestamp, `${fo}-${accountName}`, 0, 0, cases || 0
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Upload order error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /finalize-skus
+router.post('/finalize-skus', authenticateToken, async (req, res) => {
+  try {
+    const { foNumber, processedSkus } = req.body;
+    
+    // First, clear existing pending skus for this FO that have no processed qty
+    await pool.query('DELETE FROM processing_sku_data WHERE fo = $1 AND status = $2 AND processed_qty = 0', [foNumber, 'Pending']);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Finalize SKUs error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /mark-printed
+router.post('/mark-printed', authenticateToken, async (req, res) => {
+  try {
+    const { fo, user } = req.body;
+    const printed_date = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+
+    const result = await pool.query(
+      `UPDATE processing_data 
+       SET printing_status = 'Printed', printer = $1, printed_date = $2 
+       WHERE fo = $3 RETURNING *`,
+      [user, printed_date, fo]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Mark printed error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PROCESSING SKU DATA
@@ -249,6 +317,69 @@ router.delete('/skus/:id', authenticateToken, async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Delete processing SKU error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /skus/commit
+router.post('/skus/commit', authenticateToken, async (req, res) => {
+  try {
+    const { foNumber, accountName, partyCode, sku, user } = req.body;
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+
+    const result = await pool.query(
+      `INSERT INTO processing_sku_data (
+        party_code, account_name, fo, sku, qty, status,
+        bl, timestamp, sku_user, helper, processed_qty
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [partyCode, accountName, foNumber, sku.sku, sku.skuQty, sku.status,
+       sku.blNumber, timestamp, user, `${foNumber}-${accountName}`, 0]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Commit SKU error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /skus/remove
+router.post('/skus/remove', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.body;
+    const result = await pool.query('DELETE FROM processing_sku_data WHERE id = $1 RETURNING id', [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'SKU record not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Remove SKU error:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /skus/replenish
+router.post('/skus/replenish', authenticateToken, async (req, res) => {
+  try {
+    const { id, replenishQty } = req.body;
+    
+    // We add the replenishQty to processed_qty
+    const result = await pool.query(
+      `UPDATE processing_sku_data 
+       SET processed_qty = processed_qty + $1 
+       WHERE id = $2 RETURNING *`,
+      [replenishQty, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'SKU record not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Replenish SKU error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

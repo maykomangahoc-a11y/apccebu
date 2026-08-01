@@ -89,6 +89,15 @@ app.use('/api/dispatch-plan', dispatchRoutes);
 app.use('/api/dispatch', dispatchRoutes); // Supports /api/dispatch/upload
 app.use('/api/picking-orders', pickingRoutes);
 app.use('/api/picking-drafts', pickingDraftsRoutes);
+app.use('/api/processing-orders', processingRoutes);
+app.use('/api/processing-skus', (req, res, next) => {
+  req.url = req.url === '/' ? '/skus' : '/skus' + req.url;
+  processingRoutes(req, res, next);
+});
+app.use('/api/item-database', itemRoutes);
+app.use('/api/upload-order', (req, res, next) => { req.url = '/upload-order'; processingRoutes(req, res, next); });
+app.use('/api/finalize-skus', (req, res, next) => { req.url = '/finalize-skus'; processingRoutes(req, res, next); });
+app.use('/api/mark-printed', (req, res, next) => { req.url = '/mark-printed'; processingRoutes(req, res, next); });
 
 // The old UI fetches /api/pickers directly instead of /api/resources/pickers
 app.use('/api/pickers', (req, res, next) => {
