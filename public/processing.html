@@ -1074,8 +1074,8 @@
                 <div
                     style="margin-top: 40px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px;">
                     <div style="display: flex; gap: 12px;">
-                        <button id="btn-add-pending" class="btn btn-secondary" onclick="addPendingSKU()">➕ Add Pending SKU</button>
-                        <button id="btn-add-unserved" class="btn btn-secondary" onclick="addUnservedSKU()">❌ Add Unserved SKU</button>
+                        <button id="btn-add-pending" class="btn btn-secondary" onclick="addPendingSKU()" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #60a5fa;">➕ Add Pending SKU</button>
+                        <button id="btn-add-unserved" class="btn btn-secondary" onclick="addUnservedSKU()" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #f87171;">❌ Add Unserved SKU</button>
                         <button class="btn btn-secondary" onclick="clearProcessingForm()">🔄 Clear Form</button>
                     </div>
                     <button class="btn btn-primary" onclick="startProcessing()"
@@ -1175,7 +1175,7 @@
                 </div>
                 <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding: 15px 20px;">
                     <div style="display: flex; gap: 8px;">
-                        <button id="btn-add-modal-pending" class="btn btn-secondary" onclick="addModalPendingSku()" style="padding: 8px 16px; font-size: 13px;">➕ Add Pending SKU</button>
+                        <button id="btn-add-modal-pending" class="btn btn-secondary" onclick="addModalPendingSku()" style="padding: 8px 16px; font-size: 13px; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #60a5fa;">➕ Add Pending SKU</button>
                         <button id="btn-add-modal-unserved" class="btn btn-secondary" onclick="addModalUnservedSku()" style="padding: 8px 16px; font-size: 13px; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #f87171;">✕ Add Unserved SKU</button>
                     </div>
                     <button class="btn btn-primary" onclick="closeSkuMgmtModal()" style="padding: 8px 32px; font-size: 14px;">Done</button>
@@ -1443,15 +1443,16 @@
                     const pendingCount = skusForThisOrder.filter(s => s.status === 'Pending').length;
                     const unservedCount = skusForThisOrder.filter(s => s.status === 'Unserved').length;
 
-                    const addSkuHtml = isViewer ? '-' : `<span class="status-badge status-upload clickable" onclick="openOrderSkuModal('${key}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')">Add SKU</span>`;
+                    const addPendingSkuHtml = isViewer ? '-' : `<span class="status-badge status-for-processing clickable" onclick="openOrderSkuModal('${key}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')">Add SKU</span>`;
+                    const addUnservedSkuHtml = isViewer ? '-' : `<span class="status-badge status-upload clickable" onclick="openOrderSkuModal('${key}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')">Add SKU</span>`;
 
                     const pendingHtml = pendingCount > 0 ? 
                         `<span class="status-badge status-processing-pill clickable" onclick="showSkuSummaryModal('${key}', 'Pending')">${pendingCount} ${pendingCount === 1 ? 'SKU' : 'SKUs'}</span>` : 
-                        addSkuHtml;
+                        addPendingSkuHtml;
                         
                     const unservedHtml = unservedCount > 0 ? 
                         `<span class="status-badge status-upload clickable" onclick="showSkuSummaryModal('${key}', 'Unserved')">${unservedCount} ${unservedCount === 1 ? 'SKU' : 'SKUs'}</span>` : 
-                        addSkuHtml;
+                        addUnservedSkuHtml;
 
                     const row = document.createElement('tr');
                     row.innerHTML = `
