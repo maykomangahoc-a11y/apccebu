@@ -1442,17 +1442,19 @@
 
                     if (status === 'FOR UPLOAD') {
                         statusClass = isViewer ? 'status-upload' : 'status-upload clickable';
-                        actionAttr = isViewer ? '' : `onclick="uploadOrder('${escFO}', '${escAcc}', '${escCases}', '${escParty}')"`;
+                        const procId = proc ? proc.id : '';
+                        actionAttr = isViewer ? '' : `onclick="showUpdateStatusModal('${procId}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')"`;
                     } else if (status === 'For Processing') {
                         statusClass = 'status-for-processing clickable';
                         const procId = proc ? proc.id : '';
-                        actionAttr = isViewer ? '' : `onclick="markOrderProcessed('${procId}', '${escFO}', '${escAcc}', '${escCases}')"`;
+                        actionAttr = isViewer ? '' : `onclick="showUpdateStatusModal('${procId}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')"`;
                     } else if (status === 'Processing') {
                         statusClass = 'status-processing-pill clickable';
                         actionAttr = `onclick="openOrderSkuModal('${key}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')"`;
                     } else if (status === 'Completed' || status === 'Complete') {
                         statusClass = 'status-completed clickable';
-                        actionAttr = `onclick="goToCompleteTab('${escFO}')"`;
+                        const procId = proc ? proc.id : '';
+                        actionAttr = isViewer ? '' : `onclick="showUpdateStatusModal('${procId}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')"`;
                     }
 
                     const skusForThisOrder = processingSkus.filter(s => 
@@ -2340,8 +2342,7 @@
                 });
             }
             
-            async function markOrderProcessed(id, fo, accountName, cases) {
-                if (!id) return;
+            async function showUpdateStatusModal(id, fo, accountName, cases, partyCode) {
                 const msg = `Update status for <b>${accountName}</b> (FO/STO# <b>${fo}</b>)?`;
 
                 const modal = document.getElementById('update-status-modal');
@@ -2349,38 +2350,64 @@
                 
                 document.getElementById('update-status-uploaded-btn').onclick = async () => {
                     closeModal();
-                    await updateProcessingStatus(id, fo, accountName, 'For Processing');
+                    await setOrderStatus(id, fo, accountName, cases, partyCode, 'For Processing');
                 };
 
                 document.getElementById('update-status-processed-btn').onclick = async () => {
                     closeModal();
-                    await updateProcessingStatus(id, fo, accountName, 'Completed');
+                    await setOrderStatus(id, fo, accountName, cases, partyCode, 'Completed');
                 };
 
                 modal.style.display = 'flex';
             }
 
-            async function updateProcessingStatus(id, fo, accountName, newStatus) {
+            async function setOrderStatus(id, fo, accountName, cases, partyCode, newStatus) {
                 try {
                     const user = AuthGuard.getUser()?.username || 'System';
-                    const payload = { processing_status: newStatus };
-                    
-                    if (newStatus === 'Completed') {
-                        payload.completer = user;
-                        payload.completed_date = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
-                    }
-                    
-                    const res = await AuthGuard.authFetch(`/api/processing/${id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+                    let res;
 
-                    if (res.ok) {
+                    if (!id) {
+                        // Create record first
+                        res = await AuthGuard.authFetch('/api/upload-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ fo, accountName, cases, partyCode, user })
+                        });
+                        
+                        if (res.ok && newStatus === 'Completed') {
+                            const newRecord = await res.json();
+                            id = newRecord.id;
+                            const completed_date = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+                            res = await AuthGuard.authFetch(`/api/processing/${id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    processing_status: 'Completed',
+                                    completer: user,
+                                    completed_date: completed_date
+                                })
+                            });
+                        }
+                    } else {
+                        // Update existing record
+                        const payload = { processing_status: newStatus };
+                        if (newStatus === 'Completed') {
+                            payload.completer = user;
+                            payload.completed_date = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+                        }
+                        
+                        res = await AuthGuard.authFetch(`/api/processing/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    }
+
+                    if (res && res.ok) {
                         showMessage('Success', `<b>${accountName}</b> (FO# ${fo}) status updated to ${newStatus}.`, '✅');
                         await loadData();
                         renderOrderMonitoring();
-                    } else {
+                    } else if (res) {
                         const err = await res.json();
                         showMessage('Failed', err.error || 'Please try again.', '❌');
                     }
