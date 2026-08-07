@@ -1084,6 +1084,12 @@
                 return;
             }
 
+            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'orderStatus', value: 'Loading in progress' })
+            });
+
             // Log to Dispatching Data sheet (no master mirror for the log entry)
             AuthGuard.authFetch(`${API_BASE}/dispatch-plan/dispatch-log`, {
                 method: 'POST',
@@ -1330,7 +1336,13 @@
             });
 
             if (res.ok) {
-                if (field === 'linechecker' && value) {
+                if (field === 'dispatcher' && value) {
+                    await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${orderId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ field: 'orderStatus', value: 'Loading in progress' })
+                    });
+                } else if (field === 'linechecker' && value) {
                     const startTs = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
                     await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${orderId}`, {
                         method: 'POST',
