@@ -347,9 +347,6 @@
         <button class="tab-button" data-tab="inprogress" onclick="switchTab('inprogress')">
             🔄 In Progress <span class="tab-count" id="count-inprogress">—</span>
         </button>
-        <button class="tab-button" data-tab="loading" onclick="switchTab('loading')">
-            🏗️ Loading <span class="tab-count" id="count-loading">—</span>
-        </button>
         <button class="tab-button" data-tab="dispatching" onclick="switchTab('dispatching')">
             🚚 Dispatch <span class="tab-count" id="count-dispatching">—</span>
         </button>
@@ -424,30 +421,6 @@
             </div>
             <div class="table-container">
                 <div id="inprogress-table">
-                    <div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading Tab -->
-    <div id="tab-loading" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title-row">
-                    <div class="card-icon">🏗️</div>
-                    <div>
-                        <div class="card-title">Loading</div>
-                        <div class="card-sub">Assign dispatcher and finish loading</div>
-                    </div>
-                </div>
-                <div class="search-wrap">
-                    <input type="text" id="loading-search" placeholder="🔍 Search customer, FO#..."
-                        oninput="renderLoading()" style="width:240px;height:36px;">
-                </div>
-            </div>
-            <div class="table-container">
-                <div id="loading-table">
                     <div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>
                 </div>
             </div>
@@ -972,188 +945,6 @@
         }
     }
 
-    
-    // ── LOADING TAB ──────────────────────────────────────────────
-    
-    function renderLoading() {
-        const search  = document.getElementById('loading-search')?.value || '';
-        const canAct  = currentUser && ['admin', 'supervisor', 'processor'].includes(currentUser.role);
-        const orders  = applySearch(
-            filterActiveOrders().filter(o => {
-                const ps = getPickingStatus(o.id, o.qty);
-                const isPicked = ps === 'completed';
-                const isChecked = (o.endLineCheck || '').trim();
-                const isLoaded = (o.loadingEnd || '').trim();
-                return isPicked && isChecked && !isLoaded;
-            }),
-            search
-        );
-
-        document.getElementById('count-loading').textContent = orders.length;
-
-        if (!orders.length) {
-            document.getElementById('loading-table').innerHTML =
-                '<div class="empty-state"><div class="empty-icon">🏗️</div>No active orders found</div>';
-            return;
-        }
-
-        const rows = orders.map(o => {
-            const sid = safeId(o.id);
-            const isExpanded = _expandedLoadingId === o.id;
-            const hasDispatcher = (o.dispatcher || '').trim();
-
-            const dispCell = hasDispatcher
-                ? `<span class="person-badge person-badge-dispatch">${o.dispatcher}</span>
-                   ${o.dispatcher_TS ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">${formatTS(o.dispatcher_TS)}</div>` : ''}`
-                : `<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>`;
-
-            let actionCell = '';
-            if (canAct) {
-                if (isExpanded) {
-                    actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch" style="background:rgba(255,255,255,0.08);color:var(--text-secondary);" onclick="cancelLoadingExpand()">✕ Cancel</button></td>`;
-                } else {
-                    if (hasDispatcher) {
-                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-update" onclick="submitFinishLoading('${o.id}')">🏁 Finish Loading</button></td>`;
-                    } else {
-                        actionCell = `<td style="text-align:center;"><button class="btn-action" style="background:var(--accent-orange);color:#fff;" onclick="expandLoading('${o.id}')">🏗️ Start Loading</button></td>`;
-                    }
-                }
-            }
-
-            const expandRow = (canAct && isExpanded) ? `
-            <tr class="expand-row expand-row-dispatch" id="er-l-${sid}">
-                <td colspan="10">
-                    <div class="expand-inner">
-                        <div class="expand-field" style="flex:1;min-width:220px;">
-                            <label>Dispatcher</label>
-                            ${buildComboSelect(`dispatcher-sel-${sid}`, _checkers.map(c => `${c.code} - ${c.name}`), '— Select Dispatcher —', o.dispatcher || '')}
-                        </div>
-                        <div class="expand-field">
-                            <label>QTY</label>
-                            <div class="expand-qty-display">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</div>
-                        </div>
-                        <div class="expand-actions">
-                            <button class="btn-expand-save" id="save-l-${sid}"
-                                onclick="submitLoading('${o.id}','${sid}')">▶ Save</button>
-                            <button class="btn-expand-cancel" onclick="cancelLoadingExpand()">✕ Cancel</button>
-                        </div>
-                    </div>
-                </td>
-            </tr>` : '';
-
-            const checkerBadge = (o.linechecker || '').trim()
-                ? `<span class="person-badge">${o.linechecker}</span>
-                   ${o.startLineCheck ? `<div style="font-size:10px;color:var(--onesource-red);margin-top:3px;">▶ ${o.startLineCheck}</div>` : ''}`
-                : `<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>`;
-
-            const rowStyle = isExpanded ? 'background:rgba(255,165,0,0.05);' : '';
-            return `<tr style="${rowStyle}">
-                <td>${buildFoBadges(o.fo)}</td>
-                <td style="font-weight:600;white-space:nowrap;">${o.accountName || o.partyCode || '—'}</td>
-                <td style="text-align:center;font-weight:700;">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</td>
-                <td style="text-align:center;font-size:12px;">${o.cbm || '—'}</td>
-                <td style="text-align:center;font-size:12px;">${o.weight || '—'}</td>
-                <td>${buildPlanBadge(o.status)}</td>
-                <td style="text-align:center;">${buildPickingBadge(o.id, o.qty)}</td>
-                <td>${buildOrderStatusDot(o.orderStatus)}</td>
-                <td style="cursor:pointer;" onclick="startInlineEdit(this, '${o.id}', 'linechecker', 'select-checker', event)" title="Click to edit Checker">${checkerBadge}</td>
-                <td style="cursor:pointer;" onclick="startInlineEdit(this, '${o.id}', 'dispatcher', 'select-dispatcher', event)" title="Click to edit Dispatcher">${dispCell}</td>
-                ${actionCell}
-            </tr>${expandRow}`;
-        }).join('');
-
-        const actionHeader = canAct ? '<th style="width:140px;text-align:center;">ACTION</th>' : '';
-        document.getElementById('loading-table').innerHTML = `
-            <table>
-                <thead><tr>
-                    <th style="width:200px;">FO#</th>
-                    <th>ACCOUNT NAME</th>
-                    <th style="width:75px;text-align:center;">QTY</th>
-                    <th style="width:75px;text-align:center;">CBM</th>
-                    <th style="width:80px;text-align:center;">WEIGHT</th>
-                    <th style="width:140px;">PLAN STATUS</th>
-                    <th style="width:120px;text-align:center;">PICKING STATUS</th>
-                    <th style="width:175px;">ORDER STATUS</th>
-                    <th style="width:175px;">LINECHECKER</th>
-                    <th style="width:185px;">DISPATCHER</th>
-                    ${actionHeader}
-                </tr></thead>
-                <tbody>${rows}</tbody>
-            </table>`;
-    }
-
-    function expandLoading(id) {
-        _expandedLoadingId = _expandedLoadingId === id ? null : id;
-        renderLoading();
-    }
-
-    function cancelLoadingExpand() {
-        _expandedLoadingId = null;
-        renderLoading();
-    }
-
-    async function submitLoading(id, sid) {
-        const o          = dispatchData.find(x => x.id === id);
-        const dispatcher = document.getElementById(`dispatcher-sel-${sid}`)?.value?.trim();
-        if (!dispatcher) { alert('Please select a dispatcher.'); return; }
-
-        const btn = document.getElementById(`save-l-${sid}`);
-        if (btn) btn.disabled = true;
-
-        try {
-            const r = await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: 'dispatcher', value: dispatcher })
-            });
-            if (!r.ok) {
-                const e = await r.json().catch(() => ({}));
-                alert(e.error || 'Failed to save dispatcher.');
-                if (btn) btn.disabled = false;
-                return;
-            }
-
-            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: 'orderStatus', value: 'Loading in progress' })
-            });
-            
-            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: 'startLoading', value: new Date().toISOString() })
-            });
-
-            _expandedLoadingId = null;
-            await loadData();
-        } catch (err) {
-            alert('Error: ' + err.message);
-            if (btn) btn.disabled = false;
-        }
-    }
-    
-    async function submitFinishLoading(id) {
-        try {
-            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: 'orderStatus', value: 'Loaded' })
-            });
-            
-            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: 'loadingEnd', value: new Date().toISOString() })
-            });
-
-            await loadData();
-        } catch (err) {
-            alert('Error: ' + err.message);
-        }
-    }
-
-
     // ── DISPATCHING TAB ──────────────────────────────────────────
 
     function renderDispatching() {
@@ -1163,9 +954,8 @@
             filterActiveOrders().filter(o => {
                 const ps = getPickingStatus(o.id, o.qty);
                 const isPicked = ps === 'completed';
-                const isLoaded = (o.loadingEnd || '').trim();
-                const isDispatched = (o.orderStatus || '').toLowerCase() === 'dispatched';
-                return isPicked && isLoaded && !isDispatched;
+                const isChecked = (o.endLineCheck || '').trim();
+                return isPicked && isChecked;
             }),
             search
         );
@@ -1193,9 +983,6 @@
                 if (isExpanded) {
                     actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch" style="background:rgba(255,255,255,0.08);color:var(--text-secondary);" onclick="cancelDispatchingExpand()">✕ Cancel</button></td>`;
                 } else {
-                    actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch" onclick="submitDispatching('${o.id}')">🚚 Dispatch</button></td>`;
-                }
-            } else {
                     const updateClass = hasDispatcher ? 'btn-action-update' : '';
                     const isChecked = (o.endLineCheck || '').trim();
                     if (isChecked) {
@@ -1206,7 +993,26 @@
                 }
             }
 
-            const expandRow = '';
+            const expandRow = (canAct && isExpanded) ? `
+            <tr class="expand-row expand-row-dispatch" id="er-d-${sid}">
+                <td colspan="10">
+                    <div class="expand-inner">
+                        <div class="expand-field" style="flex:1;min-width:220px;">
+                            <label>Dispatcher</label>
+                            ${buildComboSelect(`dispatcher-sel-${sid}`, _checkers.map(c => `${c.code} - ${c.name}`), '— Select Dispatcher —', o.dispatcher || '')}
+                        </div>
+                        <div class="expand-field">
+                            <label>QTY</label>
+                            <div class="expand-qty-display">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</div>
+                        </div>
+                        <div class="expand-actions">
+                            <button class="btn-expand-save" id="save-d-${sid}"
+                                onclick="submitDispatching('${o.id}','${sid}')">▶ Save</button>
+                            <button class="btn-expand-cancel" onclick="cancelDispatchingExpand()">✕ Cancel</button>
+                        </div>
+                    </div>
+                </td>
+            </tr>` : '';
 
             const checkerBadge = (o.linechecker || '').trim()
                 ? `<span class="person-badge">${o.linechecker}</span>
@@ -1259,13 +1065,31 @@
         renderDispatching();
     }
 
-    async function submitDispatching(id) {
-        const o = dispatchData.find(x => x.id === id);
+    async function submitDispatching(id, sid) {
+        const o          = dispatchData.find(x => x.id === id);
+        const dispatcher = document.getElementById(`dispatcher-sel-${sid}`)?.value?.trim();
+        if (!dispatcher) { alert('Please select a dispatcher.'); return; }
+
+        const btn = document.getElementById(`save-d-${sid}`);
+        if (btn) btn.disabled = true;
+
         try {
+            const r = await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'dispatcher', value: dispatcher })
+            });
+            if (!r.ok) {
+                const e = await r.json().catch(() => ({}));
+                alert(e.error || 'Failed to save dispatcher.');
+                if (btn) btn.disabled = false;
+                return;
+            }
+
             await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: 'orderStatus', value: 'Dispatched' })
+                body: JSON.stringify({ field: 'orderStatus', value: 'Loading in progress' })
             });
 
             // Log to Dispatching Data sheet (no master mirror for the log entry)
@@ -1278,7 +1102,7 @@
                     partyCode:   o?.partyCode   || '',
                     accountName: o?.accountName || '',
                     qty:         o?.qty         || '',
-                    dispatcher:  o?.dispatcher  || ''
+                    dispatcher
                 })
             }).catch(e => console.warn('dispatch-log failed:', e));
 
@@ -1286,6 +1110,7 @@
             await loadData();
         } catch (err) {
             alert('Error: ' + err.message);
+            if (btn) btn.disabled = false;
         }
     }
 
@@ -1308,7 +1133,7 @@
             if (isLC) {
                 return (o.linechecker || '').trim() && isToday(o.startLineCheck);
             } else {
-                return (o.orderStatus || '').toLowerCase() === 'dispatched' && isToday(o.loadingEnd);
+                return (o.dispatcher || '').trim() && isToday(o.endLineCheck);
             }
         });
         orders = applySearch(orders, search);
@@ -1378,7 +1203,6 @@
         // cancel any open expand rows when switching tabs
         _expandedCheckingId = null;
         _expandedInProgressId = null;
-        _expandedLoadingId = null;
         _expandedDispatchingId = null;
     }
 
@@ -1416,7 +1240,6 @@
 
             renderChecking();
             renderInProgress();
-            renderLoading();
             renderDispatching();
             renderCompleted();
         } catch (err) {
