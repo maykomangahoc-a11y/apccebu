@@ -570,7 +570,7 @@
         'Picking Completed':   '#00b4d8',
         'Ready to Dispatch':   '#f4a261',
         'Loading in progress': '#f9e03a',
-        'Loaded':              '#57cc99',
+        'Loaded ready for dispatch': '#57cc99',
         'dispatched':          '#48bb78',
         'Checking':            '#ffb4a2',
     };
@@ -1250,7 +1250,7 @@
             await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: 'orderStatus', value: 'Loaded' })
+                body: JSON.stringify({ field: 'orderStatus', value: 'Loaded ready for dispatch' })
             });
             
             await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
