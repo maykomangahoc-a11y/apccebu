@@ -855,6 +855,7 @@ const TRUCK_FIELD_MAP = {
   startLineCheck: { col: 'start_line_check' },
   endLineCheck:   { col: 'end_line_check' },
   stagingArea:    { col: 'staging_area' },
+  orderStatus:    { col: 'order_status' },
 };
 
 router.post('/truck-field/:id', authenticateToken, async (req, res) => {
