@@ -986,8 +986,8 @@
                 const ps = getPickingStatus(o.id, o.qty);
                 const isPicked = ps === 'completed';
                 const isChecked = (o.endLineCheck || '').trim();
-                const hasDispatcher = (o.dispatcher || '').trim();
-                return isPicked && isChecked && !hasDispatcher;
+                const isDispatched = (o.orderStatus || '').toLowerCase() === 'dispatched';
+                return isPicked && isChecked && !isDispatched;
             }),
             search
         );
@@ -1004,6 +1004,7 @@
             const sid = safeId(o.id);
             const isExpanded = _expandedDispatchingId === o.id;
             const hasDispatcher = (o.dispatcher || '').trim();
+            const hasLoadingEnd = (o.loadingEnd || '').trim();
 
             const dispCell = hasDispatcher
                 ? `<span class="person-badge person-badge-dispatch">${o.dispatcher}</span>
@@ -1015,17 +1016,17 @@
                 if (isExpanded) {
                     actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch" style="background:rgba(255,255,255,0.08);color:var(--text-secondary);" onclick="cancelDispatchingExpand()">✕ Cancel</button></td>`;
                 } else {
-                    const updateClass = hasDispatcher ? 'btn-action-update' : '';
-                    const isChecked = (o.endLineCheck || '').trim();
-                    if (isChecked) {
-                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" onclick="expandDispatching('${o.id}')">🏗️ Start Loading</button></td>`;
-                    } else {
-                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" style="opacity:0.5;cursor:not-allowed;" title="Cannot dispatch if not checked yet" onclick="alert('Cannot start loading if not checked yet.')">🏗️ Start Loading</button></td>`;
+                    if (!hasDispatcher) {
+                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-update" style="background:var(--accent-orange);color:#fff;" onclick="expandDispatching('${o.id}')">🏗️ Start Loading</button></td>`;
+                    } else if (hasDispatcher && !hasLoadingEnd) {
+                        actionCell = `<td style="text-align:center;"><button class="btn-action" style="opacity:0.5;cursor:not-allowed;" disabled>⏳ Loading...</button></td>`;
+                    } else if (hasLoadingEnd) {
+                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch" onclick="submitDispatching('${o.id}')">🚚 Dispatch</button></td>`;
                     }
                 }
             }
 
-            const expandRow = (canAct && isExpanded) ? `
+            const expandRow = (canAct && isExpanded && !hasDispatcher) ? `
             <tr class="expand-row expand-row-dispatch" id="er-d-${sid}">
                 <td colspan="10">
                     <div class="expand-inner">
@@ -1039,7 +1040,7 @@
                         </div>
                         <div class="expand-actions">
                             <button class="btn-expand-save" id="save-d-${sid}"
-                                onclick="submitDispatching('${o.id}','${sid}')">▶ Save</button>
+                                onclick="submitStartLoading('${o.id}','${sid}')">▶ Save</button>
                             <button class="btn-expand-cancel" onclick="cancelDispatchingExpand()">✕ Cancel</button>
                         </div>
                     </div>
@@ -1240,7 +1241,7 @@
             await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: 'orderStatus', value: 'Dispatched' })
+                body: JSON.stringify({ field: 'orderStatus', value: 'Loaded' })
             });
             
             await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
