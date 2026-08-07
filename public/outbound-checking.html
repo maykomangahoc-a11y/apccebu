@@ -953,7 +953,9 @@
         const orders  = applySearch(
             filterActiveOrders().filter(o => {
                 const ps = getPickingStatus(o.id, o.qty);
-                return ps === 'completed' || ps === 'ongoing';
+                const isPicked = ps === 'completed';
+                const isChecked = (o.endLineCheck || '').trim();
+                return isPicked && isChecked;
             }),
             search
         );
