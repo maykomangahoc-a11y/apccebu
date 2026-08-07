@@ -1156,6 +1156,25 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Update Status Modal -->
+        <div id="update-status-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="card-icon" id="update-status-icon"
+                        style="background: linear-gradient(135deg, var(--onesource-red), #c8102e);">🔄</div>
+                    <h2 class="modal-title" id="update-status-title">Update Status</h2>
+                </div>
+                <div id="update-status-message" class="modal-body"></div>
+                <div class="modal-footer" id="update-status-footer">
+                    <button class="btn btn-secondary" onclick="closeModal()" style="padding: 8px 16px; font-size: 14px;">Cancel</button>
+                    <button class="btn btn-primary" id="update-status-uploaded-btn"
+                        style="padding: 12px 24px; font-size: 16px; background: #f6ad55; border: none; color: white; cursor: pointer; border-radius: 6px; font-weight: 600;">Uploaded</button>
+                    <button class="btn btn-primary" id="update-status-processed-btn"
+                        style="padding: 12px 24px; font-size: 16px;">Processed</button>
+                </div>
+            </div>
+        </div>
 
         <!-- SKU Management Modal Overlay -->
         <div id="sku-mgmt-modal" class="modal-overlay">
@@ -2323,33 +2342,49 @@
             
             async function markOrderProcessed(id, fo, accountName, cases) {
                 if (!id) return;
-                const msg = `Confirm <b>${accountName}</b> (FO/STO# <b>${fo}</b>) with Cases Qty <b>${cases}</b> processed?`;
+                const msg = `Update status for <b>${accountName}</b> (FO/STO# <b>${fo}</b>)?`;
 
-                showConfirm('Confirm Processed', msg, '✅', async () => {
-                    try {
-                        const user = AuthGuard.getUser()?.username || 'System';
-                        const completed_date = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
-                        
-                        const res = await AuthGuard.authFetch(`/api/processing/${id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                processing_status: 'Completed',
-                                completer: user,
-                                completed_date: completed_date
-                            })
-                        });
+                const modal = document.getElementById('update-status-modal');
+                document.getElementById('update-status-message').innerHTML = msg;
+                
+                document.getElementById('update-status-uploaded-btn').onclick = async () => {
+                    closeModal();
+                    await updateProcessingStatus(id, fo, accountName, 'For Processing');
+                };
 
-                        if (res.ok) {
-                            showMessage('Success', `<b>${accountName}</b> (FO# ${fo}) successfully marked as processed.`, '✅');
-                            await loadData();
-                            renderOrderMonitoring();
-                        } else {
-                            const err = await res.json();
-                            showMessage('Failed', err.error || 'Please try again.', '❌');
-                        }
-                    } catch (e) { console.error(e); }
-                });
+                document.getElementById('update-status-processed-btn').onclick = async () => {
+                    closeModal();
+                    await updateProcessingStatus(id, fo, accountName, 'Completed');
+                };
+
+                modal.style.display = 'flex';
+            }
+
+            async function updateProcessingStatus(id, fo, accountName, newStatus) {
+                try {
+                    const user = AuthGuard.getUser()?.username || 'System';
+                    const payload = { processing_status: newStatus };
+                    
+                    if (newStatus === 'Completed') {
+                        payload.completer = user;
+                        payload.completed_date = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+                    }
+                    
+                    const res = await AuthGuard.authFetch(`/api/processing/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.ok) {
+                        showMessage('Success', `<b>${accountName}</b> (FO# ${fo}) status updated to ${newStatus}.`, '✅');
+                        await loadData();
+                        renderOrderMonitoring();
+                    } else {
+                        const err = await res.json();
+                        showMessage('Failed', err.error || 'Please try again.', '❌');
+                    }
+                } catch (e) { console.error(e); }
             }
 
             function confirmOrderPrinted(fo, store) {
@@ -2460,6 +2495,8 @@
 
             function closeModal() {
                 document.getElementById('confirm-modal').style.display = 'none';
+                document.getElementById('update-status-modal').style.display = 'none';
+                document.getElementById('sku-mgmt-modal').style.display = 'none';
                 const proceedBtn = document.getElementById('modal-proceed-btn');
                 if (proceedBtn) proceedBtn.style.display = 'block';
             }
