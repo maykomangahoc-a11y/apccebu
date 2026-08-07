@@ -847,6 +847,17 @@
                 });
             }
 
+            const endTs = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'endLineCheck', value: endTs })
+            });
+
+            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'orderStatus', value: 'Ready to Dispatch' })
+            });
+
             AuthGuard.authFetch(`${API_BASE}/dispatch-plan/check-log`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -903,6 +914,11 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ field: 'startLineCheck', value: startTs })
+                });
+                await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: 'orderStatus', value: 'Checking' })
                 });
             }
 
@@ -1067,14 +1083,6 @@
                 if (btn) btn.disabled = false;
                 return;
             }
-
-            // Set endLineCheck timestamp
-            const endTs = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
-            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field: 'endLineCheck', value: endTs })
-            });
 
             // Log to Dispatching Data sheet (no master mirror for the log entry)
             AuthGuard.authFetch(`${API_BASE}/dispatch-plan/dispatch-log`, {
@@ -1322,19 +1330,17 @@
             });
 
             if (res.ok) {
-                if (field === 'dispatcher' && value) {
-                    const endTs = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
-                    await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${orderId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ field: 'endLineCheck', value: endTs })
-                    });
-                } else if (field === 'linechecker' && value) {
+                if (field === 'linechecker' && value) {
                     const startTs = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
                     await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${orderId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ field: 'startLineCheck', value: startTs })
+                    });
+                    await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${orderId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ field: 'orderStatus', value: 'Checking' })
                     });
                 }
                 loadData();
