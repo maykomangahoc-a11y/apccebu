@@ -1426,7 +1426,8 @@
                         actionAttr = isViewer ? '' : `onclick="uploadOrder('${escFO}', '${escAcc}', '${escCases}', '${escParty}')"`;
                     } else if (status === 'For Processing') {
                         statusClass = 'status-for-processing clickable';
-                        actionAttr = `onclick="openOrderSkuModal('${key}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')"`;
+                        const procId = proc ? proc.id : '';
+                        actionAttr = isViewer ? '' : `onclick="markOrderProcessed('${procId}', '${escFO}', '${escAcc}', '${escCases}')"`;
                     } else if (status === 'Processing') {
                         statusClass = 'status-processing-pill clickable';
                         actionAttr = `onclick="openOrderSkuModal('${key}', '${escFO}', '${escAcc}', '${escCases}', '${escParty}')"`;
@@ -2315,6 +2316,37 @@
                         } else {
                             const err = await res.json();
                             showMessage('Upload Failed', err.error || 'Please try again.', '❌');
+                        }
+                    } catch (e) { console.error(e); }
+                });
+            }
+            
+            async function markOrderProcessed(id, fo, accountName, cases) {
+                if (!id) return;
+                const msg = `Confirm <b>${accountName}</b> (FO/STO# <b>${fo}</b>) with Cases Qty <b>${cases}</b> processed?`;
+
+                showConfirm('Confirm Processed', msg, '✅', async () => {
+                    try {
+                        const user = AuthGuard.getUser()?.username || 'System';
+                        const completed_date = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+                        
+                        const res = await AuthGuard.authFetch(`/api/processing/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                processing_status: 'Completed',
+                                completer: user,
+                                completed_date: completed_date
+                            })
+                        });
+
+                        if (res.ok) {
+                            showMessage('Success', `<b>${accountName}</b> (FO# ${fo}) successfully marked as processed.`, '✅');
+                            await loadData();
+                            renderOrderMonitoring();
+                        } else {
+                            const err = await res.json();
+                            showMessage('Failed', err.error || 'Please try again.', '❌');
                         }
                     } catch (e) { console.error(e); }
                 });
