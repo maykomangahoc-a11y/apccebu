@@ -1099,7 +1099,7 @@
         renderDispatching();
     }
 
-    async function submitDispatching(id, sid) {
+    async function submitStartLoading(id, sid) {
         const o          = dispatchData.find(x => x.id === id);
         const dispatcher = document.getElementById(`dispatcher-sel-${sid}`)?.value?.trim();
         if (!dispatcher) { alert('Please select a dispatcher.'); return; }
@@ -1125,15 +1125,14 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ field: 'orderStatus', value: 'Loading in progress' })
             });
-
             
             await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ field: 'startLoading', value: new Date().toISOString() })
             });
-    
-            // Log to Dispatching Data sheet (no master mirror for the log entry)
+
+            // Log to Dispatching Data sheet
             AuthGuard.authFetch(`${API_BASE}/dispatch-plan/dispatch-log`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1147,8 +1146,7 @@
                 })
             }).catch(e => console.warn('dispatch-log failed:', e));
 
-            _expandedLoadingId = null;
-        _expandedDispatchingId = null;
+            _expandedDispatchingId = null;
             await loadData();
         } catch (err) {
             alert('Error: ' + err.message);
@@ -1156,9 +1154,20 @@
         }
     }
 
-    // ──
+    async function submitDispatching(id) {
+        const o = dispatchData.find(x => x.id === id);
+        try {
+            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'orderStatus', value: 'Dispatched' })
+            });
+            await loadData();
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    }
 
-    
     // ── LOADING TAB ──────────────────────────────────────────────
     
     function renderLoading() {
