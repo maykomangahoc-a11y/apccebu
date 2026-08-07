@@ -1837,7 +1837,7 @@
 
                 const pickerOptions = [];
                 sortedPickers.forEach(p => {
-                    if (busyPickers.has(p.code) && p.code !== currentValue) return;
+                    // if (busyPickers.has(p.code) && p.code !== currentValue) return; // Removed to allow multiple picking assignments
                     const group = `${p.shift} - ${p.designation}s`;
                     pickerOptions.push({
                         value: p.code,
@@ -1972,7 +1972,7 @@
 
             sortedPickers.forEach(p => {
                 // Skip pickers who already have an in-progress picking
-                if (busyPickers.has(p.code)) return;
+                // if (busyPickers.has(p.code)) return; // Removed to allow multiple picking assignments
                 const group = `${p.shift} - ${p.designation}s`;
                 pickerOptions.push({
                     value: p.code,
@@ -3214,7 +3214,7 @@
 
             const pickerOptions = [];
             [...pickersDatabase].sort((a, b) => (a.shift || '').localeCompare(b.shift || '')).forEach(p => {
-                if (busyPickers.has(p.code) && p.code !== order.pickerCode) return;
+                // if (busyPickers.has(p.code) && p.code !== order.pickerCode) return; // Removed to allow multiple picking assignments
                 pickerOptions.push({
                     value: p.code,
                     text: `${p.code} - ${p.name} (${p.shift})`
