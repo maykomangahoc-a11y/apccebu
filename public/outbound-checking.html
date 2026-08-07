@@ -341,6 +341,7 @@
     </header>
 
     <div class="tabs-header">
+        
         <button class="tab-button active" data-tab="checking" onclick="switchTab('checking')">
             ✅ Checking <span class="tab-count" id="count-checking">—</span>
         </button>
@@ -350,7 +351,11 @@
         <button class="tab-button" data-tab="dispatching" onclick="switchTab('dispatching')">
             🚚 Dispatch <span class="tab-count" id="count-dispatching">—</span>
         </button>
+        <button class="tab-button" data-tab="loading" onclick="switchTab('loading')">
+            🏗️ Loading <span class="tab-count" id="count-loading">—</span>
+        </button>
         <button class="tab-button" data-tab="completed" onclick="switchTab('completed')">
+
             📦 Completed <span class="tab-count" id="count-completed">—</span>
         </button>
     </div>
@@ -421,6 +426,31 @@
             </div>
             <div class="table-container">
                 <div id="inprogress-table">
+                    <div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Loading Tab -->
+    <div id="tab-loading" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title-row">
+                    <div class="card-icon">🏗️</div>
+                    <div>
+                        <div class="card-title">Loading</div>
+                        <div class="card-sub">Loading in progress</div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <input type="text" id="loading-search" placeholder="🔍 Search customer, FO#..."
+                        oninput="renderLoading()" style="width:240px;height:36px;">
+                </div>
+            </div>
+            <div class="table-container">
+                <div id="loading-table">
                     <div class="empty-state"><div class="empty-icon">⏳</div>Loading...</div>
                 </div>
             </div>
@@ -519,7 +549,8 @@
     let currentUser = null;
     let _expandedCheckingId = null;
     let _expandedInProgressId = null;
-    let _expandedDispatchingId = null;
+    let _expandedLoadingId = null;
+        _expandedDispatchingId = null;
     let _completedView = 'linechecking';
 
     const ACTIVE_PLAN_STATUSES = ["pending plan", "today's plan", "additional plan"];
@@ -955,7 +986,8 @@
                 const ps = getPickingStatus(o.id, o.qty);
                 const isPicked = ps === 'completed';
                 const isChecked = (o.endLineCheck || '').trim();
-                return isPicked && isChecked;
+                const hasDispatcher = (o.dispatcher || '').trim();
+                return isPicked && isChecked && !hasDispatcher;
             }),
             search
         );
@@ -986,9 +1018,9 @@
                     const updateClass = hasDispatcher ? 'btn-action-update' : '';
                     const isChecked = (o.endLineCheck || '').trim();
                     if (isChecked) {
-                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" onclick="expandDispatching('${o.id}')">🚚 Dispatch</button></td>`;
+                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" onclick="expandDispatching('${o.id}')">🏗️ Start Loading</button></td>`;
                     } else {
-                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" style="opacity:0.5;cursor:not-allowed;" title="Cannot dispatch if not checked yet" onclick="alert('Cannot dispatch if not checked yet.')">🚚 Dispatch</button></td>`;
+                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" style="opacity:0.5;cursor:not-allowed;" title="Cannot dispatch if not checked yet" onclick="alert('Cannot start loading if not checked yet.')">🏗️ Start Loading</button></td>`;
                     }
                 }
             }
@@ -1055,12 +1087,13 @@
             </table>`;
     }
 
-    function expandDispatching(id) {
+    function expandDispatchingfunction expandDispatching(id) {
         _expandedDispatchingId = _expandedDispatchingId === id ? null : id;
         renderDispatching();
     }
 
     function cancelDispatchingExpand() {
+        _expandedLoadingId = null;
         _expandedDispatchingId = null;
         renderDispatching();
     }
@@ -1092,6 +1125,13 @@
                 body: JSON.stringify({ field: 'orderStatus', value: 'Loading in progress' })
             });
 
+            
+            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'startLoading', value: new Date().toISOString() })
+            });
+    
             // Log to Dispatching Data sheet (no master mirror for the log entry)
             AuthGuard.authFetch(`${API_BASE}/dispatch-plan/dispatch-log`, {
                 method: 'POST',
@@ -1106,13 +1146,115 @@
                 })
             }).catch(e => console.warn('dispatch-log failed:', e));
 
-            _expandedDispatchingId = null;
+            _expandedLoadingId = null;
+        _expandedDispatchingId = null;
             await loadData();
         } catch (err) {
             alert('Error: ' + err.message);
             if (btn) btn.disabled = false;
         }
     }
+
+    // ──
+
+    
+    // ── LOADING TAB ──────────────────────────────────────────────
+    
+    function renderLoading() {
+        const search  = document.getElementById('loading-search')?.value || '';
+        const canAct  = currentUser && ['admin', 'supervisor', 'processor'].includes(currentUser.role);
+        const orders  = applySearch(
+            filterActiveOrders().filter(o => {
+                const ps = getPickingStatus(o.id, o.qty);
+                const isPicked = ps === 'completed';
+                const hasDispatcher = (o.dispatcher || '').trim();
+                const isLoaded = (o.loadingEnd || '').trim();
+                return isPicked && hasDispatcher && !isLoaded;
+            }),
+            search
+        );
+
+        document.getElementById('count-loading').textContent = orders.length;
+
+        if (!orders.length) {
+            document.getElementById('loading-table').innerHTML =
+                '<div class="empty-state"><div class="empty-icon">🏗️</div>No loading in progress found</div>';
+            return;
+        }
+
+        const rows = orders.map(o => {
+            const hasDispatcher = (o.dispatcher || '').trim();
+
+            const dispCell = hasDispatcher
+                ? `<span class="person-badge person-badge-dispatch">${o.dispatcher}</span>
+                   ${o.dispatcher_TS ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">${formatTS(o.dispatcher_TS)}</div>` : ''}`
+                : `<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>`;
+
+            let actionCell = '';
+            if (canAct) {
+                actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-update" onclick="submitFinishLoading('${o.id}')">🏁 Finish Loading</button></td>`;
+            }
+
+            const checkerBadge = (o.linechecker || '').trim()
+                ? `<span class="person-badge">${o.linechecker}</span>
+                   ${o.startLineCheck ? `<div style="font-size:10px;color:var(--onesource-red);margin-top:3px;">▶ ${o.startLineCheck}</div>` : ''}`
+                : `<span style="color:rgba(255,255,255,0.2);font-size:11px;">—</span>`;
+
+            return `<tr>
+                <td>${buildFoBadges(o.fo)}</td>
+                <td style="font-weight:600;white-space:nowrap;">${o.accountName || o.partyCode || '—'}</td>
+                <td style="text-align:center;font-weight:700;">${o.qty !== '' && o.qty !== undefined ? o.qty : '—'}</td>
+                <td style="text-align:center;font-size:12px;">${o.cbm || '—'}</td>
+                <td style="text-align:center;font-size:12px;">${o.weight || '—'}</td>
+                <td>${buildPlanBadge(o.status)}</td>
+                <td style="text-align:center;">${buildPickingBadge(o.id, o.qty)}</td>
+                <td>${buildOrderStatusDot(o.orderStatus)}</td>
+                <td style="cursor:pointer;" onclick="startInlineEdit(this, '${o.id}', 'linechecker', 'select-checker', event)" title="Click to edit Checker">${checkerBadge}</td>
+                <td style="cursor:pointer;" onclick="startInlineEdit(this, '${o.id}', 'dispatcher', 'select-dispatcher', event)" title="Click to edit Dispatcher">${dispCell}</td>
+                ${actionCell}
+            </tr>`;
+        }).join('');
+
+        const actionHeader = canAct ? '<th style="width:140px;text-align:center;">ACTION</th>' : '';
+        document.getElementById('loading-table').innerHTML = `
+            <table>
+                <thead><tr>
+                    <th style="width:200px;">FO#</th>
+                    <th>ACCOUNT NAME</th>
+                    <th style="width:75px;text-align:center;">QTY</th>
+                    <th style="width:75px;text-align:center;">CBM</th>
+                    <th style="width:80px;text-align:center;">WEIGHT</th>
+                    <th style="width:140px;">PLAN STATUS</th>
+                    <th style="width:120px;text-align:center;">PICKING STATUS</th>
+                    <th style="width:175px;">ORDER STATUS</th>
+                    <th style="width:175px;">LINECHECKER</th>
+                    <th style="width:185px;">DISPATCHER</th>
+                    ${actionHeader}
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    async function submitFinishLoading(id) {
+        try {
+            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'orderStatus', value: 'Dispatched' })
+            });
+            
+            await AuthGuard.authFetch(`${API_BASE}/dispatch-plan/truck-field/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'loadingEnd', value: new Date().toISOString() })
+            });
+
+            await loadData();
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    }
+
 
     // ── COMPLETED TAB ─────────────────────────────────────────────
 
@@ -1133,7 +1275,7 @@
             if (isLC) {
                 return (o.linechecker || '').trim() && isToday(o.startLineCheck);
             } else {
-                return (o.dispatcher || '').trim() && isToday(o.endLineCheck);
+                return (o.loadingEnd || '').trim() && isToday(o.loadingEnd);
             }
         });
         orders = applySearch(orders, search);
@@ -1203,6 +1345,7 @@
         // cancel any open expand rows when switching tabs
         _expandedCheckingId = null;
         _expandedInProgressId = null;
+        _expandedLoadingId = null;
         _expandedDispatchingId = null;
     }
 
@@ -1241,6 +1384,7 @@
             renderChecking();
             renderInProgress();
             renderDispatching();
+            renderLoading();
             renderCompleted();
         } catch (err) {
             console.error(err);
