@@ -966,7 +966,12 @@
                     actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch" style="background:rgba(255,255,255,0.08);color:var(--text-secondary);" onclick="cancelDispatchingExpand()">✕ Cancel</button></td>`;
                 } else {
                     const updateClass = hasDispatcher ? 'btn-action-update' : '';
-                    actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" onclick="expandDispatching('${o.id}')">🚚 Dispatch</button></td>`;
+                    const isChecked = (o.endLineCheck || '').trim();
+                    if (isChecked) {
+                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" onclick="expandDispatching('${o.id}')">🚚 Dispatch</button></td>`;
+                    } else {
+                        actionCell = `<td style="text-align:center;"><button class="btn-action btn-action-dispatch ${updateClass}" style="opacity:0.5;cursor:not-allowed;" title="Cannot dispatch if not checked yet" onclick="alert('Cannot dispatch if not checked yet.')">🚚 Dispatch</button></td>`;
+                    }
                 }
             }
 
