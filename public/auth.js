@@ -25,7 +25,7 @@ const AuthGuard = (() => {
 
     function redirectToLogin() {
         const current = window.location.pathname + window.location.search;
-        window.location.href = '/login.html?redirect=' + encodeURIComponent(current);
+        window.top.location.href = '/login.html?redirect=' + encodeURIComponent(current);
     }
 
     /**
@@ -92,7 +92,7 @@ const AuthGuard = (() => {
 
             if (requiredRole && !hasRole(requiredRole)) {
                 // Redirect to home with an error flag
-                window.location.href = '/?access_denied=1';
+                window.top.location.href = '/?access_denied=1';
                 return null;
             }
 
