@@ -1756,7 +1756,7 @@
                 dispatch_date: item.dispatchDate || ''
             };
             const rawValue = fieldValues[field];
-            activeInlineEdit = { cellEl, restoreHTML: cellEl.innerHTML };
+            activeInlineEdit = { cellEl, restoreHTML: cellEl.innerHTML, originalValue: rawValue };
 
             const inputStyle = 'width: 100%; padding: 4px 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; font-size: 12px;';
             let inputHTML;
@@ -1818,7 +1818,7 @@
                 value = value.trim();
             }
 
-            if ((field === 'fo' || field === 'account_name') && !value) {
+            if (String(value) === String(activeInlineEdit.originalValue) || ((field === 'fo' || field === 'account_name') && !value)) {
                 cancelInlineEdit();
                 return;
             }
