@@ -566,7 +566,13 @@
         })();
 
         function redirectAfterLogin() {
-            const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
+            let redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
+            if (redirect !== '/' && redirect !== '/index.html') {
+                const pageMatch = redirect.match(/^\/([^.]+)\.html/);
+                if (pageMatch) {
+                    redirect = '/?page=' + pageMatch[1];
+                }
+            }
             window.location.href = redirect;
         }
 

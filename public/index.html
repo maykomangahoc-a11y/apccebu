@@ -598,9 +598,16 @@
         let framesLoaded = { dashboard: false, 'dispatch-plan': false, 'outbound-checking': false, outbound: false, processing: false, reporting: false, 'inbound-dashboard': false, 'inbound-monitoring': false, 'inbound-monitoring-sku': false, inbound: false, 'inbound-putaway': false, 'inbound-reporting': false, replenishment: false, management: false };
 
         // Restore last visited page, default to dashboard
-        let currentPage = localStorage.getItem('onesource_page') || 'dashboard';
+        const urlParams = new URLSearchParams(window.location.search);
+        let requestedPage = urlParams.get('page');
+        let currentPage = requestedPage || localStorage.getItem('onesource_page') || 'dashboard';
         if (window.location.search.includes('access_denied=1')) currentPage = 'dashboard';
         if (!PAGES.includes(currentPage)) currentPage = 'dashboard';
+        
+        // Clean URL if requested page was provided
+        if (requestedPage && PAGES.includes(requestedPage)) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
         function switchPage(page) {
             const activeFrame = document.getElementById('frame-' + page);

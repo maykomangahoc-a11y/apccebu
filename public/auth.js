@@ -24,7 +24,8 @@ const AuthGuard = (() => {
     }
 
     function redirectToLogin() {
-        const current = window.location.pathname + window.location.search;
+        let current = '/';
+        try { current = window.top.location.pathname + window.top.location.search; } catch (e) { current = window.location.pathname + window.location.search; }
         window.top.location.href = '/login.html?redirect=' + encodeURIComponent(current);
     }
 
@@ -69,6 +70,15 @@ const AuthGuard = (() => {
      * then optionally enforces a minimum role.
      */
     async function init({ requiredRole = null } = {}) {
+        // Enforce running inside the shell (index.html)
+        const isIndexOrLogin = window.location.pathname === '/' || window.location.pathname === '/index.html' || window.location.pathname === '/login.html' || window.location.pathname === '/setup.html';
+        if (window.top === window.self && !isIndexOrLogin) {
+            let page = window.location.pathname.substring(1).replace('.html', '');
+            if (!page) page = 'dashboard';
+            window.location.href = `/?page=${page}`;
+            return null;
+        }
+
         const token = getToken();
         if (!token) { redirectToLogin(); return null; }
 
