@@ -393,17 +393,17 @@
                 <div class="nav-section-label">OUTBOUND</div>
 
                 <a class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
-                    <span class="nav-icon">ðŸ“Š</span>
+                    <span class="nav-icon">📊</span>
                     <span class="nav-label">Dashboard</span>
                 </a>
 
                 <a class="nav-item" data-page="dispatch-plan" onclick="switchPage('dispatch-plan')">
-                    <span class="nav-icon">ðŸ“‹</span>
+                    <span class="nav-icon">📋</span>
                     <span class="nav-label">Dispatch Plan</span>
                 </a>
 
                 <a class="nav-item" data-page="outbound-checking" onclick="switchPage('outbound-checking')">
-                    <span class="nav-icon">âœ…</span>
+                    <span class="nav-icon">✅</span>
                     <span class="nav-label">Outbound Checking</span>
                 </a>
 
@@ -483,7 +483,7 @@
 
         <!-- Sidebar Toggle Button -->
         <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle navigation">
-            <span id="toggleIcon">â—€</span>
+            <span id="toggleIcon">◀</span>
         </button>
 
         <!-- Main Content Area -->
@@ -703,11 +703,11 @@
             if (sidebarHidden) {
                 sidebar.classList.add('hidden');
                 toggle.style.left = '0px';
-                icon.textContent = 'â–¶';
+                icon.textContent = '▶';
             } else {
                 sidebar.classList.remove('hidden');
                 toggle.style.left = 'var(--sidebar-width)';
-                icon.textContent = 'â—€';
+                icon.textContent = '◀';
             }
 
             // Force charts to resize in the active iframe after transition
@@ -721,7 +721,7 @@
 
         // Initialize
         async function initPage() {
-            // Auth guard â€” validate token and get user
+            // Auth guard — validate token and get user
             const user = await AuthGuard.init();
             if (!user) return; // will have redirected to login
 
