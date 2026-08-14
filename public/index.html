@@ -63,7 +63,7 @@
             border-right: none;
         }
 
-        /* Toggle button — always visible, floats on edge */
+        /* Toggle button â€” always visible, floats on edge */
         .sidebar-toggle {
             position: fixed;
             top: 50%;
@@ -372,7 +372,7 @@
 <body>
     <!-- Mobile Header -->
     <div class="mobile-header">
-        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">â˜°</button>
         <img src="/onesource.png" alt="Onesource" style="height: 28px;">
         <span style="color: white; font-weight: 600; font-size: 14px;">Onesource Logistics</span>
     </div>
@@ -393,17 +393,17 @@
                 <div class="nav-section-label">OUTBOUND</div>
 
                 <a class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
-                    <span class="nav-icon">📊</span>
+                    <span class="nav-icon">ðŸ“Š</span>
                     <span class="nav-label">Dashboard</span>
                 </a>
 
                 <a class="nav-item" data-page="dispatch-plan" onclick="switchPage('dispatch-plan')">
-                    <span class="nav-icon">📋</span>
+                    <span class="nav-icon">ðŸ“‹</span>
                     <span class="nav-label">Dispatch Plan</span>
                 </a>
 
                 <a class="nav-item" data-page="outbound-checking" onclick="switchPage('outbound-checking')">
-                    <span class="nav-icon">✅</span>
+                    <span class="nav-icon">âœ…</span>
                     <span class="nav-label">Outbound Checking</span>
                 </a>
 
@@ -412,13 +412,13 @@
                     <span class="nav-label">Outbound Picking</span>
                 </a>
 
-                <a class="nav-item" data-page="processing" onclick="switchPage('processing')">
+                <a class="nav-item" data-page="processing" onclick="switchPage('processing')" style="display: none;">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-label">Order Processing</span>
                 </a>
 
-                <a class="nav-item" data-page="reporting" onclick="switchPage('reporting')">
-                    <span class="nav-icon">📈</span>
+                <a class="nav-item" data-page="reporting" onclick="switchPage('reporting')" style="display: none;">
+                    <span class="nav-icon">📊</span>
                     <span class="nav-label">Reporting</span>
                 </a>
 
@@ -452,7 +452,7 @@
                     </a>
 
                     <a class="nav-item" data-page="inbound-reporting" onclick="switchPage('inbound-reporting')">
-                        <span class="nav-icon">📈</span>
+                        <span class="nav-icon">📊</span>
                         <span class="nav-label">Reporting</span>
                     </a>
                 </div>
@@ -463,8 +463,8 @@
                     <span class="nav-label">Replenishment</span>
                 </a>
 
-                <div class="nav-section-label">Configuration</div>
-                <a class="nav-item" data-page="management" onclick="switchPage('management')">
+                <div class="nav-section-label" id="nav-section-config" style="display: none;">Configuration</div>
+                <a class="nav-item" data-page="management" onclick="switchPage('management')" style="display: none;">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-label">Management</span>
                 </a>
@@ -483,7 +483,7 @@
 
         <!-- Sidebar Toggle Button -->
         <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle navigation">
-            <span id="toggleIcon">◀</span>
+            <span id="toggleIcon">â—€</span>
         </button>
 
         <!-- Main Content Area -->
@@ -496,98 +496,98 @@
             <iframe 
                 id="frame-dashboard" 
                 class="content-frame active" 
-                src="/dashboard.html?v=4"
+                data-src="/dashboard.html?v=4"
                 onload="frameLoaded('dashboard')"
             ></iframe>
 
             <iframe
                 id="frame-dispatch-plan"
                 class="content-frame"
-                src="/dispatch-plan.html?v=1"
+                data-src="/dispatch-plan.html?v=1"
                 onload="frameLoaded('dispatch-plan')"
             ></iframe>
 
             <iframe
                 id="frame-outbound-checking"
                 class="content-frame"
-                src="/outbound-checking.html?v=1"
+                data-src="/outbound-checking.html?v=1"
                 onload="frameLoaded('outbound-checking')"
             ></iframe>
 
             <iframe
                 id="frame-outbound" 
                 class="content-frame" 
-                src="/outbound.html?v=4"
+                data-src="/outbound.html?v=4"
                 onload="frameLoaded('outbound')"
             ></iframe>
 
             <iframe
                 id="frame-processing"
                 class="content-frame"
-                src="/processing.html?v=4"
+                data-src="/processing.html?v=4"
                 onload="frameLoaded('processing')"
             ></iframe>
 
             <iframe 
                 id="frame-reporting" 
                 class="content-frame" 
-                src="/reporting.html?v=4"
+                data-src="/reporting.html?v=4"
                 onload="frameLoaded('reporting')"
             ></iframe>
 
             <iframe
                 id="frame-inbound-dashboard"
                 class="content-frame"
-                src="/inbound-dashboard.html?v=1"
+                data-src="/inbound-dashboard.html?v=1"
                 onload="frameLoaded('inbound-dashboard')"
             ></iframe>
 
             <iframe
                 id="frame-inbound-monitoring"
                 class="content-frame"
-                src="/inbound-monitoring.html?v=1"
+                data-src="/inbound-monitoring.html?v=1"
                 onload="frameLoaded('inbound-monitoring')"
             ></iframe>
 
             <iframe
                 id="frame-inbound-monitoring-sku"
                 class="content-frame"
-                src="/inbound-monitoring-sku.html?v=1"
+                data-src="/inbound-monitoring-sku.html?v=1"
                 onload="frameLoaded('inbound-monitoring-sku')"
             ></iframe>
 
             <iframe
                 id="frame-inbound"
                 class="content-frame"
-                src="/inbound.html?v=1"
+                data-src="/inbound.html?v=1"
                 onload="frameLoaded('inbound')"
             ></iframe>
 
             <iframe
                 id="frame-inbound-putaway"
                 class="content-frame"
-                src="/inbound-putaway.html?v=1"
+                data-src="/inbound-putaway.html?v=1"
                 onload="frameLoaded('inbound-putaway')"
             ></iframe>
 
             <iframe
                 id="frame-inbound-reporting"
                 class="content-frame"
-                src="/inbound-reporting.html?v=1"
+                data-src="/inbound-reporting.html?v=1"
                 onload="frameLoaded('inbound-reporting')"
             ></iframe>
 
             <iframe
                 id="frame-replenishment"
                 class="content-frame"
-                src="/replenishment.html?v=2"
+                data-src="/replenishment.html?v=2"
                 onload="frameLoaded('replenishment')"
             ></iframe>
 
             <iframe
                 id="frame-management"
                 class="content-frame"
-                src="/management.html?v=2"
+                data-src="/management.html?v=2"
                 onload="frameLoaded('management')"
             ></iframe>
         </main>
@@ -599,10 +599,13 @@
 
         // Restore last visited page, default to dashboard
         let currentPage = localStorage.getItem('onesource_page') || 'dashboard';
+        if (window.location.search.includes('access_denied=1')) currentPage = 'dashboard';
         if (!PAGES.includes(currentPage)) currentPage = 'dashboard';
 
         function switchPage(page) {
-            if (page === currentPage) return;
+            const activeFrame = document.getElementById('frame-' + page);
+            if (page === currentPage && activeFrame.getAttribute('src')) return;
+            
             currentPage = page;
             localStorage.setItem('onesource_page', page);
 
@@ -616,11 +619,16 @@
                 document.getElementById('loadingOverlay').classList.remove('hidden');
             }
 
+            // Lazy load the iframe if it hasn't been loaded yet
+            if (!activeFrame.getAttribute('src') || activeFrame.getAttribute('src') === window.location.href) {
+                activeFrame.setAttribute('src', activeFrame.getAttribute('data-src'));
+            }
+
             // Switch frames
             document.querySelectorAll('.content-frame').forEach(frame => {
                 frame.classList.remove('active');
             });
-            document.getElementById('frame-' + page).classList.add('active');
+            activeFrame.classList.add('active');
 
             // Close mobile menu
             closeMobileMenu();
@@ -688,11 +696,11 @@
             if (sidebarHidden) {
                 sidebar.classList.add('hidden');
                 toggle.style.left = '0px';
-                icon.textContent = '▶';
+                icon.textContent = 'â–¶';
             } else {
                 sidebar.classList.remove('hidden');
                 toggle.style.left = 'var(--sidebar-width)';
-                icon.textContent = '◀';
+                icon.textContent = 'â—€';
             }
 
             // Force charts to resize in the active iframe after transition
@@ -706,14 +714,17 @@
 
         // Initialize
         async function initPage() {
-            // Auth guard — validate token and get user
+            // Auth guard â€” validate token and get user
             const user = await AuthGuard.init();
             if (!user) return; // will have redirected to login
 
             // Show/hide Management nav based on role
             const mgmtNav = document.querySelector('[data-page="management"]');
+            const configLabel = document.getElementById('nav-section-config');
             if (mgmtNav) {
-                mgmtNav.style.display = (user.role === 'admin' || user.role === 'supervisor') ? '' : 'none';
+                const showMgmt = (user.role === 'admin' || user.role === 'supervisor');
+                mgmtNav.style.display = showMgmt ? '' : 'none';
+                if (configLabel) configLabel.style.display = showMgmt ? '' : 'none';
             }
             // If current page is management but user isn't admin/supervisor, redirect to dashboard
             if (currentPage === 'management' && user.role !== 'admin' && user.role !== 'supervisor') {
@@ -742,16 +753,8 @@
                 outboundNav.style.display = '';
             }
 
-            // Set correct nav item active
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.toggle('active', item.dataset.page === currentPage);
-            });
-
-            // Show the correct frame
-            document.querySelectorAll('.content-frame').forEach(frame => {
-                frame.classList.remove('active');
-            });
-            document.getElementById('frame-' + currentPage).classList.add('active');
+            // Trigger iframe load and active states
+            switchPage(currentPage);
         }
 
         // Initialize
@@ -770,3 +773,4 @@
     </script>
 </body>
 </html>
+
