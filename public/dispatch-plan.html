@@ -357,15 +357,13 @@
         .os-trigger .os-caret { margin-left: auto; opacity: 0.5; font-size: 10px; }
         .os-dropdown {
             display: none;
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            z-index: 9999;
+            position: fixed;
+            z-index: 99999;
             background: #1e293b;
-            border: 1px solid rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
             border-radius: 8px;
             min-width: 200px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.4);
             overflow: hidden;
         }
         .os-dropdown.open { display: block; }
@@ -373,14 +371,20 @@
             width: 100%;
             background: rgba(255,255,255,0.07);
             border: none;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
             padding: 8px 12px;
             color: white;
             font-size: 12px;
             outline: none;
         }
-        .os-search::placeholder { color: rgba(255,255,255,0.3); }
+        .os-search:focus {
+            background: rgba(255,255,255,0.1);
+        }
+        .os-search::placeholder { color: rgba(255,255,255,0.35); }
         .os-options { max-height: 220px; overflow-y: auto; }
+        .os-options::-webkit-scrollbar { width: 6px; }
+        .os-options::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        .os-options::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
         .os-option {
             display: flex;
             align-items: center;
@@ -391,7 +395,7 @@
             cursor: pointer;
             transition: background 0.15s;
         }
-        .os-option:hover { background: rgba(255,255,255,0.07); }
+        .os-option:hover { background: rgba(255,255,255,0.1); }
         .os-option .os-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .os-option.hidden { display: none; }
 
@@ -861,6 +865,12 @@
         </div>
     </div>
 
+    <!-- Order Status Floating Dropdown -->
+    <div id="os-floating-dropdown" class="os-dropdown" style="display: none;" onclick="event.stopPropagation()">
+        <input class="os-search" id="os-floating-search" type="text" placeholder="Search..." oninput="filterOrderStatus(this.value)" onclick="event.stopPropagation()">
+        <div class="os-options" id="os-floating-options"></div>
+    </div>
+
     <!-- Bulk Action Bar (hidden by default) -->
     <div id="bulk-action-bar" class="bulk-action-bar" style="display: none;">
         <span class="bulk-count" id="bulk-count">0</span>
@@ -1047,6 +1057,7 @@
         }
 
         function filterDispatchTable() {
+            if (typeof closeOrderStatusDropdown === 'function') closeOrderStatusDropdown();
             const searchTerm = document.getElementById('dispatch-search')?.value.toLowerCase() || '';
             const dateFilter = document.getElementById('dispatch-date-filter')?.value || '';
             const filteredData = dispatchPlanData.filter(item => {
@@ -1469,6 +1480,43 @@
                     </div>`;
             }
 
+            return `
+                <div class="os-combobox" id="osc-${id}">
+                    <div class="os-trigger" onclick="toggleOrderStatusCombo('${id}', event)">
+                        <span class="os-dot" style="${dotStyle}"></span>
+                        <span class="os-label">${label}</span>
+                        <span class="os-caret">▼</span>
+                    </div>
+                </div>`;
+        }
+
+        let activeOrderStatusId = null;
+
+        function closeOrderStatusDropdown() {
+            const dropdown = document.getElementById('os-floating-dropdown');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+            activeOrderStatusId = null;
+        }
+
+        function toggleOrderStatusCombo(id, e) {
+            e.stopPropagation();
+            const dropdown = document.getElementById('os-floating-dropdown');
+            if (!dropdown) return;
+
+            if (activeOrderStatusId === id && dropdown.style.display === 'block') {
+                closeOrderStatusDropdown();
+                return;
+            }
+
+            activeOrderStatusId = id;
+            const searchInput = document.getElementById('os-floating-search');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+
+            const optionsContainer = document.getElementById('os-floating-options');
             const options = `<div class="os-option" data-value="" onclick="selectOrderStatus('${id}', '', this)">
                 <span class="os-dot" style="background:rgba(255,255,255,0.2);"></span>
                 - (Blank)
@@ -1478,51 +1526,54 @@
                     ${s}
                 </div>
             `).join('');
+            optionsContainer.innerHTML = options;
 
-            return `
-                <div class="os-combobox" id="osc-${id}">
-                    <div class="os-trigger" onclick="toggleOrderStatusCombo('${id}', event)">
-                        <span class="os-dot" style="${dotStyle}"></span>
-                        <span class="os-label">${label}</span>
-                        <span class="os-caret">▼</span>
-                    </div>
-                    <div class="os-dropdown" id="osd-${id}">
-                        <input class="os-search" type="text" placeholder="Search..." oninput="filterOrderStatus('${id}', this.value)" onclick="event.stopPropagation()">
-                        <div class="os-options">${options}</div>
-                    </div>
-                </div>`;
-        }
+            dropdown.style.display = 'block';
+            dropdown.style.visibility = 'hidden';
 
-        function toggleOrderStatusCombo(id, e) {
-            e.stopPropagation();
-            const dropdown = document.getElementById(`osd-${id}`);
-            const isOpen = dropdown.classList.contains('open');
-            // Close all open dropdowns
-            document.querySelectorAll('.os-dropdown.open').forEach(d => {
-                d.classList.remove('open');
-                const inp = d.querySelector('.os-search');
-                if (inp) { inp.value = ''; filterOrderStatus(d.id.replace('osd-',''), ''); }
-            });
-            if (!isOpen) {
-                dropdown.classList.add('open');
-                setTimeout(() => dropdown.querySelector('.os-search').focus(), 50);
+            const trigger = e.currentTarget;
+            const triggerRect = trigger.getBoundingClientRect();
+            const dropdownHeight = 260;
+            const dropdownWidth = Math.max(200, triggerRect.width);
+
+            dropdown.style.minWidth = `${dropdownWidth}px`;
+
+            let left = triggerRect.left;
+            if (left + dropdownWidth > window.innerWidth - 10) {
+                left = Math.max(10, window.innerWidth - dropdownWidth - 10);
             }
+            dropdown.style.left = `${left}px`;
+
+            const spaceBelow = window.innerHeight - triggerRect.bottom;
+            const spaceAbove = triggerRect.top;
+            if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+                dropdown.style.top = 'auto';
+                dropdown.style.bottom = `${window.innerHeight - triggerRect.top + 4}px`;
+            } else {
+                dropdown.style.top = `${triggerRect.bottom + 4}px`;
+                dropdown.style.bottom = 'auto';
+            }
+
+            dropdown.style.visibility = 'visible';
+
+            setTimeout(() => {
+                if (searchInput) searchInput.focus();
+            }, 30);
         }
 
-        function filterOrderStatus(id, query) {
-            const dropdown = document.getElementById(`osd-${id}`);
+        function filterOrderStatus(query) {
+            const dropdown = document.getElementById('os-floating-dropdown');
             if (!dropdown) return;
-            const q = query.toLowerCase();
+            const q = (query || '').toLowerCase().trim();
             dropdown.querySelectorAll('.os-option').forEach(opt => {
-                opt.classList.toggle('hidden', !opt.dataset.value.toLowerCase().includes(q));
+                const val = (opt.dataset.value || '').toLowerCase();
+                const text = opt.textContent.toLowerCase();
+                opt.classList.toggle('hidden', !val.includes(q) && !text.includes(q));
             });
         }
 
         function selectOrderStatus(id, value, optEl) {
-            const dropdown = document.getElementById(`osd-${id}`);
-            dropdown.classList.remove('open');
-            const inp = dropdown.querySelector('.os-search');
-            if (inp) { inp.value = ''; filterOrderStatus(id, ''); }
+            closeOrderStatusDropdown();
 
             if (String(value).trim().toLowerCase() === 'dispatched') {
                 const item = dispatchPlanData.find(d => d.id === id);
@@ -1551,20 +1602,42 @@
                 }
             }
 
-            const trigger  = document.querySelector(`#osc-${id} .os-trigger`);
-            const color    = ORDER_STATUS_COLORS[value] || 'rgba(255,255,255,0.2)';
-            trigger.querySelector('.os-dot').style.background   = color;
-            trigger.querySelector('.os-label').textContent = value;
+            const trigger = document.querySelector(`#osc-${id} .os-trigger`);
+            if (trigger) {
+                const color = ORDER_STATUS_COLORS[value] || 'rgba(255,255,255,0.2)';
+                const dot = trigger.querySelector('.os-dot');
+                const label = trigger.querySelector('.os-label');
+                if (dot) dot.style.background = color;
+                if (label) label.textContent = value || '-';
+            }
             updateOrderStatus(id, value);
         }
 
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.os-dropdown.open').forEach(d => {
-                d.classList.remove('open');
-                const inp = d.querySelector('.os-search');
-                if (inp) { inp.value = ''; filterOrderStatus(d.id.replace('osd-',''), ''); }
-            });
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('os-floating-dropdown');
+            if (dropdown && dropdown.style.display === 'block') {
+                if (!dropdown.contains(e.target) && !e.target.closest('.os-trigger')) {
+                    closeOrderStatusDropdown();
+                }
+            }
+        });
+
+        // Close dropdown on scroll (outside dropdown), resize, or Escape
+        window.addEventListener('scroll', (e) => {
+            const dropdown = document.getElementById('os-floating-dropdown');
+            if (dropdown && dropdown.style.display === 'block') {
+                if (e.target && dropdown.contains(e.target)) {
+                    return;
+                }
+                closeOrderStatusDropdown();
+            }
+        }, true);
+        window.addEventListener('resize', closeOrderStatusDropdown);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeOrderStatusDropdown();
+            }
         });
 
         async function updateOrderStatus(id, newStatus) {
@@ -2456,6 +2529,7 @@
         }
 
         function switchTab(tabId) {
+            if (typeof closeOrderStatusDropdown === 'function') closeOrderStatusDropdown();
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
