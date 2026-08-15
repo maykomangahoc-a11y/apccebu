@@ -477,7 +477,7 @@
                     <div class="status-indicator" id="sidebarStatusDot"></div>
                     <span id="sidebarStatusText">Connecting...</span>
                 </div>
-                <div class="sidebar-version">v1.0.0</div>
+                <div class="sidebar-version">v1.0.1</div>
             </div>
         </aside>
 
@@ -531,7 +531,7 @@
             <iframe 
                 id="frame-reporting" 
                 class="content-frame" 
-                data-src="/reporting.html?v=4"
+                data-src="/reporting.html?v=5"
                 onload="frameLoaded('reporting')"
             ></iframe>
 
@@ -655,7 +655,7 @@
             try {
                 const res = await fetch('/api/health');
                 const data = await res.json();
-                if (data.status === 'OK' && data.sheetsConnected) {
+                if (data.status === 'ok' || data.status === 'OK') {
                     dot.classList.remove('error');
                     if (text) {
                         if (data.environment === 'Railway') {
@@ -668,7 +668,7 @@
                     }
                 } else {
                     dot.classList.add('error');
-                    text.textContent = 'Sheets disconnected';
+                    text.textContent = 'Disconnected';
                 }
             } catch (e) {
                 dot.classList.add('error');

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Onesource Reporting Hub</title>
+    <script src="/auth.js"></script>
     <style>
         :root {
             --onesource-red: #E63946;
@@ -445,6 +446,30 @@
         let allOrders = [];
         let currentReportData = [];
         let currentFilterColumn = '';
+
+        window.onload = async function() {
+            const user = await AuthGuard.init();
+            if (!user) return;
+            
+            const savedTab = localStorage.getItem('reporting_tab') || 'outbound';
+            switchTab(savedTab);
+
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            
+            const formatDate = d => {
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            };
+
+            document.getElementById('report-start').value = formatDate(startOfMonth);
+            document.getElementById('report-end').value = formatDate(endOfMonth);
+
+            loadReportData();
+        };
         let activeFilters = {
             date: [],
             foNumber: [],
@@ -803,8 +828,11 @@
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
 
-            document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
+            const tabElement = document.getElementById(tabId);
+            if (tabElement) tabElement.classList.add('active');
+            
+            const btn = document.querySelector(`button[onclick*="switchTab('${tabId}')"]`);
+            if (btn) btn.classList.add('active');
         }
     </script>
 
