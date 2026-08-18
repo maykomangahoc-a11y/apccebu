@@ -447,6 +447,16 @@
         let currentReportData = [];
         let currentFilterColumn = '';
 
+        function formatDuration(totalMins) {
+            if (totalMins === null || totalMins === undefined || isNaN(totalMins)) return '';
+            const hours = Math.floor(totalMins / 60);
+            const mins = totalMins % 60;
+            if (hours > 0) {
+                return `${hours}h ${mins}m`;
+            }
+            return `${mins}m`;
+        }
+
         window.onload = async function() {
             const user = await AuthGuard.init();
             if (!user) return;
@@ -573,7 +583,7 @@
                 } else if (column === 'duration') {
                     const endTime = new Date(order.endTime);
                     const dur = Math.floor((endTime - new Date(order.startTime)) / 60000);
-                    return `${dur} min`;
+                    return formatDuration(dur);
                 } else if (column === 'status') {
                     return 'Completed';
                 }
@@ -688,7 +698,7 @@
                         } else if (col === 'duration') {
                             const endTime = new Date(order.endTime);
                             const dur = Math.floor((endTime - new Date(order.startTime)) / 60000);
-                            cellVal = `${dur} min`;
+                            cellVal = formatDuration(dur);
                         } else if (col === 'status') {
                             cellVal = 'Completed';
                         } else {
@@ -752,7 +762,7 @@
                         <td>${order.accountName}</td>
                         <td>${order.pickerCode}</td>
                         <td>${order.pickerQty.toLocaleString()}</td>
-                        <td>${duration.toLocaleString()} min</td>
+                        <td>${formatDuration(duration)}</td>
                         <td><span class="badge badge-success">Completed</span></td>
                     </tr>
                 `;
@@ -778,7 +788,7 @@
                         } else if (col === 'duration') {
                             const endTime = new Date(order.endTime);
                             const dur = Math.floor((endTime - new Date(order.startTime)) / 60000);
-                            cellVal = `${dur} min`;
+                            cellVal = formatDuration(dur);
                         } else if (col === 'status') {
                             cellVal = 'Completed';
                         } else {
