@@ -5,7 +5,115 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Onesource Reporting Hub</title>
-    <script src="/auth.js"></script>
+    <script src="/auth.js">
+        let allCheckingData = [];
+        let currentCheckingReportData = [];
+
+        async function loadCheckingReportData() {
+            const foFilter = document.getElementById('checking-report-fo').value.toLowerCase();
+            const checkerFilter = document.getElementById('checking-report-checker').value.toLowerCase();
+            const startDate = document.getElementById('checking-report-start').value;
+            const endDate = document.getElementById('checking-report-end').value;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/checking`);
+                allCheckingData = await res.json();
+                
+                let filtered = allCheckingData;
+
+                if (foFilter) filtered = filtered.filter(o => String(o.fo || '').toLowerCase().includes(foFilter));
+                if (checkerFilter) filtered = filtered.filter(o => String(o.checker || '').toLowerCase().includes(checkerFilter));
+                
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    filtered = filtered.filter(o => new Date(o.timestamp) >= start);
+                }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setDate(end.getDate() + 1);
+                    end.setHours(23, 59, 59, 999);
+                    filtered = filtered.filter(o => new Date(o.timestamp) <= end);
+                }
+
+                currentCheckingReportData = filtered;
+                renderCheckingReport(filtered);
+            } catch (error) {
+                console.error('Error loading checking reports:', error);
+            }
+        }
+
+        function renderCheckingReport(data) {
+            const tbody = document.getElementById('checking-report-body');
+            const empty = document.getElementById('checking-report-empty');
+            const counterContainer = document.getElementById('checking-selection-counter-container');
+            const counter = document.getElementById('checking-selection-counter');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+                empty.style.display = 'block';
+                if (counterContainer) counterContainer.style.display = 'none';
+                return;
+            }
+
+            empty.style.display = 'none';
+            if (counterContainer) {
+                counterContainer.style.display = 'flex';
+                counter.innerHTML = `<span>📋</span> Showing: <strong>${data.length}</strong> / ${data.length} records`;
+            }
+            
+            tbody.innerHTML = data.map(record => {
+                const ts = new Date(record.timestamp);
+                return `
+                    <tr>
+                        <td>${ts.toLocaleDateString()}</td>
+                        <td><strong>${record.fo || ''}</strong></td>
+                        <td>${record.accountName || ''}</td>
+                        <td>${record.checker || ''}</td>
+                        <td>${Number(record.qty || 0).toLocaleString()}</td>
+                        <td>${Number(record.checkedQty || 0).toLocaleString()}</td>
+                        <td><span class="badge badge-success">Checked</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportCheckingToCSV() {
+            if (!currentCheckingReportData || currentCheckingReportData.length === 0) {
+                alert("No data to export. Please generate a report first.");
+                return;
+            }
+
+            let csvContent = "Date,STO Number,Account Name,Checker,Qty,Checked Qty,Status\n";
+
+            currentCheckingReportData.forEach(record => {
+                const ts = new Date(record.timestamp);
+                const accountName = record.accountName ? record.accountName.replace(/"/g, '""') : '';
+                
+                const row = [
+                    ts.toLocaleDateString(),
+                    record.fo || '',
+                    `"${accountName}"`,
+                    record.checker || '',
+                    record.qty || 0,
+                    record.checkedQty || 0,
+                    "Checked"
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `checking_report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+    </script>
     <style>
         :root {
             --onesource-red: #E63946;
@@ -308,7 +416,10 @@
 
     <div class="tabs-header">
         <button class="tab-button active" onclick="switchTab('outbound')">
-            📦 Outbound Reports
+            📦 Outbound Picking Reports
+        </button>
+        <button class="tab-button" onclick="switchTab('checking')">
+            📋 Outbound Checking Reports
         </button>
         <button class="tab-button" onclick="switchTab('inbound')">
             📥 Order Processing Reports
@@ -320,8 +431,8 @@
         <div class="filter-card">
             <div class="filter-grid">
                 <div class="form-group">
-                    <label>FO Number</label>
-                    <input type="text" id="report-fo" placeholder="Search FO...">
+                    <label>STO Number</label>
+                    <input type="text" id="report-fo" placeholder="Search STO...">
                 </div>
                 <div class="form-group">
                     <label>Picker/Operator</label>
@@ -372,7 +483,7 @@
                         </th>
                         <th>
                             <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                                <span>FO#</span>
+                                <span>STO#</span>
                                 <span class="filter-trigger" data-filter-trigger="foNumber" onclick="toggleFilterDropdown('foNumber', event)">
                                     <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                                 </span>
@@ -425,6 +536,71 @@
                 </tbody>
             </table>
             <div id="report-empty" class="empty-state">
+                <div class="empty-icon">📊</div>
+                <div class="empty-title">Ready to Generate</div>
+                <div class="empty-text">Set your filters and click Generate Report</div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Outbound Checking Reports -->
+    <div id="checking" class="tab-content">
+        <div class="filter-card">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label>STO Number</label>
+                    <input type="text" id="checking-report-fo" placeholder="Search STO...">
+                </div>
+                <div class="form-group">
+                    <label>Checker</label>
+                    <input type="text" id="checking-report-checker" placeholder="Search name...">
+                </div>
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" id="checking-report-start">
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" id="checking-report-end">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end; gap: 8px;">
+                    <button class="btn btn-primary" style="flex: 1; justify-content: center; padding: 12px 8px; white-space: nowrap; font-size: 13px;" onclick="loadCheckingReportData()">
+                        🔍 Generate
+                    </button>
+                    <button class="btn"
+                        style="flex: 1; justify-content: center; padding: 12px 8px; white-space: nowrap; font-size: 13px; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.2); color: white;"
+                        onclick="exportCheckingToCSV()">
+                        📥 Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selection Counter / Toolbar -->
+        <div id="checking-selection-counter-container" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
+            <div id="checking-selection-counter" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                <span>📋</span> Showing: <strong>0</strong> / 0 records
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="checking-report-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>STO#</th>
+                        <th>Account</th>
+                        <th>Checker</th>
+                        <th>Qty</th>
+                        <th>Checked Qty</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="checking-report-body">
+                </tbody>
+            </table>
+            <div id="checking-report-empty" class="empty-state">
                 <div class="empty-icon">📊</div>
                 <div class="empty-title">Ready to Generate</div>
                 <div class="empty-text">Set your filters and click Generate Report</div>
@@ -807,7 +983,7 @@
                 return;
             }
 
-            let csvContent = "Date,FO Number,Account Name,Picker,Qty,Duration (min),Status\n";
+            let csvContent = "Date,STO Number,Account Name,Picker,Qty,Duration (min),Status\n";
 
             filteredOrders.forEach(order => {
                 const endTime = new Date(order.endTime);
