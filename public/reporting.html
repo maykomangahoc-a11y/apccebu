@@ -76,7 +76,7 @@
                         <td>${record.accountName || ''}</td>
                         <td>${record.checker || ''}</td>
                         <td>${Number(record.qty || 0).toLocaleString()}</td>
-                        <td>${Number(record.checkedQty || 0).toLocaleString()}</td>
+                        <td>${record.duration || '-'}</td>
                         <td><span class="badge badge-success">Checked</span></td>
                     </tr>
                 `;
@@ -89,7 +89,7 @@
                 return;
             }
 
-            let csvContent = "Date,STO Number,Account Name,Checker,Qty,Checked Qty,Status\n";
+            let csvContent = "Date,STO Number,Account Name,Checker,Qty,Duration,Status\n";
 
             currentCheckingReportData.forEach(record => {
                 const ts = new Date(record.timestamp);
@@ -101,8 +101,8 @@
                     `"${accountName}"`,
                     record.checker || '',
                     record.qty || 0,
-                    record.checkedQty || 0,
-                    "Checked"
+                    record.duration || '-',
+                    'Checked'
                 ];
                 csvContent += row.join(",") + "\n";
             });
@@ -598,7 +598,7 @@
                         <th>Account</th>
                         <th>Checker</th>
                         <th>Qty</th>
-                        <th>Checked Qty</th>
+                        <th>Duration</th>
                         <th>Status</th>
                     </tr>
                 </thead>
