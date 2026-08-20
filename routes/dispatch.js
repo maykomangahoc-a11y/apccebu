@@ -58,7 +58,7 @@ router.post('/', authenticateToken, async (req, res) => {
       'start_line_check', 'end_line_check', 'staging_area', 'delivery_date',
       'dispatch_date', 'loading_date', 'rtd_date', 'line_check_date',
       'picking_date', 'done_pick_date', 'ready_for_dispatch', 'w_truck',
-      'ongoing', 'loaded_date'
+      'ongoing', 'loaded_date', 'truck_status'
     ];
 
     const provided = [];
@@ -111,7 +111,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       'invoiced_value_user', 'invoiced_value_ts', 'delivery_date',
       'dispatch_date', 'loading_date', 'rtd_date', 'line_check_date',
       'picking_date', 'done_pick_date', 'ready_for_dispatch', 'w_truck',
-      'ongoing', 'loaded_date'
+      'ongoing', 'loaded_date', 'truck_status'
     ];
 
     for (const col of columns) {
@@ -305,6 +305,15 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
       values.push(user);
     }
 
+    if (statusKey === 'dispatched') {
+      fields.push(`truck_status = $${idx++}`);
+      values.push('Dispatched');
+      fields.push(`truck_status_ts = $${idx++}`);
+      values.push(ts);
+      fields.push(`truck_status_user = $${idx++}`);
+      values.push(user);
+    }
+
     values.push(id);
     const result = await pool.query(
       `UPDATE dispatch_orders SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
@@ -346,8 +355,8 @@ router.post('/:id/archive', authenticateToken, async (req, res) => {
         invoiced_value, order_status, fo, truck_size, trucker, loading_time, linechecker,
         dispatcher, checked_qty, plate_no, time_arrival, start_loading, loading_end,
         preparation, est_amount, start_line_check, end_line_check,
-        invoiced_value_user, dispatch_date, done_pick_date, delivery_date
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)`,
+        invoiced_value_user, dispatch_date, done_pick_date, delivery_date, truck_status
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31)`,
       [
         order.id, order.status, order.order_received, order.party_code, order.account_name,
         order.type, order.qty, order.cbm, order.weight, order.invoiced_value, order.order_status,
@@ -355,7 +364,7 @@ router.post('/:id/archive', authenticateToken, async (req, res) => {
         order.dispatcher, order.checked_qty, order.plate_no, order.time_arrival,
         order.start_loading, order.loading_end, order.preparation, order.est_amount,
         order.start_line_check, order.end_line_check, order.invoiced_value_user,
-        order.dispatch_date, order.done_pick_date, order.delivery_date
+        order.dispatch_date, order.done_pick_date, order.delivery_date, order.truck_status
       ]
     );
 
@@ -400,8 +409,8 @@ router.post('/bulk-archive', authenticateToken, async (req, res) => {
           invoiced_value, order_status, fo, truck_size, trucker, loading_time, linechecker,
           dispatcher, checked_qty, plate_no, time_arrival, start_loading, loading_end,
           preparation, est_amount, start_line_check, end_line_check,
-          invoiced_value_user, dispatch_date, done_pick_date
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)
+          invoiced_value_user, dispatch_date, done_pick_date, truck_status
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
         ON CONFLICT (id) DO NOTHING`,
         [
           order.id, order.status, order.order_received, order.party_code, order.account_name,
@@ -410,7 +419,7 @@ router.post('/bulk-archive', authenticateToken, async (req, res) => {
           order.dispatcher, order.checked_qty, order.plate_no, order.time_arrival,
           order.start_loading, order.loading_end, order.preparation, order.est_amount,
           order.start_line_check, order.end_line_check, order.invoiced_value_user,
-          order.dispatch_date, order.done_pick_date
+          order.dispatch_date, order.done_pick_date, order.truck_status
         ]
       );
 
@@ -536,8 +545,8 @@ router.post('/archive-completed-yesterday', authenticateToken, async (req, res) 
           invoiced_value, order_status, fo, truck_size, trucker, loading_time, linechecker,
           dispatcher, checked_qty, plate_no, time_arrival, start_loading, loading_end,
           preparation, est_amount, start_line_check, end_line_check,
-          invoiced_value_user, dispatch_date, done_pick_date, delivery_date
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
+          invoiced_value_user, dispatch_date, done_pick_date, delivery_date, truck_status
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31)
         ON CONFLICT (id) DO NOTHING`,
         [
           order.id, order.status, order.order_received, order.party_code, order.account_name,
@@ -546,7 +555,7 @@ router.post('/archive-completed-yesterday', authenticateToken, async (req, res) 
           order.dispatcher, order.checked_qty, order.plate_no, order.time_arrival,
           order.start_loading, order.loading_end, order.preparation, order.est_amount,
           order.start_line_check, order.end_line_check, order.invoiced_value_user,
-          order.dispatch_date, order.done_pick_date, order.delivery_date
+          order.dispatch_date, order.done_pick_date, order.delivery_date, order.truck_status
         ]
       );
 
@@ -856,6 +865,7 @@ const TRUCK_FIELD_MAP = {
   endLineCheck:   { col: 'end_line_check' },
   stagingArea:    { col: 'staging_area' },
   orderStatus:    { col: 'order_status' },
+  truckStatus:    { col: 'truck_status', tsCol: 'truck_status_ts', userCol: 'truck_status_user' },
 };
 
 router.post('/truck-field/:id', authenticateToken, async (req, res) => {

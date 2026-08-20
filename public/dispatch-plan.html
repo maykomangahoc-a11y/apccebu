@@ -232,6 +232,8 @@
 
         /* Truck Status Colors */
         .status-on-site { background: rgba(66,153,225,0.15); color: #4299e1; }
+        .status-in-transit { background: rgba(246, 173, 85, 0.15); color: #ed8936; }
+        .status-arrived { background: rgba(66, 153, 225, 0.15); color: #4299e1; }
         .status-dispatched { background: rgba(72,187,120,0.15); color: #48bb78; }
 
         /* Outbound Status Colors */
@@ -1213,7 +1215,7 @@
                         ${formatDeliveryDate(item.deliveryDate)}
                     </td>
                     <td style="text-align: center;">
-                        ${item.truckStatus === 'Dispatched' ? '<span class="status-badge status-dispatched">Dispatched</span>' : item.truckStatus === 'On Site' ? '<span class="status-badge status-on-site">On Site</span>' : '<span style="color: rgba(255,255,255,0.2); font-size: 11px;">—</span>'}
+                        ${buildTruckStatusCombo(item.id, item.truckStatus, (effectiveOrderStatus || '').toLowerCase().trim() === 'dispatched')}
                     </td>
                 `;
                 body.appendChild(tr);
@@ -1488,6 +1490,42 @@
                         <span class="os-caret">▼</span>
                     </div>
                 </div>`;
+        }
+
+        function buildTruckStatusCombo(id, current, isDispatched) {
+            const val = current || '';
+            const isAutoDispatched = isDispatched || (val.toLowerCase() === 'dispatched');
+            const displayVal = isAutoDispatched ? 'Dispatched' : val;
+            let cls = '';
+            let bg = 'var(--card-bg)';
+            let color = 'inherit';
+            
+            if (displayVal === 'Dispatched') {
+                cls = 'status-dispatched';
+            } else if (displayVal === 'In Transit') {
+                cls = 'status-in-transit';
+                bg = 'rgba(246, 173, 85, 0.1)';
+                color = '#ed8936';
+            } else if (displayVal === 'Arrived') {
+                cls = 'status-arrived';
+                bg = 'rgba(66, 153, 225, 0.1)';
+                color = '#4299e1';
+            } else {
+                cls = 'status-pending';
+            }
+
+            if (isAutoDispatched) {
+                return `<span class="status-badge status-dispatched">Dispatched</span>`;
+            }
+
+            return `
+                <select class="status-badge" style="background-color: ${bg}; color: ${color}; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; outline: none; padding: 2px 6px; cursor: pointer; text-transform: uppercase;" onchange="saveTruckField('${id}', 'truckStatus', this.value, this)">
+                    <option value="" style="background-color: #1e1e24; color: #fff;" ${val===''?'selected':''}>—</option>
+                    <option value="In Transit" style="background-color: #1e1e24; color: #fff;" ${val==='In Transit'?'selected':''}>In Transit</option>
+                    <option value="Arrived" style="background-color: #1e1e24; color: #fff;" ${val==='Arrived'?'selected':''}>Arrived</option>
+                    <option value="Dispatched" style="background-color: #1e1e24; color: #fff;" ${val==='Dispatched'?'selected':''}>Dispatched</option>
+                </select>
+            `;
         }
 
         let activeOrderStatusId = null;
@@ -2510,7 +2548,7 @@
                         ${formatDeliveryDate(item.deliveryDate)}
                     </td>
                     <td style="text-align: center;">
-                        ${item.truckStatus === 'Dispatched' ? '<span class="status-badge status-dispatched">Dispatched</span>' : item.truckStatus === 'On Site' ? '<span class="status-badge status-on-site">On Site</span>' : '<span style="color: rgba(255,255,255,0.2); font-size: 11px;">—</span>'}
+                        ${buildTruckStatusCombo(item.id, item.truckStatus, (effectiveOrderStatus || '').toLowerCase().trim() === 'dispatched')}
                     </td>
                     <td style="text-align:center;">${item.cbm || '-'}</td>
                     <td style="text-align:center;">${item.weight || '-'}</td>

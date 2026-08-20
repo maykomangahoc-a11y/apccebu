@@ -417,6 +417,10 @@ async function initDatabase() {
       -- Schema Migrations
       ALTER TABLE dispatch_orders ADD COLUMN IF NOT EXISTS delivery_date VARCHAR(255) DEFAULT '';
       ALTER TABLE dispatch_archive ADD COLUMN IF NOT EXISTS delivery_date VARCHAR(255) DEFAULT '';
+      ALTER TABLE dispatch_orders ADD COLUMN IF NOT EXISTS truck_status VARCHAR(100) DEFAULT '';
+      ALTER TABLE dispatch_orders ADD COLUMN IF NOT EXISTS truck_status_ts VARCHAR(255) DEFAULT '';
+      ALTER TABLE dispatch_orders ADD COLUMN IF NOT EXISTS truck_status_user VARCHAR(255) DEFAULT '';
+      ALTER TABLE dispatch_archive ADD COLUMN IF NOT EXISTS truck_status VARCHAR(100) DEFAULT '';
       ALTER TABLE picking_data ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'in-progress';
       ALTER TABLE picking_data ADD COLUMN IF NOT EXISTS start_time_formatted VARCHAR(255) DEFAULT '';
       ALTER TABLE picking_data ADD COLUMN IF NOT EXISTS end_time_formatted VARCHAR(255) DEFAULT '';
