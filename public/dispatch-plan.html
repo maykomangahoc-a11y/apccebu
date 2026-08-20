@@ -762,10 +762,8 @@
                                 <th style="width: 70px; text-align: center;">Type</th>
                                 <th style="text-align: center;">Order Qty</th>
                                 <th style="width: 175px; text-align: center;">Order Status</th>
-                                <th style="width: 120px; text-align: center;">Picking Status</th>
                                 <th style="width: 100px; text-align: center;">Loading Date</th>
                                 <th style="width: 100px; text-align: center;">Delivery Date</th>
-                                <th style="width: 100px; text-align: center;">Truck Status</th>
                                 <th style="text-align: center;">CBM</th>
                                 <th style="text-align: center;">Weight</th>
                                 <th>Truck Size</th>
@@ -2383,6 +2381,7 @@
             const searchTerm = document.getElementById('truck-search')?.value.toLowerCase() || '';
             const filteredData = dispatchPlanData.filter(item => {
                 if (item.archiveStatus === 'Archived') return false;
+                if (String(item.orderStatus || '').toLowerCase().trim() === 'dispatched') return false;
                 const status = computePlanStatus(item.dispatchDate).toLowerCase().trim();
                 if (status !== "today's plan" && status !== "pending plan") return false;
 
@@ -2524,17 +2523,11 @@
                     <td style="text-align: center;">
                         ${buildOrderStatusCombo(item.id, effectiveOrderStatus)}
                     </td>
-                    <td style="text-align: center;">
-                        <span class="status-badge ${statusClass}" style="cursor: pointer;" onclick="navigateToOutbound('${(foList[0] || '').replace(/'/g, "\\'")}')"> ${statusLabel}</span>
-                    </td>
                     <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'dispatch_date', 'date', event)" title="Click to edit Loading Date">
                         ${formatDeliveryDate(item.dispatchDate)}
                     </td>
                     <td class="text-sm font-medium" style="color: var(--text-secondary); text-align: center; cursor: pointer;" onclick="startInlineEdit(this, '${escapedId}', 'delivery_date', 'date', event)" title="Click to edit Delivery Date">
                         ${formatDeliveryDate(item.deliveryDate)}
-                    </td>
-                    <td style="text-align: center;">
-                        ${buildTruckStatusCombo(item.id, item.truckStatus, (effectiveOrderStatus || '').toLowerCase().trim() === 'dispatched')}
                     </td>
                     <td style="text-align:center;">${item.cbm || '-'}</td>
                     <td style="text-align:center;">${item.weight || '-'}</td>
