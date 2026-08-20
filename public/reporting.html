@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Onesource Reporting Hub</title>
-    <script src="/auth.js">
+    <script src="/auth.js"></script>
+    <script>
         let allCheckingData = [];
         let currentCheckingReportData = [];
 
@@ -16,8 +17,13 @@
             const endDate = document.getElementById('checking-report-end').value;
 
             try {
-                const res = await fetch(`${API_BASE_URL}/checking`);
+                const [res, configRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/checking`),
+                    fetch(`${API_BASE_URL}/config`)
+                ]);
                 allCheckingData = await res.json();
+                const config = await configRes.json().catch(() => ({ dayStartHour: 3 }));
+                const dayStartHour = config.dayStartHour !== undefined ? config.dayStartHour : 3;
                 
                 let filtered = allCheckingData;
 
@@ -26,13 +32,12 @@
                 
                 if (startDate) {
                     const start = new Date(startDate);
-                    start.setHours(0, 0, 0, 0);
+                    start.setHours(dayStartHour, 0, 0, 0);
                     filtered = filtered.filter(o => new Date(o.timestamp) >= start);
                 }
                 if (endDate) {
                     const end = new Date(endDate);
-                    end.setDate(end.getDate() + 1);
-                    end.setHours(23, 59, 59, 999);
+                    end.setHours(23 + dayStartHour, 59, 59, 999);
                     filtered = filtered.filter(o => new Date(o.timestamp) <= end);
                 }
 
@@ -653,12 +658,19 @@
 
             document.getElementById('report-start').value = formatDate(startOfMonth);
             document.getElementById('report-end').value = formatDate(endOfMonth);
+            
+            document.getElementById('checking-report-start').value = formatDate(startOfMonth);
+            document.getElementById('checking-report-end').value = formatDate(endOfMonth);
 
             // Auto-update table on date change
             document.getElementById('report-start').addEventListener('change', loadReportData);
             document.getElementById('report-end').addEventListener('change', loadReportData);
+            
+            document.getElementById('checking-report-start').addEventListener('change', loadCheckingReportData);
+            document.getElementById('checking-report-end').addEventListener('change', loadCheckingReportData);
 
             loadReportData();
+            loadCheckingReportData();
         };
         let activeFilters = {
             date: [],
