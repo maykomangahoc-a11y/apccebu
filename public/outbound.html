@@ -2921,8 +2921,10 @@
         // Break windows in PH time (UTC+8): 12:00–13:00 (lunch) and 18:00–19:00 (dinner)
         const PH_OFFSET_MS = 8 * 60 * 60 * 1000;
         const BREAK_WINDOWS = [
-            { start: 12, end: 13 }, // 12:00 PM – 1:00 PM PH
-            { start: 18, end: 19 }, // 6:00 PM – 7:00 PM PH
+            { startH: 10, startM: 0, endH: 10, endM: 15 },
+            { startH: 12, startM: 0, endH: 13, endM: 0 },
+            { startH: 15, startM: 0, endH: 15, endM: 15 },
+            { startH: 18, startM: 0, endH: 19, endM: 0 }
         ];
 
         /**
@@ -2943,8 +2945,8 @@
 
             for (let d = new Date(dayStart); d <= dayEnd; d.setDate(d.getDate() + 1)) {
                 for (const w of BREAK_WINDOWS) {
-                    const bStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.start, 0, 0, 0);
-                    const bEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.end, 0, 0, 0, 0);
+                    const bStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.startH, w.startM, 0, 0);
+                    const bEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.endH, w.endM, 0, 0, 0);
 
                     // Overlap of [start, end] with [bStart, bEnd]
                     const overlapStart = Math.max(start.getTime(), bStart.getTime());
