@@ -1389,8 +1389,9 @@
                 tbody.innerHTML = '';
 
                 let filtered = picklistDatabase.filter(item =>
-                    String(item.fo || '').toLowerCase().includes(search) ||
-                    String(item.accountName || '').toLowerCase().includes(search)
+                    (String(item.fo || '').toLowerCase().includes(search) ||
+                    String(item.accountName || '').toLowerCase().includes(search)) &&
+                    (String(item.orderStatus || '').trim() === '' || String(item.orderStatus || '').trim() === '-')
                 );
 
                 if (grandAdvanceOnly) {
