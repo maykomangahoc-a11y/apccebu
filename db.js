@@ -424,6 +424,7 @@ async function initDatabase() {
       ALTER TABLE picking_data ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'in-progress';
       ALTER TABLE picking_data ADD COLUMN IF NOT EXISTS start_time_formatted VARCHAR(255) DEFAULT '';
       ALTER TABLE picking_data ADD COLUMN IF NOT EXISTS end_time_formatted VARCHAR(255) DEFAULT '';
+      ALTER TABLE checking_data ADD COLUMN IF NOT EXISTS duration VARCHAR(100) DEFAULT '';
       UPDATE picking_data SET status = 'completed' WHERE status = 'in-progress' AND end_time IS NOT NULL AND end_time != '';
 
       -- Seed default users

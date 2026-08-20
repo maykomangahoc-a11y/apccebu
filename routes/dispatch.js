@@ -908,15 +908,15 @@ router.post('/truck-field/:id', authenticateToken, async (req, res) => {
 // POST /api/dispatch-plan/check-log
 router.post('/check-log', authenticateToken, async (req, res) => {
   try {
-    const { id, fo, partyCode, accountName, qty, checker, checkedQty } = req.body;
+    const { id, fo, partyCode, accountName, qty, checker, checkedQty, duration } = req.body;
     const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
 
     const result = await pool.query(
       `INSERT INTO checking_data (
-        timestamp, order_id, fo, party_code, account_name, qty, checker, checked_qty, log_user
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+        timestamp, order_id, fo, party_code, account_name, qty, checker, checked_qty, duration, log_user
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [timestamp, id || '', fo || '', partyCode || '', accountName || '',
-       qty || '', checker || '', checkedQty || '', req.user.username]
+       qty || '', checker || '', checkedQty || '', duration || '', req.user.username]
     );
 
     res.status(201).json(result.rows[0]);
