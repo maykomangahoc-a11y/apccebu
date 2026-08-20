@@ -638,6 +638,37 @@
             return `${mins}m`;
         }
 
+        const BREAK_WINDOWS = [
+            { start: 12, end: 13 },
+            { start: 18, end: 19 }
+        ];
+
+        function getActiveMinutes(startTime, endTime = new Date()) {
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            if (end <= start) return 0;
+
+            let breakMs = 0;
+
+            const dayStart = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const dayEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+            for (let d = new Date(dayStart); d <= dayEnd; d.setDate(d.getDate() + 1)) {
+                for (const w of BREAK_WINDOWS) {
+                    const bStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.start, 0, 0, 0);
+                    const bEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), w.end, 0, 0, 0, 0);
+
+                    const overlapStart = Math.max(start.getTime(), bStart.getTime());
+                    const overlapEnd = Math.min(end.getTime(), bEnd.getTime());
+                    if (overlapEnd > overlapStart) {
+                        breakMs += overlapEnd - overlapStart;
+                    }
+                }
+            }
+
+            return Math.floor((end.getTime() - start.getTime() - breakMs) / 60000);
+        }
+
         window.onload = async function() {
             const user = await AuthGuard.init();
             if (!user) return;
@@ -941,7 +972,7 @@
             
             tbody.innerHTML = data.map(order => {
                 const endTime = new Date(order.endTime);
-                const duration = Math.floor((endTime - new Date(order.startTime)) / 60000);
+                const duration = getActiveMinutes(order.startTime, order.endTime);
                 
                 return `
                     <tr>
@@ -999,7 +1030,7 @@
 
             filteredOrders.forEach(order => {
                 const endTime = new Date(order.endTime);
-                const duration = Math.floor((endTime - new Date(order.startTime)) / 60000);
+                const duration = getActiveMinutes(order.startTime, order.endTime);
                 const accountName = order.accountName ? order.accountName.replace(/"/g, '""') : '';
                 
                 const row = [
