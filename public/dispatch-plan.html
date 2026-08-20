@@ -1498,14 +1498,14 @@
 
             if (isAutoDispatched) {
                 return `
-                    <div style="display: inline-flex; align-items: center; justify-content: space-between; padding: 5px 10px; border-radius: 6px; background: rgba(72,187,120,0.05); border: 1px solid rgba(72,187,120,0.3); min-width: 110px; font-size: 13px;">
+                    <div style="display: inline-flex; align-items: center; justify-content: space-between; padding: 4px 10px; border-radius: 6px; background: rgba(72,187,120,0.05); border: 1px solid rgba(72,187,120,0.3); min-width: 110px; font-size: 12px;">
                         <span style="color: #48bb78; font-weight: 600;">Dispatched</span>
                         <span style="font-size: 10px; opacity: 0.7;">🔒</span>
                     </div>`;
             }
 
             return `
-                <select style="background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; outline: none; padding: 5px 10px; cursor: pointer; font-size: 13px; min-width: 110px;" onchange="saveTruckField('${id}', 'truckStatus', this.value, this)">
+                <select style="background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; outline: none; padding: 4px 10px; cursor: pointer; font-size: 12px; min-width: 110px;" onchange="saveTruckField('${id}', 'truckStatus', this.value, this)">
                     <option value="" style="background-color: #1e1e24; color: #fff;" ${val===''?'selected':''}>—</option>
                     <option value="In Transit" style="background-color: #1e1e24; color: #fff;" ${val==='In Transit'?'selected':''}>In Transit</option>
                     <option value="Arrived" style="background-color: #1e1e24; color: #fff;" ${val==='Arrived'?'selected':''}>Arrived</option>
